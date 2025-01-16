@@ -263,15 +263,18 @@ Mouse.prototype.__handleContextMenu = function(event) {
   // Close existing menu's
   gameClient.interface.menuManager.close();
 
+  // Open the menu options
   if(gameClient.keyboard.isControlDown()) {
 
     // Close existing menu's
     gameClient.interface.menuManager.close();
 
+
     // Delegate to the right handler
     if(event.target.id === "screen") {
-
       let menu = gameClient.interface.menuManager.getMenu("screen-menu");
+      
+      menu.removeDynamicOptions();
       let tile = this.getWorldObject(event);
       menu.element.querySelector("button[action=use]").innerHTML = "Use";
       if(tile !== null && tile.which.items.length > 0) {
@@ -281,7 +284,13 @@ Mouse.prototype.__handleContextMenu = function(event) {
           menu.element.querySelector("button[action=use]").innerHTML = "Use With";
         }
       }
-
+      const monsters = tile.which.monsters;
+      if (monsters.size > 0) {
+        const firstMonster = Array.from(monsters)[0];
+        if (firstMonster.name === gameClient.player.name)
+          menu.addOption("outfits", "Outfits");
+      }
+      
       return gameClient.interface.menuManager.open("screen-menu", event);
 
     }
@@ -364,14 +373,11 @@ Mouse.prototype.__handleMouseDown = function(event) {
 
 
   if (event.button === 0) this.__leftButtonPressed = true ; // Left button
-  if (event.button === 2){
-    console.log('right true');
-    this.__rightButtonPressed = true;  // Right button
-  }
+  if (event.button === 2) this.__rightButtonPressed = true; // Right button
+  
 
   // Detect simultaneous left + right click
   if (this.__leftButtonPressed && this.__rightButtonPressed) {
-    console.log("Simultaneous left + right click detected!");
     if (this.__mouseDownObject) {
       this.look(this.__mouseDownObject); // Call the `look` function
     }
@@ -481,24 +487,20 @@ Mouse.prototype.__handleMouseUp = function(event) {
    */
 
   if (event.button === 0) this.__leftButtonPressed = false; // Left button released
-  if (event.button === 2){
-    console.log('right false');
-    this.__rightButtonPressed = false;  // Right button
-  } 
+  if (event.button === 2) this.__rightButtonPressed = false; // Right button
 
   // Must be connected to the gameserver
   if (!gameClient.networkManager.isConnected()) {
     return;
   }
 
-  // Handle right-click (use item)
+  // Mouse righ-click use
   if (event.button === 2 && !gameClient.keyboard.isControlDown()) {
     const targetObject = this.__mouseDownObject;
 
     if (targetObject && targetObject.which) {
       this.use(targetObject);
     }
-
     return;
   }
 
