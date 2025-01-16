@@ -7,14 +7,13 @@ const Enum = function() {
    * Generates an enum by returning an object with symbols
    */
 
-  // Go over each elements
-  let enumerator = new Object();
+  // Maximum number of bits
+  if(arguments.length > 31) {
+    throw new Error("Cannot create enum with more than 31 values.")
+  }
 
-  Array.from(arguments).forEach(function(x) {
-    enumerator[x] = Symbol(x);
-  });
-
-  return Object.freeze(enumerator);
+  // Another bit per item
+  Array.from(arguments).forEach((x, i) => this[x] = 1 << i);
 
 }
 

@@ -1,8 +1,8 @@
 "use strict";
 
-const { OTBBitFlag } = require("./bitflag");
+const { OTBBitFlag } = requireModule("bitflag");
 
-const Thing = require("./thing");
+const Thing = requireModule("thing");
 
 const Item = function(id) {
 
@@ -18,8 +18,6 @@ const Item = function(id) {
 
   // Inherit from a thing
   Thing.call(this, id);
-
-  this.weight = 0;
 
 }
 
@@ -52,6 +50,11 @@ Item.prototype.setFluidType = function(count) {
 }
 
 Item.prototype.hasHeight = function() {
+
+  /*
+   * Function Item.hasHeight
+   * Returns true if the item prototype has a height
+   */
 
   return this.hasFlag(OTBBitFlag.prototype.flags.FLAG_HAS_HEIGHT);
 
@@ -169,7 +172,7 @@ Item.prototype.split = function(count) {
   this.setCount(this.count - count);
 
   // Create the new item
-  let item = process.gameServer.database.createThing(this.id);
+  let item = gameServer.database.createThing(this.id);
   item.setCount(count);
 
   // Return a new item generated from the stack
@@ -180,37 +183,18 @@ Item.prototype.split = function(count) {
 Item.prototype.toJSON = function() {
 
   /*
-   * Function Item.stringify
-   * Recursively serializes the item class
+   * Function Item.toJSON
+   * Serializes an item
    */
 
-  let item = this.__serialize();
-
-  // Containers need to be recursively serialized (may contain other containers)
-  if(this.isContainer()) {
-    item.items = this.container.__slots;
-  }
-
-  // Always clean up events after serializing items
+  // Clean up items when they are serialized
   this.cleanup();
-
-  return item;
-
-}
-
-Item.prototype.__serialize = function() {
-
-  /*
-   * Function Item.serialize
-   * Serializes the item class to JSON
-   */
 
   return new Object({
     "id": this.id,
     "count": this.count,
     "actionId": this.actionId,
-    "duration": this.duration,
-    "content": this.content
+    "duration": this.duration
   });
 
 }

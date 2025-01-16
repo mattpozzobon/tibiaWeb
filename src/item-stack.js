@@ -1,4 +1,6 @@
-const Condition = require("./condition");
+"use strict";
+
+const Condition = requireModule("condition");
 
 const ItemStack = function() {
 
@@ -330,6 +332,7 @@ ItemStack.prototype.applyFieldDamage = function(creature) {
    * Adds the reference of a creature to the tile
    */
 
+  return;
   // Go over the item stack from top to bottom
   for(let i = this.__items.length - 1; i >= 0; i--) {
 
@@ -354,9 +357,9 @@ ItemStack.prototype.__applyFieldCondition = function(field, creature) {
 
   // Handle specific field types
   switch(field) {
-    case "energy": return creature.addCondition(Condition.prototype.ELECTRIFIED, 3, 100, null);
-    case "fire": return creature.addCondition(Condition.prototype.BURNING, 5, 50, null);
-    case "poison": return creature.addCondition(Condition.prototype.POISONED, 20, 10, null);
+    case "energy": return creature.addCondition(CONST.CONDITION.ELECTRIFIED, 3, 100, null);
+    case "fire": return creature.addCondition(CONST.CONDITION.BURNING, 5, 50, null);
+    case "poison": return creature.addCondition(CONST.CONDITION.POISONED, 20, 10, null);
   }
 
 }

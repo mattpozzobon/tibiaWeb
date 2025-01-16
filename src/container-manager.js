@@ -1,12 +1,12 @@
 "use strict";
 
-const DepotContainer = require("./depot");
-const Equipment = require("./equipment");
-const Keyring = require("./keyring");
-const Thing = require("./thing");
-const Inbox = require("./inbox");
+const DepotContainer = requireModule("depot");
+const Equipment = requireModule("equipment");
+const Keyring = requireModule("keyring");
+const Thing = requireModule("thing");
+const Inbox = requireModule("inbox");
 
-const ContainerManager = function(player, depot, equipment, keyring, inbox) {
+const ContainerManager = function(player, containers) {
 
   /*
    * Class ContainerManager
@@ -25,20 +25,35 @@ const ContainerManager = function(player, depot, equipment, keyring, inbox) {
   // Must circular reference the player
   this.__player = player;
 
-  this.__openedContainers = new Set();
+  // Keep a set of the opened containers
+  this.__openedContainers = new Map();
 
   // Depots and equipments are owned by individual players
-  this.depot = new DepotContainer(this.DEPOT, depot);
-  this.equipment = new Equipment(this.EQUIPMENT, player, equipment);
-  this.keyring = new Keyring(this.KEYRING, player, keyring);
-  this.inbox = new Inbox(player, inbox);
+  this.depot = new DepotContainer(CONST.CONTAINER.DEPOT, containers.depot);
+  this.equipment = new Equipment(CONST.CONTAINER.EQUIPMENT, player, containers.equipment);
+  this.keyring = new Keyring(CONST.CONTAINER.KEYRING, player, containers.keyring);
+
+  this.inbox = new Inbox(player, containers.inbox);
 
 }
 
 ContainerManager.prototype.MAXIMUM_OPENED_CONTAINERS = 5;
-ContainerManager.prototype.EQUIPMENT = 0x00;
-ContainerManager.prototype.DEPOT = 0x01;
-ContainerManager.prototype.KEYRING = 0x02;
+
+ContainerManager.prototype.toJSON = function() {
+
+  /*
+   * Function ContainerManager.toJSON
+   * Serializes the container manager
+   */
+
+  return new Object({
+    "depot": this.depot,
+    "equipment": this.equipment,
+    "keyring": this.keyring,
+    "inbox": this.inbox
+  });
+
+}
 
 ContainerManager.prototype.getContainerFromId = function(cid) {
 
@@ -49,10 +64,10 @@ ContainerManager.prototype.getContainerFromId = function(cid) {
 
   // Simple mapping of the container identifier
   switch(cid) {
-    case this.DEPOT: return (this.depot.isClosed() ? null : this.depot);
-    case this.EQUIPMENT: return this.equipment;
-    case this.KEYRING: return this.keyring;
-    default: return this.__findContainer(cid);
+    case CONST.CONTAINER.DEPOT: return (this.depot.isClosed() ? null : this.depot);
+    case CONST.CONTAINER.EQUIPMENT: return this.equipment;
+    case CONST.CONTAINER.KEYRING: return this.keyring;
+    default: return this.__getContainer(cid);
   }
 
 }
@@ -65,11 +80,11 @@ ContainerManager.prototype.toggleContainer = function(container) {
    */
 
   // Either open or close it
-  if(this.__openedContainers.has(container)) {
+  if(this.__openedContainers.has(container.id)) {
     return this.closeContainer(container);
   }
 
-  if(container.isDepot() && this.__openedContainers.has(this.depot)) {
+  if(container.isDepot() && this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {
     return this.closeContainer(this.depot);
   }
 
@@ -77,13 +92,14 @@ ContainerManager.prototype.toggleContainer = function(container) {
 
 }
 
-ContainerManager.prototype.closeAll = function() {
+ContainerManager.prototype.cleanup = function() {
 
   /*
-   * Function ContainerManager.closeAll
+   * Function ContainerManager.cleanup
    * Closes all the containers that are opened by the player
    */
 
+  // Close all opened containers
   this.__openedContainers.forEach(container => this.closeContainer(container));
 
 }
@@ -104,7 +120,7 @@ ContainerManager.prototype.checkContainer = function(container) {
   }
 
   // If the parent is a depot but the depot is closed we need to eliminate the container
-  if(parentThing === this.depot && !this.depot.isClosed()) {
+  if(parentThing === this.depot && this.depot.isClosed()) {
     return this.closeContainer(container);
   }
 
@@ -134,12 +150,12 @@ ContainerManager.prototype.closeContainer = function(container) {
    */
 
   // Guard
-  if(!this.__openedContainers.has(container)) {
+  if(!this.__openedContainers.has(container.id)) {
     return;
   }
 
   // Deference the container in a circular way
-  this.__openedContainers.delete(container);
+  this.__openedContainers.delete(container.id);
 
   // Close the container
   if(container === this.depot) {
@@ -151,42 +167,37 @@ ContainerManager.prototype.closeContainer = function(container) {
 
 }
 
-ContainerManager.prototype.__findContainer = function(cid) { 
+ContainerManager.prototype.__getContainer = function(cid) { 
 
   /*
-   * Function ContainerManager.__findContainer
+   * Function ContainerManager.__getContainer
    * Finds a container by completing a linear search in all opened containers
    */
 
-  // Confirm that the player has the container opened
-  for(let container of this.__openedContainers) {
-
-    // Ignore the depot if it is opened
-    if(container === this.depot || container === this.keyring) {
-      continue;
-    }
-
-    // Found!
-    if(container.hasIdentifier(cid)) {
-      return container;
-    }
-
+  if(!this.__openedContainers.has(cid)) {
+    return null;
   }
 
-  // The container was not found
-  return null;
+  return this.__openedContainers.get(cid);
 
 }
 
 ContainerManager.prototype.openKeyring = function() {
 
-  // Open the depot at the position
-  if(this.__openedContainers.has(this.keyring)) {
-    this.__openedContainers.delete(this.keyring);
-    return this.__player.closeContainer(this.keyring.container);
+  /*
+   * Function ContainerManager.openKeyring
+   * Opens the keyring for the player
+   */
+
+  // If already opened, close it
+  if(this.__openedContainers.has(CONST.CONTAINER.KEYRING)) {
+    this.__openedContainers.delete(CONST.CONTAINER.KEYRING);
+    this.__player.closeContainer(this.keyring.container);
+    return;
   }
 
-  this.__openedContainers.add(this.keyring);
+  // Add a reference
+  this.__openedContainers.set(CONST.CONTAINER.KEYRING, this.keyring);
   this.__player.openContainer(1987, "Keyring", this.keyring.container);
 
 }
@@ -198,8 +209,8 @@ ContainerManager.prototype.__openContainer = function(container) {
    * Writes packet to open a container
    */
 
-  // Already opened..?
-  if(this.__openedContainers.has(container)) {
+  // Is already opened
+  if(this.__openedContainers.has(container.id)) {
     return;
   }
 
@@ -210,17 +221,17 @@ ContainerManager.prototype.__openContainer = function(container) {
 
   // Sanity check for opening two depots
   if(container.isDepot() && !this.depot.isClosed()) {
-    return this.__player.sendCancelMessage("You already have another locker opened.");
+    return this.__player.sendCancelMessage("You already have another depot opened.");
   }
 
   // Open the depot or a simple container
   if(!container.isDepot()) {
-    this.__openedContainers.add(container);
+    this.__openedContainers.set(container.id, container);
     return this.__player.openContainer(container.id, container.getName(), container.container);
   }
 
   // Open the depot at the position
-  this.__openedContainers.add(this.depot);
+  this.__openedContainers.set(CONST.CONTAINER.DEPOT, this.depot);
   this.depot.openAtPosition(container.getPosition());
   this.__player.openContainer(container.id, "Depot", this.depot.container);
 

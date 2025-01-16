@@ -6,9 +6,9 @@ const http = require("http");
 const fs = require("fs");
 const url = require("url");
 
-const AccountManager = require("./account-manager");
+const AccountDatabase = requireModule("account-database");
 
-const LoginServer = function(callback) {
+const LoginServer = function(host, port) {
 
   /*
    * Class LoginServer
@@ -19,51 +19,54 @@ const LoginServer = function(callback) {
    *
    */
 
-  // List of available account
-  this.__init();
-  this.accounts = JSON.parse(fs.readFileSync(getDataFile("accounts", "accounts.json").toString()));
-  this.accountManager = new AccountManager();
+  // Save information
+  this.__host = CONFIG.LOGIN.HOST;
+  this.__port = CONFIG.LOGIN.PORT;
+
+  // The character manager
+  this.accountDatabase = new AccountDatabase(CONFIG.DATABASE.ACCOUNT_DATABASE);
 
   // Create the server and handler
   this.server = http.createServer(this.__handleRequest.bind(this));
+  this.server.on("listening", this.__handleListening.bind(this));
+  this.server.on("close", this.__handleClose.bind(this));
 
   // Graceful close
   process.on("SIGINT", this.server.close.bind(this.server));
   process.on("SIGTERM", this.server.close.bind(this.server));
-  process.on("exit", this.__handleExit.bind(this));
-  //process.on("uncaughtException", process.exit.bind(this, 1));
-
-  // Listen for incoming requests
-  this.server.listen(CONFIG.LOGIN.PORT, CONFIG.LOGIN.HOST, callback);
 
 }
 
-LoginServer.prototype.__init = function() {
+LoginServer.prototype.__handleClose = function() {
 
   /*
-   * LoginServer.__init
-   * Initializes the login server and handles creation of account directory if it does not exist
+   * LoginServer.__handleClose
+   * Callback fired when the HTTP server is closed
    */
 
-  // If accounts does not exist create the folder and necessary files
-  try {
-    fs.accessSync(getDataFile("accounts"));
-  } catch(error) {
-    fs.mkdirSync(getDataFile("accounts"));
-    fs.writeFileSync(getDataFile("accounts", "accounts.json"), "{}");
-    fs.mkdirSync(getDataFile("accounts", "definitions"));
-  }
+  this.accountDatabase.close();
 
 }
 
-LoginServer.prototype.__handleExit = function(exit) {
+LoginServer.prototype.__handleListening = function() {
 
   /*
-   * LoginServer.__handleExit
-   * Writes the account state to the filesystem
+   * LoginServer.__handleListening
+   * Callback fired when the HTTP server is listening
    */
 
-  fs.writeFileSync(getDataFile("accounts", "accounts.json"), JSON.stringify(this.accounts, null, 2));
+  console.log("The login server is listening for connections on %s:%s.".format(this.__host, this.__port));
+
+}
+
+LoginServer.prototype.initialize = function() {
+
+  /*
+   * LoginServer.initialize
+   * Starts the HTTP server and listens for incoming connections
+   */
+
+  this.server.listen(this.__port, this.__host);
 
 }
 
@@ -74,14 +77,15 @@ LoginServer.prototype.__generateToken = function(name) {
    * Generates a simple HMAC token for the client to identify itself with.
    */
 
-   // Token is only valid for a few seconds
-   let expire = Date.now() + 3000;
+   // Token is only c valid for a few seconds
+   let expire = Date.now() + CONFIG.LOGIN.TOKEN_VALID_MS;
+   let hmac = crypto.createHmac("sha256", CONFIG.HMAC.SHARED_SECRET).update(name + expire).digest("hex");
 
    // Return the JSON payload
    return new Object({
      "name": name,
      "expire": expire,
-     "token": crypto.createHmac("sha256", CONFIG.HMAC.SHARED_SECRET).update(name + expire).digest("hex")
+     "hmac": hmac
    });
 
 }
@@ -93,9 +97,10 @@ LoginServer.prototype.__isValidCreateAccount = function(queryObject) {
    * Returns true if the request to create the account is valid 
    */
 
-  // Missing
-  if(!queryObject.account || !queryObject.password || !queryObject.name || !queryObject.sex) {
-    return false;
+  for(let property of ["account", "password", "name", "sex"]) {
+    if(!Object.prototype.hasOwnProperty.call(queryObject, "account")) {
+      return false;
+    }
   }
 
   // Accept only lower case letters for the character name
@@ -112,42 +117,32 @@ LoginServer.prototype.__isValidCreateAccount = function(queryObject) {
 
 }
 
-LoginServer.prototype.__createAccount = function(request, response) {
+LoginServer.prototype.__createAccount = function(queryObject, response) {
 
   /*
    * LoginServer.__createAccount
    * Makes a call to the account manager to create a new account if the request is valid
    */
 
-  let queryObject = url.parse(request.url, true).query;
-
-  // Account number already exists..
-  if(this.accounts.hasOwnProperty(queryObject.account)) {
-    response.statusCode = 409;
-    return response.end();
-  }
-
+  // Is valid
   if(!this.__isValidCreateAccount(queryObject)) {
     response.statusCode = 400;
     return response.end();
   }
 
-  this.accountManager.createAccount(queryObject, function(error, accountObject) {
+  this.accountDatabase.createAccount(queryObject, function(error, accountObject) {
 
     // Failure creating the account
-    if(error) {
+    if(error !== null) {
       response.statusCode = error;
       return response.end();
     }
-
-    // Created! Append to the in-memory map    
-    this.accounts[queryObject.account] = accountObject;
 
     // Finish the HTTP response
     response.statusCode = 201;
     response.end();
 
-  }.bind(this));
+  }.bind(this))
 
 }
 
@@ -168,11 +163,6 @@ LoginServer.prototype.__handleRequest = function(request, response) {
     return response.end();
   }
 
-  // Post means creating account
-  if(request.method === "POST") {
-    return this.__createAccount(request, response);
-  }
-
   // Data submitted in the querystring
   let requestObject = url.parse(request.url, true);
 
@@ -181,7 +171,16 @@ LoginServer.prototype.__handleRequest = function(request, response) {
     return response.end();
   }
 
-  let queryObject = requestObject.query;
+  // POST requests means creating account
+  if(request.method === "POST") {
+    return this.__createAccount(requestObject.query, response);
+  }
+
+  return this.__getAccount(requestObject.query, response);
+
+}
+
+LoginServer.prototype.__getAccount = function(queryObject, response) {
 
   // Account or password were not supplied
   if(!queryObject.account || !queryObject.password) {
@@ -189,39 +188,40 @@ LoginServer.prototype.__handleRequest = function(request, response) {
     return response.end();
   }
 
-  // Account does not exist
-  if(!this.accounts.hasOwnProperty(queryObject.account)) {
-    response.statusCode = 401;
-    return response.end();
-  }
+  this.accountDatabase.getAccountCredentials(queryObject.account, function(error, result) {
 
-  // Reference the entry
-  let entry = this.accounts[queryObject.account];
-
-  // Compare the submitted password with the hashed + salted password
-  bcrypt.compare(queryObject.password, entry.hash, function(error, result) {
-
-    if(error) {
-      response.statusCode = 500;
-      return response.end();
-    }
-
-    if(!result) {
+    // Does not exist
+    if(result === undefined) {
       response.statusCode = 401;
       return response.end();
     }
 
-    // Valid return a HMAC token to be verified by the GameServer
-    response.writeHead(200, {"Content-Type": "application/json"});
+    // Compare the submitted password with the hashed + salted password
+    bcrypt.compare(queryObject.password, result.hash, function(error, isPasswordCorrect) {
 
-    // Return the host and port of the game server too in addition to the token
-    response.end(JSON.stringify({
-      "token": Buffer.from(JSON.stringify(this.__generateToken(entry.definition))).toString("base64"),
-      "host": CONFIG.SERVER.EXTERNAL_HOST
-    }));
+      if(error) {
+        response.statusCode = 500;
+        return response.end();
+      }
+
+      if(!isPasswordCorrect) {
+        response.statusCode = 401;
+        return response.end();
+      }
+
+      // Valid return a HMAC token to be verified by the GameServer
+      response.writeHead(200, {"Content-Type": "application/json"});
+
+      // Return the host and port of the game server too in addition to the token
+      response.end(JSON.stringify({
+        "token": Buffer.from(JSON.stringify(this.__generateToken(queryObject.account))).toString("base64"),
+        "host": CONFIG.SERVER.EXTERNAL_HOST
+      }));
+
+    }.bind(this));
 
   }.bind(this));
 
 }
 
-module.exports = LoginServer;
+module.exports = LoginServer;

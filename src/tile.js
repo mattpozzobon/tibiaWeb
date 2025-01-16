@@ -2,13 +2,14 @@
 
 const Item = require("./item");
 const ItemStack = require("./item-stack");
-const PacketWriter = require("./packet-writer");
 const Thing = require("./thing");
 const Condition = require("./condition");
+const { TilePacket, ItemRemovePacket, ItemAddPacket } = requireModule("protocol");
 
 const { OTBBitFlag, TileFlag } = require("./bitflag");
+const PathfinderNode = requireModule("pathfinder-node");
 
-const Tile = function(chunk, id, position) {
+const Tile = function(id, position) {
 
   /*
    * Class Tile
@@ -27,27 +28,8 @@ const Tile = function(chunk, id, position) {
   // Tiles also inherit from thing
   Thing.call(this, id);
 
-  // Reference the position & chunk
+  // Reference the position
   this.position = position;
-  this.__chunk = chunk;
-
-  // Keep separate references to the players and monsters
-  this.players = new Set();
-  this.monsters = new Set();
-  this.npcs = new Set();
-
-  // The stack of items on top of the tile
-  this.itemStack = new ItemStack();
-
-  // Save the tilezone flags
-  this.tilezoneFlags = new TileFlag();
-  this.zoneIdentifier = 0;
-
-  // Set up tile neighbours used for monster pathfinding (includes a reference to self)
-  this.neighbours = new Array(this);
-
-  // Open A* pathfinding parameters
-  this.cleanPathfinding();
 
 }
 
@@ -76,6 +58,17 @@ Tile.prototype.broadcastNeighbours = function(packet) {
 
 }
 
+Tile.prototype.distanceManhattan = function(other) {
+
+  /*
+   * Function Tile.distanceManhattan
+   * Returns the Manhattan distance between two tiles
+   */
+
+  return this.getPosition().manhattanDistance(other.getPosition());
+
+}
+
 Tile.prototype.writePlayers = function(packet) {
 
   /*
@@ -83,7 +76,7 @@ Tile.prototype.writePlayers = function(packet) {
    * Writes a packet to all players on the tile
    */
 
-  this.players.forEach(player => player.gameSocket.write(packet));
+  this.players.forEach(player => player.write(packet));
 
 }
 
@@ -100,35 +93,31 @@ Tile.prototype.addCreature = function(creature) {
    * Adds the reference of a creature to the tile
    */
 
+  creature.position = this.position;
+
   // Write tile condition
   if(creature.isPlayer()) {
 
     if(this.isProtectionZone()) {
 
+      // Drop the combat lock
       if(creature.isInCombat()) {
         creature.combatLock.unlock();
       }
 
-      if(creature.hasTarget()) {
-        creature.setTarget(null)
+      if(creature.actionHandler.targetHandler.hasTarget()) {
+        creature.actionHandler.targetHandler.setTarget(null)
       }
 
     }
 
   }
 
-  // Add to the appropriate container
-  switch(creature.constructor.name) {
-    case "Player":
-      this.players.add(creature);
-      break;
-    case "Monster":
-      this.monsters.add(creature);
-      break;
-    case "NPC":
-      this.npcs.add(creature);
-      break;
+  if(!this.hasOwnProperty("creatures")) {
+    this.creatures = new Set();
   }
+
+  this.creatures.add(creature);
 
 }
 
@@ -154,6 +143,10 @@ Tile.prototype.addThing = function(thing, index) {
    * Public function to add an item to the tile at a particular index. Normally players can only add things to the top of a tile.
    * Decaying items however, may need to be inserted with the appropriate index
    */
+
+  if(!this.hasOwnProperty("itemStack")) {
+    this.itemStack = new ItemStack();
+  }
 
   // Guard
   if(!this.itemStack.isValidIndex(index)) {
@@ -186,8 +179,15 @@ Tile.prototype.addThing = function(thing, index) {
     return this.__addStackable(index, currentThing, thing);
   }
 
-  // Set the item in the slot
-  this.__addThing(thing, index);
+  if(!this.hasOwnProperty("itemStack")) {
+    this.itemStack = new ItemStack();
+  }
+
+  // If specified at the top of the stack
+  this.itemStack.addThing(index, thing);
+
+  // Broadcast
+  this.broadcast(new ItemAddPacket(this.position, thing, index));
 
 }
 
@@ -209,7 +209,7 @@ Tile.prototype.hasElevation = function() {
    * Returns true if the tile has sufficient elevation to bring the player to another level
    */
 
-  return this.itemStack.hasElevation();
+  return this.hasItems() && this.itemStack.hasElevation();
 
 }
 
@@ -221,7 +221,15 @@ Tile.prototype.hasDestination = function() {
    */
 
   // Could be a teleporter or floor change (stair?)
-  return this.getFloorChange() !== null || this.itemStack.getTeleporterDestination() !== null;
+  if(this.__getFloorChange() !== null) {
+    return true;
+  }
+
+  if(!this.hasItems()) {
+    return false;
+  }
+
+  return this.itemStack.getTeleporterDestination() !== null;
 
 }
 
@@ -240,7 +248,7 @@ Tile.prototype.replace = function(id) {
     this.scheduleDecay();
   }
 
-  this.broadcast(new PacketWriter(PacketWriter.prototype.opcodes.TRANSFORM_ITEM).writeItemTransform(this.position, id));
+  this.broadcast(new TilePacket(this.position, id));
 
 }
 
@@ -251,41 +259,40 @@ Tile.prototype.getItems = function() {
    * Returns a reference to the items that are placed on the tile
    */
 
+  if(!this.hasItems()) {
+    return new Array();
+  }
+
   return this.itemStack.__items;
 
 }
 
-Tile.prototype.getCost = function() {
+Tile.prototype.getScore = function() {
+  
+  /*
+   * Function Tile.getScore
+   * Returns the A* cost of walking on a tile
+   */
+
+  // Currently implemented as a constant
+  return this.pathfinderNode.getScore();
+  
+}
+
+Tile.prototype.getWeight = function(current) {
 
   /*
    * Function Tile.getCost
    * Returns the A* cost of walking on a tile
    */
 
+  // Moving diagonally is not preferred
+  if(this.getPosition().isDiagonal(current.getPosition())) {
+    return 3 * this.getFriction();
+  }
+
   // Currently implemented as a constant
-  return 1;
-
-}
-
-Tile.prototype.getPlayer = function() {
-
-  /*
-   * Function Tile.getPlayer
-   * Returns the top player from the tile
-   */
-
-  return this.players.values().next().value;
-
-}
-
-Tile.prototype.getNPC = function() {
-
-  /*
-   * Function Tile.getNPC
-   * Returns the top player from the tile
-   */
-
-  return this.npcs.values().next().value;
+  return this.getFriction(); 
 
 }
 
@@ -296,25 +303,18 @@ Tile.prototype.getNumberCharacters = function() {
    * Returns the total number of characters on a tile
    */
 
-  return this.monsters.size + this.npcs.size + this.players.size;
+  if(!this.hasOwnProperty("creatures")) {
+    return 0;
+  }
+
+  return this.creatures.size;
 
 }
 
-Tile.prototype.getMonster = function() {
+Tile.prototype.__getFloorChange = function() {
 
   /*
-   * Function Tile.getMonster
-   * Returns the top monster on the stack
-   */
-
-  return this.monsters.values().next().value;
-
-}
-
-Tile.prototype.getFloorChange = function() {
-
-  /*
-   * Function Tile.getFloorChange
+   * Function Tile.__getFloorChange
    * Returns where the floor has a change event or null
    */
 
@@ -331,37 +331,46 @@ Tile.prototype.getFloorChange = function() {
     return floorChange;
   }
 
+  if(!this.hasItems()) {
+    return null;
+  }
+
   // Check the item stack for stairs perhaps?
   return this.itemStack.getFloorChange();
 
 }
 
-Tile.prototype.cleanPathfinding = function() {
+Tile.prototype.enablePathfinding = function(target) {
 
   /*
-   * Function Tile.cleanPathfinding
+   * Function Tile.prototype.enablePathfinding
    * Clears A* pathfinding parameters and resets it
    */
 
-  // Some important parameters that are used in the pathfinding algorithm
-  this.__parent = null;
-  this.__closed = false;
-  this.__visited = false;
-  this.__f = 0;
-  this.__g = 0;
-  this.__h = 0;
+  this.pathfinderNode = new PathfinderNode();
 
 }
 
-Tile.prototype.setZoneFlags = function(zones) {
+Tile.prototype.disablePathfinding = function() {
+
+  /*
+   * Function Tile.prototype.disablePathfinding
+   * Clears A* pathfinding parameters and resets it
+   */
+
+  delete this.pathfinderNode;
+
+}
+
+Tile.prototype.setZoneFlags = function(flags) {
 
   /*
    * Function Tile.setZoneFlags
    * Sets the configured flags
    */
 
-  // Add each zone (flags share a bit with RME)
-  Object.values(zones).forEach(zone => this.tilezoneFlags.set(zone));
+  // Create
+  this.tilezoneFlags = new TileFlag(flags); 
 
 }
 
@@ -372,7 +381,7 @@ Tile.prototype.isNoLogoutZone = function() {
    * Returns true when the tile is a no logout zone
    */
 
-  return this.tilezoneFlags.get(TileFlag.prototype.flags.TILESTATE_NOLOGOUT);
+  return this.hasOwnProperty("tilezoneFlags") && this.tilezoneFlags.get(TileFlag.prototype.flags.TILESTATE_NOLOGOUT);
 
 }
 
@@ -383,7 +392,7 @@ Tile.prototype.isProtectionZone = function() {
    * Returns true when the tile is a protection zone and cannot be entered by monsters
    */
 
-  return this.tilezoneFlags.get(TileFlag.prototype.flags.TILESTATE_PROTECTIONZONE);
+  return this.hasOwnProperty("tilezoneFlags") && this.tilezoneFlags.get(TileFlag.prototype.flags.TILESTATE_PROTECTIONZONE);
 
 }
 
@@ -431,13 +440,20 @@ Tile.prototype.isOccupied = function() {
   }
 
   // The tile items contain a block solid (e.g., a wall)
-  if(this.itemStack.isBlockSolid()) {
+  if(this.hasItems() && this.itemStack.isBlockSolid()) {
     return true;
   }
 
   return false;
 
 }
+
+Tile.prototype.hasItems = function() {
+
+  return this.hasOwnProperty("itemStack");
+
+}
+
 
 Tile.prototype.isOccupiedCharacters = function() {
 
@@ -446,7 +462,11 @@ Tile.prototype.isOccupiedCharacters = function() {
    * Returns true if the tile is occupied by any item (e.g., prevents closing a door)
    */
 
-  return this.players.size > 0 || this.monsters.size > 0 || this.npcs.size > 0;
+  if(!this.hasOwnProperty("creatures")) {
+    return false;
+  }
+
+  return this.creatures.size > 0;
 
 }
 
@@ -469,6 +489,10 @@ Tile.prototype.deleteThing = function(thing) {
    * Function Tile._removeItemReference
    * Removes an item on the tile by reference
    */
+
+  if(!this.hasItems()) {
+    return;
+  }
 
   // Get the index of the item to be removed
   let index = this.itemStack.__items.indexOf(thing);
@@ -526,7 +550,7 @@ Tile.prototype.isTrashholder = function() {
   }
  
   // Item prototypes like a dustbin?
-  return this.itemStack.isTrashholder();
+  return this.hasItems() && this.itemStack.isTrashholder();
 
 }
 
@@ -536,6 +560,10 @@ Tile.prototype.getTopItem = function() {
    * Function Tile.getTopItem
    * Returns at the top item of the stack
    */
+
+  if(!this.hasItems()) {
+    return null;
+  }
 
   return this.itemStack.getTopItem();
 
@@ -548,6 +576,10 @@ Tile.prototype.peekIndex = function(index) {
    * Peeks at the item at the specified index
    */
 
+  if(!this.hasItems()) {
+    return null;
+  }
+
   return this.itemStack.peekIndex(index);
 
 }
@@ -559,6 +591,10 @@ Tile.prototype.isFull = function() {
    * Returns true if the stack is full and does not accept any more items
    */
 
+  if(!this.hasItems()) {
+    return false;
+  }
+
   return this.itemStack.isFull();
 
 }
@@ -569,6 +605,10 @@ Tile.prototype.getMaximumAddCount = function(player, item, index) {
    * Function Tile.getMaximumAddCount
    * Returns true if you can add an item to a tile
    */
+
+  if(!this.hasItems()) {
+    return Item.prototype.MAXIMUM_STACK_COUNT;
+  }
 
   // Must be a valid index requested
   if(!this.itemStack.isValidIndex(index)) {
@@ -616,6 +656,17 @@ Tile.prototype.getMaximumAddCount = function(player, item, index) {
 
 }
 
+Tile.prototype.getChunk = function() {
+
+  /*
+   * Function Tile.getChunk
+   * Returns the chunk that a tile is located in
+   */
+
+  return gameServer.world.getChunkFromWorldPosition(this.position);
+
+}
+
 Tile.prototype.broadcast = function(packet) {
 
   /*
@@ -623,7 +674,7 @@ Tile.prototype.broadcast = function(packet) {
    * Broadcasts a message to the parent chunk
    */
 
-  return this.__chunk.broadcast(packet);
+  return this.getChunk().broadcast(packet);
 
 }
 
@@ -634,11 +685,10 @@ Tile.prototype.removeCreature = function(creature) {
    * Removes the reference of a creature from the tile
    */
 
-  // From the correct place
-  switch(creature.constructor.name) {
-    case "Player": return this.players.delete(creature);
-    case "Monster": return this.monsters.delete(creature);
-    case "NPC": return this.npcs.delete(creature);
+  this.creatures.delete(creature);
+
+  if(this.creatures.size === 0) {
+    delete this.creatures;
   }
 
 }
@@ -650,21 +700,73 @@ Tile.prototype.getCreature = function() {
    * Returns a single creature from the tile with given priorities
    */
 
-  if(this.players.size !== 0) {
-    return this.getPlayer();
+  if(!this.hasOwnProperty("creatures")) {
+    return null;
   }
 
-  if(this.npcs.size !== 0) {
-    return this.getNPC();
+  return this.creatures.values().next().value;
+
+}
+
+Tile.prototype.getDestination = function() {
+    
+  /*
+   * Function Tile.getDestination
+   * Handles a floor change event by stepping on a floor change tile
+   */
+  
+  let destination = null;
+
+  // Perhaps a teleporter?
+  if(this.hasItems()) {
+    destination = this.itemStack.getTeleporterDestination();
+  }
+      
+  // Destination was found through teleporter
+  if(destination !== null) {
+    return destination;
+  } 
+
+  // A floor change on the item
+  let change = this.__getFloorChange();
+
+  // Teleport to the appropriate tile
+  switch(change) {
+    case "north": return this.position.north().up();
+    case "west": return this.position.west().up();
+    case "east": return this.position.east().up();
+    case "south": return this.position.south().up();
+    case "down": return this.__getInverseFloorChange();
   }
 
-  if(this.monsters.size !== 0) {
-    return this.getMonster();
-  }
-
-  // Nothing found
   return null;
 
+}
+
+Tile.prototype.__getInverseFloorChange = function() {
+
+  /*
+   * Function Tile.__getInverseFloorChange
+   * When a tile is specified to move you down, let us see downstairs in what direction we need to move
+   */
+
+  // Get the tile below the current floor change
+  let tile = gameServer.world.getTileFromWorldPosition(this.position.down());
+
+  // There is no available tile
+  if(tile === null) {
+    return null;
+  }
+  
+  // Map to the appropriate (reserved) direction
+  switch(tile.__getFloorChange()) {
+    case "north": return tile.position.south();
+    case "west": return tile.position.east();
+    case "east":return tile.position.west();
+    case "south": return tile.position.north();
+    default: return tile.position;
+  }   
+    
 }
 
 Tile.prototype.scheduleDecay = function() {
@@ -769,19 +871,9 @@ Tile.prototype.__replaceFungibleItem = function(index, thing, count) {
 
 }
 
-Tile.prototype.__addThing = function(thing, index) {
+Tile.prototype.isBlockProjectile = function() {
 
-  /*
-   * Function Tile.__addThing
-   * Adds an item to the tile
-   */
-
-  // If specified at the top of the stack
-  this.itemStack.addThing(index, thing);
-
-  // Inform spectators of the change
-  this.broadcast(new PacketWriter(PacketWriter.prototype.opcodes.ITEM_ADD).writeItemAdd(this.position, thing, index));
-
+  return this.hasOwnProperty("itemStack") && this.itemStack.isBlockProjectile();
 
 }
 
@@ -792,11 +884,14 @@ Tile.prototype.__deleteThing = function(thing, index) {
    * Removes an item from the tile
    */
 
+  if(!this.hasItems()) {
+    return;
+  }
+
   // Top index
   this.itemStack.deleteThing(index);
 
-  // Inform spectators of the change
-  this.broadcast(new PacketWriter(PacketWriter.prototype.opcodes.ITEM_REMOVE).writeItemRemove(this.position, index, thing.getCount()));
+  this.broadcast(new ItemRemovePacket(this.position, index, thing.getCount()));
 
 }
 

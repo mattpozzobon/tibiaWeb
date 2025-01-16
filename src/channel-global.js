@@ -1,7 +1,7 @@
 "use strict";
 
-const Channel = require("./channel");
-const PacketWriter = require("./packet-writer");
+const Channel = requireModule("channel");
+const { ChannelWritePacket, ChannelJoinPacket } = requireModule("protocol");
 
 const GlobalChannel = function(id, name) {
   
@@ -16,7 +16,7 @@ const GlobalChannel = function(id, name) {
    * GlobalChannel.has(player) - Returns true if the player is inside the channel
    * GlobalChannel.join(player) - Subscribes a player to the channel
    * GlobalChannel.leave(player) - Unsubscribes a player to the channel
-   * GlobalChannel.send(player, message) - Sends a message from player to the entire channel
+   * GlobalChannel.send(player, clientPacket) - Sends a message from player to the entire channel
    * 
    */
   
@@ -51,10 +51,12 @@ GlobalChannel.prototype.join = function(player) {
 
   // Create circular reference
   this.__players.add(player);
-  player.__openedChannels.set(this.id, this);
 
-  // Write a packet to the player to join the channel
-  player.write(new PacketWriter(PacketWriter.prototype.opcodes.JOIN_CHANNEL).writeJoinChannel(this));
+  // Circular reference
+  player.channelManager.add(this);
+
+  // Write join channel packet
+  player.write(new ChannelJoinPacket(this));
 
 }
 
@@ -67,22 +69,25 @@ GlobalChannel.prototype.leave = function(player) {
 
   // Delete circular reference
   this.__players.delete(player);
-  player.__openedChannels.delete(this.id);
+
+  // Circular dereference
+  player.channelManager.remove(this.id);
 
 }
 
-GlobalChannel.prototype.send = function(player, message) {
+GlobalChannel.prototype.send = function(player, clientPacket) {
 
   /*
    * Function GlobalChannel.send
    * Sends a message to all subscribers in the global channel
    */
 
-  // Administrators have a red color
-  let color = player.characterStatistics.admin ? CONST.COLOR.RED : CONST.COLOR.YELLOW;
-
-  // Generate the packet once
-  let packet = new PacketWriter(PacketWriter.prototype.opcodes.CREATURE_MESSAGE).writeChannelMessage(this.id, player.name, message, color);
+  let packet = new ChannelWritePacket(
+    this.id,
+    player.getProperty(CONST.PROPERTIES.NAME),
+    clientPacket.message,
+    player.getTextColor()
+  );
 
   // Write this packet to all players in the channel
   this.__players.forEach(player => player.write(packet));

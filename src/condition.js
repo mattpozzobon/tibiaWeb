@@ -1,3 +1,5 @@
+"use strict";
+
 const Condition = function(id, ticks, duration) {
 
   /*
@@ -15,25 +17,6 @@ const Condition = function(id, ticks, duration) {
   this.__applyEvent = null;
 
 }
-
-// Definitions
-Condition.prototype.DRUNK = 0;
-Condition.prototype.POISONED = 1;
-Condition.prototype.BURNING = 2;
-Condition.prototype.ELECTRIFIED = 3;
-Condition.prototype.INVISIBLE = 4;
-Condition.prototype.PROTECTION_ZONE = 5;
-Condition.prototype.SUPPRESS_DRUNK = 7;
-Condition.prototype.LIGHT = 8;
-Condition.prototype.HEALING = 9;
-Condition.prototype.REGENERATION = 10;
-Condition.prototype.MORPH = 11;
-Condition.prototype.MAGIC_SHIELD = 12;
-Condition.prototype.MAGIC_FLAME = 13;
-Condition.prototype.SATED = 14;
-Condition.prototype.HASTE = 15;
-
-Condition.prototype.ARENA = 17;
 
 Condition.prototype.isPermanent = function() {
 

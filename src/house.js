@@ -41,7 +41,7 @@ House.prototype.__evictAllItems = function() {
    * Moves all pickupable items to the inbox
    */
 
-  let owner = process.gameServer.world.getGameSocketByName(this.owner);
+  let owner = process.gameServer.world.getPlayerByName(this.owner);
 
   // Check whether the player is online or offline
   if(owner === null) {

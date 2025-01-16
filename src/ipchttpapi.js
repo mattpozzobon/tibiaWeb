@@ -121,10 +121,42 @@ IPCHTTPAPI.prototype.__writeStatusCode = function(statusCode, response) {
 
 }
 
-IPCHTTPAPI.prototype.__requestStatus = function(request, response, queryObject) {
+IPCHTTPAPI.prototype.__requestStatusChange = function(request, response, queryObject) {
 
   /*
-   * Function IPCHTTPAPI.__requestStatus
+   * Function IPCHTTPAPI.__requestStatusChange
+   * Requests the status of the server to be changed
+   */
+
+  let status = queryObject.query.status;
+
+  if(status !== "listen" && status !== "closed") {
+    return this.__writeStatusCode(400, response);
+  }
+
+  let req = new IPCPacket(IPCPacket.prototype.PACKETS.CHANGE_STATUS).writeChangeStatus(status);
+
+  this.client.makeRequest(req, function(error, packet) {
+
+    if(error) {
+      return this.__writeStatusCode(500, response);
+    }
+
+    response.statusCode = 200;
+    response.setHeader("Content-Type", "application/json");
+
+    response.end(JSON.stringify({
+      "status": status
+    }));
+
+  }.bind(this));
+
+}
+
+IPCHTTPAPI.prototype.__requestStatistics = function(request, response, queryObject) {
+
+  /*
+   * Function IPCHTTPAPI.__requestStatistics
    * Requests the status of the server that includes the numbers of players online
    */
 
@@ -161,10 +193,11 @@ IPCHTTPAPI.prototype.__handleRequest = function(request, response) {
   let queryObject = url.parse(request.url, true);
 
   switch(queryObject.pathname) {
-    case "/status": return this.__requestStatus(request, response, queryObject);
+    case "/statistics": return this.__requestStatistics(request, response, queryObject);
     case "/broadcast": return this.__requestBroadcast(request, response, queryObject);
     case "/shutdown": return this.__requestShutdown(request, response, queryObject);
     case "/time": return this.__requestTimeChange(request, response, queryObject);
+    case "/status": return this.__requestStatusChange(request, response, queryObject);
   }
 
   this.__writeStatusCode(404, response);

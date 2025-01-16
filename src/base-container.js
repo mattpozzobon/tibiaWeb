@@ -1,7 +1,8 @@
 "use strict";
 
-const Item = require("./item");
-const PacketWriter = require("./packet-writer");
+const Item = requireModule("item");
+
+const { ContainerAddPacket, ContainerRemovePacket } = requireModule("protocol");
 
 const BaseContainer = function(guid, size) {
 
@@ -34,6 +35,17 @@ const BaseContainer = function(guid, size) {
 
   // The spectators that are presently viewing the base container and keep track of container updates
   this.spectators = new Set();
+
+}
+
+BaseContainer.prototype.getPacketSize = function() {
+
+  /*
+   * Function BaseContainer.getPacketSize
+   * Returns the size of a container in bytes based on the total number of slots
+   */
+
+  return 3 * this.__slots.length;
 
 }
 
@@ -149,8 +161,8 @@ BaseContainer.prototype.addThing = function(thing, index) {
     return this.__addStackable(index, currentThing, thing);
   }
 
-  // Write an item add packet to all observing players
-  this.__informSpectators(new PacketWriter(PacketWriter.prototype.opcodes.CONTAINER_ITEM_ADD).writeContainerItemAdd(this.guid, index, thing));
+  // Update all spectators
+  this.__informSpectators(new ContainerAddPacket(this.guid, index, thing));
 
   // Set the item in the slot
   this.__setItem(thing, index);
@@ -228,8 +240,7 @@ BaseContainer.prototype.__remove = function(index) {
    * Internal function remove an item from the stack
    */
 
-  // Write remove packet to all spectating players
-  this.__informSpectators(new PacketWriter(PacketWriter.prototype.opcodes.CONTAINER_ITEM_REMOVE).writeContainerItemRemove(this.guid, index, 0));
+  this.__informSpectators(new ContainerRemovePacket(this.guid, index, 0));
 
   // Clear the slot and return the index
   this.__setItem(null, index);

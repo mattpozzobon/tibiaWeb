@@ -102,15 +102,16 @@ MailboxHandler.prototype.__mailThing = function(name, thing, callback) {
    */
 
   // Check whether the player is online
-  let gameSocket = process.gameServer.world.getGameSocketByName(name);
+  let player = process.gameServer.world.getPlayerByName(name);
 
   // If the player is not online we have to add the items to the gamefile
-  if(gameSocket === null) {
+  if(player === null) {
     return this.__addItemsOffline(name, thing, callback);
   }
 
   // The player is online and we can add to the inbox
-  gameSocket.player.containerManager.inbox.addThing(thing);
+  player.containerManager.inbox.addThing(thing);
+
   callback(false);
 
 }

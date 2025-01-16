@@ -1,42 +1,72 @@
 "use strict";
 
-const crypto = require("crypto");
-const Enum = require("./enum");
 const http = require("http");
-const fs = require("fs");
 const url = require("url");
 
-const WebsocketServer = require("./websocket-server");
+const AuthService = requireModule("auth-service");
+const BandwidthHandler = requireModule("bandwidth-handler");
+const Enum = requireModule("enum");
+const WebsocketServer = requireModule("websocket-server");
 
-const HTTPServer = function() {
+const HTTPServer = function(host, port) {
 
   /*
    * Class HTTPServer
-   * Wrapper for NodeJS HTTP(S) server to host the websocket server
+   * Wrapper for NodeJS HTTP server to host the websocket server
+   *
+   * Public API:
+   *
+   * HTTPServer.close() - Closes the HTTP and websocket serve   
+   * HTTPServer.getDataDetails() - Returns telemetry of the HTTP and websocket server
+   * HTTPServer.listen() - Opens the HTTP server to listen for connections
+   *
    */
+
+  // Save internal parameters
+  this.__host = host;
+  this.__port = port;
+
+  // Sequential request identifiers
+  this.__socketId = 0;
 
   // Create the websocket server that handles network IO
   this.websocketServer = new WebsocketServer();
 
-  // State variable to keep the current server status
-  this.__serverStatus = this.STATUS.STARTUP;
+  // The service that handles authentication and token validation
+  this.authService = new AuthService();
 
-  // Should we enable TLS to encrypt websocket messages?
-  this.__server = http.createServer(this.__handleRequest.bind(this));
+  // Handler for bandwidth
+  this.bandwidthHandler = new BandwidthHandler();
+
+  // Default HTTP server: use a reverse proxy (Apache, NGINX) if you want to use TLS
+  this.__server = http.createServer();
+
+  // Timeout in ms for sockets that do not upgrade to WS or fail to make a HTTP request
+  this.__server.timeout = 5000;
+
+  // Delegate internal client error to HTTP error
+  this.websocketServer.websocket.on("wsClientError", this.__handleClientError.bind(this));
 
   // Upgrade of HTTP server to websocket protocol and check authentication with login server
-  this.__server.on("upgrade", this.__handleUpgrade.bind(this));
+  this.__server.on("close", this.__handleClose.bind(this));
+  this.__server.on("clientError", this.__handleClientError.bind(this));
+  this.__server.on("connection", this.__handleConnection.bind(this));
   this.__server.on("error", this.__handleError.bind(this));
   this.__server.on("listening", this.__handleListening.bind(this));
-  this.__server.on("close", this.__handleClose.bind(this));
+  this.__server.on("request", this.__handleRequest.bind(this));
+  this.__server.on("timeout", this.__handleTimeout.bind(this));
+  this.__server.on("upgrade", this.__handleUpgrade.bind(this));
+
+  // Start the HTTP server as closed
+  this.__status = this.STATUS.CLOSED;
 
 }
 
-// Game server status
-HTTPServer.prototype.STATUS = Enum(
-  "STARTUP",
-  "LISTENING",
-  "SHUTDOWN",
+// Possible server states
+HTTPServer.prototype.STATUS = new Enum(
+  "OPENING",
+  "OPEN",
+  "CLOSING",
   "CLOSED"
 );
 
@@ -47,34 +77,55 @@ HTTPServer.prototype.close = function() {
    * Closes the HTTP server
    */
 
-  // Close the websocket server
+  // Only when the HTTP Server is open
+  if(this.__status !== this.STATUS.OPEN) {
+    return;
+  }
+
+  console.log("The HTTP server has started to close.");
+  
+  // Disconnect all the clients from the Websocket Server
   this.websocketServer.close();
 
-  // And the HTTP server
+  // Close all remaining idle HTTP connections
+  this.__server.closeAllConnections();
+
+  // And close the HTTP server itself
   this.__server.close();
 
 }
 
-HTTPServer.prototype.enableHTTP = function() {
+HTTPServer.prototype.getDataDetails = function() {
 
   /*
-   * Function HTTPServer.enableHTTP
-   * Enables unencrypted websocket over HTTP
+   * Function HTTPServer.getDataDetails
+   * Gets the data details (received & sent) from the network manager
    */
 
-  return http.createServer(this.__handleRequest.bind(this));
+  return new Object({
+    "websocket": this.websocketServer.getDataDetails(),
+    "bandwidth": this.bandwidthHandler.getBandwidth()
+  });
 
 }
 
-HTTPServer.prototype.listen = function(host, port) {
+HTTPServer.prototype.listen = function() {
 
   /*
    * Function HTTPServer.listen
    * Sets server to listening for incoming requests
    */
 
+  // Can only work when the HTTP server is currently closed
+  if(this.__status !== this.STATUS.CLOSED) {
+    return;
+  }
+
+  // Opening: only open when the listen callback fires
+  this.__status = this.STATUS.OPENING;
+
   // Delegate to the internal server
-  this.__server.listen(host, port);
+  this.__server.listen(this.__port, this.__host);
 
 }
 
@@ -82,18 +133,43 @@ HTTPServer.prototype.__handleRequest = function(request, response) {
 
   /*
    * Function HTTPServer.__handleRequest
-   * Handles HTTP requests to the game server: we do not accept these.
+   * Handles standard HTTP requests to the game server: we do not accept these and tell the client to upgrade to WS.
    */
 
-  const body = new Object({
-    "Upgrade": "WebSocket",
-    "Connection": "Upgrade",
-    "Sec-WebSocket-Version": 13
-  });
+  // Validation of request
+  let code = this.__validateHTTPRequest(request);
+  
+  if(code !== null) {
+    return this.__generateRawHTTPResponse(request.socket, code)
+  }
 
-  // Direct HTTP requests to the gameserver are blocked. Write an update required to websockets to the client
-  response.writeHead(426, body);
-  response.end();
+  // We only accept websocket connections: tell the client to upgrade
+  return this.__generateRawHTTPResponse(request.socket, 426);
+
+}
+
+HTTPServer.prototype.__validateHTTPRequest = function(request) {
+
+  /*
+   * Function HTTPServer.__validateHTTPRequest
+   * Validates the initial HTTP request
+   */
+
+  // HTTP versions unsupported
+  if(request.httpVersion === "0.9" || request.httpVersion === "1.0") {
+    return 505;
+  }
+
+  if(request.method !== "GET") {
+    return 405;
+  }
+
+  // Only root node
+  if(url.parse(request.url).pathname!== "/") {
+    return 404;
+  }
+
+  return null;
 
 }
 
@@ -104,18 +180,102 @@ HTTPServer.prototype.__handleUpgrade = function(request, socket, head) {
    * Handles upgrading of the websocket and checks the token from the login server. Only valid tokens are upgraded.
    */
 
-  // The login server will eventually provide a token
-  let valid = this.__authenticateToken(request);
+  // Validation of request
+  let code = this.__validateHTTPRequest(request);
 
-  // Token was not valid
-  if(valid === null) {
-    return socket.destroy();
+  if(code !== null) {
+    return this.__generateRawHTTPResponse(socket, code)
   }
 
-  // Otherwise handle the upgrade with the submitted account information
-  this.websocketServer.websocket.handleUpgrade(request, socket, head, function upgradeWebsocket(websocket) {
-    this.websocketServer.websocket.emit("connection", websocket, request, valid);
-  }.bind(this));
+  // Get the token from the URL 
+  let query = url.parse(request.url, true).query;
+
+  // The login token must be present
+  if(!Object.prototype.hasOwnProperty.call(query, "token")) {
+    return this.__generateRawHTTPResponse(socket, 400);
+  }
+
+  // Authenticate the token
+  let accountName = this.authService.authenticate(query.token);
+
+  // Token was not valid: destroy the connection manually
+  if(accountName === null) {
+    return this.__generateRawHTTPResponse(socket, 401);
+  }
+
+  // Upgrade the HTTP request to the websocket server
+  this.websocketServer.upgrade(request, socket, head, accountName);
+
+}
+
+HTTPServer.prototype.__handleConnection = function(socket) {
+
+  /*
+   * Function HTTPServer.__handleConnection
+   * Handles an incoming TCP connection and socket
+   */
+
+  // Assign a unique identifier for tracking it
+  socket.id = this.__socketId++;
+
+  console.log("Connected TCP socket with identifier %s from %s.".format(socket.id, socket.address().address));
+
+  // Socket handler
+  socket.on("close", this.__handleSocketClose.bind(this, socket));
+
+  // If socket monitoring is enabled
+  if(CONFIG.LOGGING.NETWORK_TELEMETRY) {
+    this.bandwidthHandler.monitorSocket(socket);
+  }
+
+}
+
+HTTPServer.prototype.__generateRawHTTPResponse = function(socket, code) {
+
+  /*
+   * Function WebsocketServer.__generateRawHTTPResponse
+   * Generates a raw HTTP response
+   */
+
+  console.log("Ending socket request with identifier %s with status code %s.".format(socket.id, code));
+  
+  // Destroy the socket manually
+  socket.write("HTTP/1.1 %s %s\r\nConnection: close\r\n\r\n".format(code, http.STATUS_CODES[code]));
+  socket.destroy();
+
+}
+
+HTTPServer.prototype.__handleClientError = function(error, socket) {
+
+
+  /*
+   * Function WebsocketServer.__handleClientError
+   * Handles client protocol error by sending 400 
+   */
+
+  return this.__generateRawHTTPResponse(socket, 400);
+
+}
+
+HTTPServer.prototype.__handleSocketClose = function(socket) {
+
+  /*
+   * Function WebsocketServer.__handleSocketClose
+   * Handles closing even of the socket
+   */
+
+  console.log("Disconnected TCP socket with identifier %s.".format(socket.id));
+
+}
+
+HTTPServer.prototype.__handleTimeout = function(socket) {
+
+  /*
+   * Function WebsocketServer.__handleTimeout
+   * Handles a socket timeout before the HTTP request
+   */
+
+  return this.__generateRawHTTPResponse(socket, 408);
 
 }
 
@@ -127,134 +287,37 @@ HTTPServer.prototype.__handleError = function(error) {
    */
 
   // Already in use
-  if(error.code === "EADDRINUSE") {
-    console.log("Could not start server: the address or port is already in use.");
+  switch(error.code) {
+    case "EADDRINUSE":
+      return console.log("Could not start the HTTP server: the address or port is already in use.");
   }
-
-  process.gameServer.shutdown();
-
-}
-
-HTTPServer.prototype.__parseHMACToken = function(token) {
-
-  /*
-   * Function HTTPServer.__parseHMACToken
-   * Attempt to parse the HMAC token to JSON
-   */
-
-  // Wrap token extraction in a try/catch
-  try {
-    return JSON.parse(Buffer.from(token, "base64").toString());
-  } catch(exception) {
-    return null;
-  }
-
-}
-
-HTTPServer.prototype.__verifyToken = function(payload) {
-
-  /*
-   * Function HTTPServer.__verifyToken
-   * Verities the passed HMAC token and check that it was signed by the login server
-   */
-
-  // Confirm the HMAC signature
-  return payload.token === crypto.createHmac("sha256", CONFIG.HMAC.SHARED_SECRET).update(payload.name + payload.expire).digest("hex");
 
 }
 
 HTTPServer.prototype.__handleListening = function() {
 
   /*
-   * HTTPServer.__handleListening
+   * Function HTTPServer.__handleListening
    * Callback fired when server is listening for incoming connections
    */
 
-  const { address, family, port } = this.__server.address();
+  // We are listening for connections
+  this.__status = this.STATUS.OPEN;
 
-  this.__serverStatus = this.STATUS.LISTENING;
-
-  console.log("The gameserver is listening for connections on %s:%s.".format(address, port));
+  console.log("The HTTP gameserver is listening for connections on %s:%s.".format(this.__host, this.__port));
 
 }
 
 HTTPServer.prototype.__handleClose = function() {
 
   /*
-   * WebsocketServer.__handleClose
+   * Function HTTPServer.__handleClose
    * Callback fired when the server is closed
    */
 
-  // Set state to closed
-  this.__serverStatus = this.STATUS.CLOSED;
+  this.__status = this.STATUS.CLOSED;
 
-  console.log("The gameserver has been closed.");
-
-}
-
-HTTPServer.prototype.isListening = function() {
-
-  /*
-   * Function HTTPServer.isListening
-   * Returns true if the server was closed
-   */
-
-  return this.__serverStatus === this.STATUS.LISTENING;
-
-}
-
-HTTPServer.prototype.isShutdown = function() {
-
-  /*
-   * Function HTTPServer.isShutdown
-   * Returns true if the server was closed
-   */
-
-  return this.__serverStatus === this.STATUS.SHUTDOWN;
-
-}
-
-HTTPServer.prototype.isClosed = function() {
-
-  /*
-   * Function HTTPServer.isClosed
-   * Returns true if the server was closed
-   */
-
-  return this.__serverStatus === this.STATUS.CLOSED;
-
-}
-
-HTTPServer.prototype.__authenticateToken = function(request) {
-
-  /*
-   * Function HTTPServer.__authenticateToken
-   * Fake function that authenticates tokens and makes a request to the login server
-   */
-
-  // Get the token from the URL 
-  let token = url.parse(request.url, true).query.token;
-
-  // Get the payload from the request
-  let payload = this.__parseHMACToken(token);
-
-  // Could not parse payload
-  if(payload === null) {
-    return null;
-  }
-
-  // Could not verify token: it was tampered with or not signed by our login server via the shared secret
-  if(!this.__verifyToken(payload)) {
-    return null; 
-  }
-
-  // Token has expired
-  if(payload.expire <= Date.now()) {
-    return null;
-  }
-
-  // Token was verified and succesfully return the name of the account to be loaded
-  return payload.name;
+  console.log("The HTTP Server stopped listening for connections.");
 
 }
 

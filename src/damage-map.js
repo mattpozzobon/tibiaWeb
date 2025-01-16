@@ -1,8 +1,11 @@
 "use strict";
 
-const PacketWriter = require("./packet-writer");
+const ServerMessagePacket = requireModule("protocol");
+const DamageMapEntry = requireModule("damage-map-entry");
 
-const DamageMap = function() {
+const { EmotePacket } = requireModule("protocol");
+
+const DamageMap = function(monster) {
 
   /*
    * Class DamageMap
@@ -10,6 +13,7 @@ const DamageMap = function() {
    */
 
   this.__map = new Map();
+  this.__monster = monster;
 
 }
 
@@ -36,20 +40,16 @@ DamageMap.prototype.update = function(attacker, amount) {
     return;
   }
 
-  // Add the attacker entry (object literal for now) TODO
   if(!this.__map.has(attacker)) {
-    return this.__map.set(attacker, new Object({
-      "damage": amount,
-      "aggro": 0
-    }));
+    this.__map.set(attacker, new DamageMapEntry());
   }
 
   // Add to the existing amount
-  this.__map.get(attacker).damage += amount;
+  this.__map.get(attacker).addDamage(amount);
 
 }
 
-DamageMap.prototype.distributeExperienceAndLoot = function(proto, loot) {
+DamageMap.prototype.distributeExperience = function() {
 
   /*
    * Function DamageMap.distributeExperience
@@ -57,15 +57,7 @@ DamageMap.prototype.distributeExperienceAndLoot = function(proto, loot) {
    */
 
   // Distribute equally to all attackers
-  let sharedExperience = this.getDividedExperience(proto.experience);
-
-  let packet;
-  if(loot.length > 0) {
-    let message = "%s drops: %s".format(proto.creatureStatistics.name, loot.map(this.__createLootText).join(", "));
-    packet = new PacketWriter(PacketWriter.prototype.opcodes.SERVER_MESSAGE).writeString(message);
-  } else {
-    packet = new PacketWriter(PacketWriter.prototype.opcodes.SERVER_MESSAGE).writeString("%s drops nothing".format(proto.creatureStatistics.name));
-  }
+  let sharedExperience = this.getDividedExperience(this.__monster.experience);
 
   // Evenly distribute the experience
   this.__map.forEach(function(map, attacker) {
@@ -76,19 +68,17 @@ DamageMap.prototype.distributeExperienceAndLoot = function(proto, loot) {
     }
 
     // No longer online?
-    if(attacker.isOffline()) {
+    if(!attacker.isOnline()) {
       return;
     }
 
     // Experience to share
     if(sharedExperience > 0) {
-      attacker.characterStatistics.addExperience(sharedExperience);
+      attacker.incrementProperty(CONST.PROPERTIES.EXPERIENCE, sharedExperience);
+      attacker.write(new EmotePacket(attacker, String(sharedExperience), CONST.COLOR.WHITE));
     }
 
-    // Write the loot packet
-    attacker.write(packet);
-
-  }, this);
+  });
 
 }
 

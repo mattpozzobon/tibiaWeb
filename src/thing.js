@@ -21,13 +21,6 @@ const Thing = function(id) {
 
   this.id = id;
 
-  this.duration = null;
-  this.frozen = false;
-
-  // Things must have a parent that is a tile or container
-  this.__parent = null;
-  this.__scheduledDecayEvent = null;
-
 }
 
 Thing.prototype = Object.create(ThingEmitter.prototype);
@@ -51,7 +44,7 @@ Thing.prototype.freeze = function() {
    * Freeze the thing from all player interactions (e.g., when it is undergoing I/O)
    */
 
-  this.frozen = true;
+  delete this.frozen;
 
 }
 
@@ -111,7 +104,7 @@ Thing.prototype.scheduleDecay = function() {
   }
 
   // If there is no duration: set the default decay duration
-  if(this.duration === null) {
+  if(!this.duration) {
     this.setDuration(this.__getDecayProperties().duration);
   }
 
@@ -141,8 +134,15 @@ Thing.prototype.setUniqueId = function(uid) {
   // Update the identifier
   this.uid = uid;
 
-  // Make sure to attach listeners to the identifier
-  process.gameServer.database.attachUniqueEvent(uid, this);
+  // No unique events assigned to this identifier
+  let uniqueActions = gameServer.database.actionLoader.getUniqueActions(uid);
+
+  if(uniqueActions === null) {
+    return;
+  }
+
+  // Add all the configured listeners to the thing
+  uniqueActions.forEach(action => this.on(action.on, action.callback));
 
 }
 
@@ -277,6 +277,10 @@ Thing.prototype.getAttribute = function(attribute) {
 
   let properties = this.getPrototype().properties;
 
+  if(properties === null) {
+    return null;
+  }
+
   // Does not exist
   if(!properties.hasOwnProperty(attribute)) {
     return null;
@@ -293,7 +297,7 @@ Thing.prototype.getPrototype = function() {
    * Returns the data object based on the identifier
    */
 
-  return process.gameServer.database.getThingPrototype(this.id);
+  return gameServer.database.getThingPrototype(this.id);
 
 }
 
@@ -362,7 +366,7 @@ Thing.prototype.getDescription = function() {
   // Has a duration
   if(this.getAttribute("showduration")) {
 
-    if(this.duration === null) {
+    if(!this.duration) {
       return "It is brand-new.";
     } else {
       return this.getDurationString();
@@ -445,7 +449,7 @@ Thing.prototype.createFungibleThing = function(count) {
    * Creates a stackable item that is fungible
    */
 
-  return process.gameServer.database.createThing(this.id).setCount(count);
+  return gameServer.database.createThing(this.id).setCount(count);
 
 }
 
@@ -479,15 +483,10 @@ Thing.prototype.copyProperties = function(thing) {
    */
 
   // The thing does not have a duration yet: copy it over from the transformed item
-  if(thing.duration === null) {
+  if(!thing.duration) {
     thing.setDuration(this.getRemainingDuration());
   }
 
-  // Make sure to schedule the decay event itself
-  if(thing.isDecaying()) {
-    thing.scheduleDecay();
-  }
- 
   if(this.uid) {
     thing.setUniqueId(this.uid);
   }
@@ -532,7 +531,7 @@ Thing.prototype.rotate = function() {
   }
 
   // Replace with the rotated item
-  this.replace(process.gameServer.database.createThing(this.getAttribute("rotateTo")));
+  this.replace(gameServer.database.createThing(this.getAttribute("rotateTo")));
 
 }
 
@@ -817,7 +816,7 @@ Thing.prototype.cleanup = function() {
    * Deletes a thing by cleaning up: other classes (e.g., containers may implement the "delete" method)
    */
 
-  if(this.__scheduledDecayEvent !== null) {
+  if(this.__scheduledDecayEvent) {
     this.__scheduledDecayEvent.cancel();
   }
 
@@ -835,11 +834,17 @@ Thing.prototype.__scheduleDecay = function(duration) {
 
   // Decay to zero means remove from game world
   if(properties.decayTo === 0) {
-    return this.__scheduledDecayEvent = process.gameServer.world.eventQueue.addEventSeconds(this.remove.bind(this), duration);
+    return this.__scheduledDecayEvent = gameServer.world.eventQueue.addEventSeconds(
+      this.remove.bind(this),
+      duration
+    );
   }
 
   // Schedule an event to create a replace the item with a new item: the new decay process is started when an item is created
-  this.__scheduledDecayEvent = process.gameServer.world.eventQueue.addEventSeconds(this.__decayCallback.bind(this, properties.decayTo), duration);
+  this.__scheduledDecayEvent = gameServer.world.eventQueue.addEventSeconds(
+    this.__decayCallback.bind(this, properties.decayTo),
+    duration
+  );
 
 }
 
@@ -851,7 +856,7 @@ Thing.prototype.__decayCallback = function(id) {
    */
 
   // Create a new thing with a particular "decay to" identifier
-  let thing = process.gameServer.database.createThing(id);
+  let thing = gameServer.database.createThing(id);
 
   // If this is a splash we should copy over the count which indicates the fluid type
   if(this.isSplash()) {
@@ -876,7 +881,7 @@ Thing.prototype.__isTopParent = function(thing) {
    */
 
   // These are top levels
-  return thing === null ||
+  return !thing ||
          thing.constructor.name === "DepotContainer" ||
          thing.constructor.name === "Tile" ||
          thing.constructor.name === "Player";
@@ -902,6 +907,11 @@ Thing.prototype.__getDecayProperties = function() {
 }
 
 Thing.prototype.getParent = function() {
+
+  /*
+   * Function Thing.getParent
+   * Returns the parent of a particular thing
+   */
 
   return this.__parent;
 

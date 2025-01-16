@@ -1,6 +1,7 @@
 "use strict";
 
-const Channel = require("./channel");
+const Channel = requireModule("channel");
+const CommandHandler = requireModule("command-handler");
 
 const DefaultChannel = function(id, name) {
 
@@ -11,6 +12,9 @@ const DefaultChannel = function(id, name) {
 
   // Inherits from channel
   Channel.call(this, id, name);
+
+  // The handler for chat commands
+  this.commandHandler = new CommandHandler();
 
 }
 
@@ -29,7 +33,12 @@ DefaultChannel.prototype.send = function(player, packet) {
   let loudness = packet.loudness;
 
   // Administrators have a red color; players yellow
-  let color = player.characterStatistics.admin ? CONST.COLOR.RED : CONST.COLOR.YELLOW;
+  let color = player.getProperty(CONST.PROPERTIES.ROLE) === CONST.ROLES.ADMIN ? CONST.COLOR.RED : CONST.COLOR.YELLOW;
+
+  // Forward to the command handler
+  if(message.startsWith("/")) {
+    return this.commandHandler.handle(player, message);
+  }
 
   // Whispers
   if(packet.loudness === 0) {
@@ -41,7 +50,7 @@ DefaultChannel.prototype.send = function(player, packet) {
   }
 
   // Write to the default game screen and the default chat channel
-  player.internalCreatureSay(message, color);
+  player.speechHandler.internalCreatureSay(message, color);
 
   // NPCs listen to all messages in the default channels
   this.__NPCListen(player, message.toLowerCase());
@@ -51,23 +60,16 @@ DefaultChannel.prototype.send = function(player, packet) {
 DefaultChannel.prototype.__NPCListen = function(player, message) {
 
   /*
-   * Function PacketHandler.__NPCListen
+   * Function DefaultChannel.__NPCListen
    * Handler called when a player says a message and NPCs are nearby
    */
  
-  // Go over all the NPCs in the nearby game world
-  process.gameServer.world.forEachNearbyNPC(player.position, function(npc) {
+  // Get the npcs spectating the chunk
+  let chunks = gameServer.world.getSpectatingChunks(player);
 
-    // Do not accept anything when in a scene
-    if(npc.isScene()) {
-      return;
-    }
-
-    // If in range
-    if(npc.isWithinRangeOf(player, npc.hearingRange)) {
-      return npc.handleResponse(player, message);
-    } 
-
+  // Go over all the NPCs that are nearby in the game world
+  chunks.forEach(function(chunk) {
+    chunk.npcs.forEach(npc => npc.listen(player, message));
   });
 
 }

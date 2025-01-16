@@ -12,7 +12,7 @@ module.exports = function useLadder(player, tile, index, item) {
     let attemptTile = process.gameServer.world.getTileFromWorldPosition(attempt);
     
     if(!player.isTileOccupied(attemptTile)) {
-      process.gameServer.world.teleportCreature(player, attempt);
+      process.gameServer.world.creatureHandler.teleportCreature(player, attempt);
       player.__moveLock.lock(10);
       return true;
     }

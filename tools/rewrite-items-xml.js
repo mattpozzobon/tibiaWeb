@@ -1,5 +1,5 @@
 const fs = require("fs");
-const otb2json = require("../lib/otb2json");
+const otb2json = require("./lib/otb2json");
 
 var parseString = require('xml2js').parseString;
 

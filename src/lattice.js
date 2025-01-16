@@ -1,7 +1,8 @@
 "use strict";
 
-const Chunk = require("./chunk");
-const Position = require("./position");
+const Chunk = requireModule("chunk");
+const Pathfinder = requireModule("pathfinder");
+const Position = requireModule("position");
 
 const Lattice = function(size) {
 
@@ -11,97 +12,232 @@ const Lattice = function(size) {
    *
    * API:
    *
+   * Lattice.createChunk(position) - Creates a chunk at the given position
+   * Lattice.findDestination(tile) - Returns the destination of a tile (accounts for floor changes and teleporters)
+   * Lattice.getActiveChunks(players) - returns the currently active chunks that need to be updated
    * Lattice.getChunkFromWorldPosition(position) - returns the chunk that belongs to a world position
    * Lattice.getTileFromWorldPosition(position) - returns the tile that belongs to a world position
    * Lattice.setReferences() - Creates the lattice by setting all references to each other
-   * Lattice.createChunk(position) - Creates a chunk at the given position
+   * Lattice.withinBounds(position) - Returns true if the position is within the configured world bounds
    *
    */
 
-  // Determine the number of chunks on the map
-  this.nChunksWidth = size.x / Chunk.prototype.WIDTH;
-  this.nChunksHeight = size.y / Chunk.prototype.HEIGHT;
-  this.nChunksDepth = size.z / Chunk.prototype.DEPTH;
+  // Size of the world
+  this.width = size.x;
+  this.height = size.y;
+  this.depth = size.z;
+
+  // Determine the number of chunks on the map on each axis
+  this.nChunksWidth = this.width / Chunk.prototype.WIDTH;
+  this.nChunksHeight = this.height / Chunk.prototype.HEIGHT;
+  this.nChunksDepth = this.depth / Chunk.prototype.DEPTH;
+
+  // Create an A* pathfinder class inside the lattice
+  this.pathfinder = new Pathfinder();
 
   // Create the chunks and tiles and save reference memory
-  this.__reserveChunksMemory();
+  this.__chunksPositive = new Map();
+  this.__chunksNegative = new Map();
 
 }
 
+Lattice.prototype.findPath = function(creature, fromPosition, toPosition, mode) {
 
-Lattice.prototype.getActiveChunks = function(gameSockets) {
+  /*
+   * Function Lattice.findPath
+   * Finds a path between two positions in the lattice
+   */
+
+  if(fromPosition === null || toPosition === null) {
+    return new Array();
+  }
+
+  // Same position
+  if(fromPosition.equals(toPosition)) {
+    return new Array();
+  }
+
+  // Not on the same floor
+  if(!fromPosition.isSameFloor(toPosition)) {
+    return new Array();
+  }
+
+  if(mode === Pathfinder.prototype.ADJACENT && fromPosition.besides(toPosition)) {
+    return new Array();
+  }
+
+  // Get the tiles
+  let fromTile = this.getTileFromWorldPosition(fromPosition);
+  let toTile = this.getTileFromWorldPosition(toPosition);
+  
+  // No path between non-existing tiles
+  if(fromTile === null || toTile === null) {
+    return new Array();
+  }
+
+  // If the target is blocked do not even attempt pathfinding
+  if(mode === Pathfinder.prototype.EXACT && creature.isTileOccupied(toTile)) {
+    return new Array();
+  }
+
+  if(!toTile.neighbours) {
+    return new Array();
+  }
+
+  // Simple extra heuristic if the target is blocked in every direction do not begin search, otherwise the entire field is searched
+  if(toTile.neighbours.every(x => creature.isTileOccupied(x))) {
+    return new Array();
+  }
+
+  // Delegate
+  return this.pathfinder.search(creature, fromTile, toTile, mode);
+
+}
+
+Lattice.prototype.getSpectatingChunks = function(position) {
+
+  /*
+   * Function Lattice.getSpectatingChunks
+   * Returns the spectating chunks for a given position
+   */
+
+  let chunk = this.getChunkFromWorldPosition(position);
+
+  if(chunk === null) {
+    return new Array();
+  }
+
+  // All neighbours need to be updated
+  return chunk.neighbours;
+
+}
+
+Lattice.prototype.getSpectatingChunks = function(position) {
+
+  /*
+   * Function Lattice.getSpectatingChunks
+   * Returns the spectating chunks for a given position
+   */
+
+  let chunk = this.getChunkFromWorldPosition(position);
+
+  if(chunk === null) {
+    return new Array();
+  }
+
+  // All neighbours need to be updated
+  return chunk.neighbours;
+
+}
+
+Lattice.prototype.getActiveChunks = function(onlinePlayers) {
 
   /*
    * Function Lattice.getActiveChunks
-   * Returns the currently active chunks that have a player in them.
-   * Monsters and NPCs in these chunks need to be updated!
+   * Returns the currently active chunks that have a player in them. Monsters and NPCs in these chunks need to be updated!
    */
 
   // Create a set of the currently sectors activated by players
   let activeChunks = new Set();
 
-  gameSockets.forEach(function(gameSocket) {
-
-    // Add all neighbouring chunks for all players to the active set (no duplicates)
-    gameSocket.player.getAdjacentChunks().forEach(function(chunk) {
-
-      if(chunk === null) {
-        return;
-      }
-
-      activeChunks.add(chunk);
-
-    });
-
+  // Add all neighbouring chunks for all players to the active set (no duplicates)
+  onlinePlayers.forEach(function(player) {
+    this.getSpectatingChunks(player.position).forEach(chunk => activeChunks.add(chunk));
   }, this);
 
   return activeChunks;
 
 }
 
-Lattice.prototype.findDestination = function(tile) {
+Lattice.prototype.findAvailableTile = function(creature, position) {
+
+  /*
+   * Function Lattice.findAvailableTile
+   * Finds an available tile for the creature starting from itself and its neighbours
+   */
+
+  // This is the requested tile
+  let tile = this.getTileFromWorldPosition(position);
+
+  // Does not exist
+  if(tile === null || !tile.hasOwnProperty("neighbours")) {
+    return null;
+  }
+
+  // Go over its neighbours: this includes itself as the first element
+  for(let neighbour of tile.neighbours) {
+
+    // Cannot log into no-logout zones
+    if(creature.isPlayer() && neighbour.isNoLogoutZone()) {
+      continue;
+    }
+
+    // The tile is occupied for the creature type
+    if(creature.isTileOccupied(neighbour)) {
+      continue;
+    }
+  
+    // It is available
+    return neighbour;
+
+  }
+
+  // No available tile to place the creature
+  return null;
+
+}
+
+Lattice.prototype.findDestination = function(creature, tile) {
 
   /*
    * Function Lattice.findDestination
    * When teleporting: recursively go down the tile to find its eventual destination
    */
 
-  // Maximum of eight hops
-  let retries = 8;
+  if(tile === null) {
+    return null;
+  }
+
+  // If this is not a portal just return the tile
+  if(!tile.hasDestination()) {
+    return tile;
+  }
+
+  // Maximum of eight hops before giving up (e.g., infinite loops)
+  let hops = 8;
 
   // Following floor changes & teleporters forever
   while(tile.hasDestination()) {
 
     // Prevent infinite loops from one to back
-    if(--retries === 0) {
+    if(--hops === 0) {
       return null;
     }
 
     // Get the floor change
-    let position = this.__handleFloorChange(tile);
+    let position = tile.getDestination();
 
     // Nothing found
     if(position === null) {
       return null;
     }
 
-    // Prevent infinite loops to self
+    // To self: infinite loop
     if(tile.position.equals(position)) {
       return null;
     }
 
-    // Update the tile
+    // Update the tile for the next iteration
     tile = this.getTileFromWorldPosition(position);
 
-    // Dead end..
     if(tile === null) {
       return null;
     }
 
   }
 
-  // Found the final tile
-  return tile;
+  // Found the final tile to put the player
+  return this.findAvailableTile(creature, tile.position);
 
 }
 
@@ -112,6 +248,10 @@ Lattice.prototype.getChunkFromWorldPosition = function(position) {
    * Returns the chunk beloning to a particular position
    */
 
+  if(position === null) {
+    return null;
+  }
+
   // Calculate the chunk position
   let chunkPosition = this.__getChunkPositionFromWorldPosition(position);
 
@@ -120,11 +260,14 @@ Lattice.prototype.getChunkFromWorldPosition = function(position) {
     return null;
   }
 
-  // Get the index
-  let index = this.__getChunkIndex(chunkPosition);
+  let map = chunkPosition.z === 0 ? this.__chunksPositive : this.__chunksNegative;
+
+  if(!map.has(chunkPosition.xy)) {
+    return null;
+  }
 
   // Return the chunk
-  return this.__chunks[index];
+  return map.get(chunkPosition.xy);
 
 }
 
@@ -134,6 +277,15 @@ Lattice.prototype.getTileFromWorldPosition = function(position) {
    * Function Lattice.getTileFromWorldPosition
    * Returns tile based on a requested world position
    */
+
+  if(position === null) {
+    return null;
+  }
+
+  // Not within world range
+  if(!this.withinBounds(position)) {
+    return null;
+  }
 
   // First get the chunk
   let chunk = this.getChunkFromWorldPosition(position);
@@ -156,138 +308,29 @@ Lattice.prototype.createChunk = function(position) {
 
   let chunkPosition = this.__getChunkPositionFromWorldPosition(position);
   let index = this.__getChunkIndex(chunkPosition);
+  let chunk = new Chunk(index, chunkPosition);
 
-  this.__chunks[index] = new Chunk(index, chunkPosition);
+  if(chunkPosition.z === 0) {
+    this.__chunksPositive.set(chunkPosition.xy, chunk);
+  } else {
+    this.__chunksNegative.set(chunkPosition.xy, chunk);
+  }
 
   // Return the created chunk
-  return this.__chunks[index];
+  return chunk;
 
 }
 
-Lattice.prototype.setReferences = function() {
+Lattice.prototype.enablePathfinding = function(tile, refreshNeighbours) {
 
   /*
-   * Function Lattice.setReferences
+   * Function Lattice.enablePathfinding
    * Goes over all available chunks and references its neighbours, including tiles for pathfinding
    */
 
-  this.__chunks.forEach(function(chunk) {
-
-    // Chunk does not exist
-    if(chunk === null) {
-      return;
-    }
-
-    // First reference all chunks
-    this.__referenceChunkNeighbours(chunk);
-
-    // Go over all tiles that exist and reference its neighbours
-    chunk.tiles.forEach(function(tile) {
-
-      if(tile === null) {
-        return;
-      }
-
-      this.__referenceTileNeighbours(tile);
-
-    }, this);
-
-  }, this);
-
-}
-
-Lattice.prototype.__getFloorChangePosition = function(position) {
-
-  /*
-   * Function Lattice.__getFloorChangePosition
-   * When a tile is specified to move you down, let us see downstairs in what direction we need to move
-   */
-
-  // Get the tile below the current floor change
-  let tile = this.getTileFromWorldPosition(position.down());
-
-  // No tile was found there..
-  if(tile === null) {
-    return null;
-  }
-
-  // Map to the appropriate direction and up!
-  switch(tile.getFloorChange()) {
-    case "north": return position.south().down();
-    case "west": return position.east().down();
-    case "east":return position.west().down();
-    case "south": return position.north().down();
-    default: return position.down();
-  }
-
-}
-
-Lattice.prototype.__handleFloorChange = function(tile) {
-
-  /*
-   * Function Lattice.__handleFloorChange
-   * Handles a floor change event by stepping on a floor change tile
-   */
-
-  // Perhaps a teleporter?
-  let destination = tile.itemStack.getTeleporterDestination();
-
-  // Destination was found through teleporter
-  if(destination !== null) {
-    process.gameServer.world.sendMagicEffect(tile.position, CONST.EFFECT.MAGIC.TELEPORT);
-    // Defer
-    setImmediate(() => process.gameServer.world.sendMagicEffect(destination, CONST.EFFECT.MAGIC.TELEPORT));
-    return destination;
-  }
-
-  let change = tile.getFloorChange();
-
-  // Teleport to the appropriate tile
-  switch(change) {
-    case "north": return new Position(tile.position.x, tile.position.y - 1, tile.position.z + 1);
-    case "west": return new Position(tile.position.x - 1, tile.position.y, tile.position.z + 1);
-    case "east": return new Position(tile.position.x + 1, tile.position.y, tile.position.z + 1);
-    case "south": return new Position(tile.position.x, tile.position.y + 1, tile.position.z + 1);
-    case "down": return this.__getFloorChangePosition(tile.position);
-  }
-
-  return null;
-
-}
-
-Lattice.prototype.__referenceChunkNeighbours = function(chunk) {
-
-  /*
-   * Function Lattice.__referenceChunkNeighbours
-   * References neighbouring chunks for quick lookup
-   */
-
-  // These are all the neighbours
-  let chunks = new Array(
-    chunk.position.west(),
-    chunk.position.north(),
-    chunk.position.east(),
-    chunk.position.south(),
-    chunk.position.northwest(),
-    chunk.position.southwest(),
-    chunk.position.northeast(),
-    chunk.position.southeast()
-  );
-
-  // Add the neighbouring chunks
-  chunks.map(this.__getChunkFromChunkPosition, this).nullfilter().forEach(x => chunk.neighbours.push(x));
-
-}
-
-Lattice.prototype.__referenceTileNeighbours = function(tile) {
-
-  /*
-   * Function Lattice.__referenceTileNeighbours
-   * References tile neighbours to use for A* pathfinding
-   */
-
-  // All tiles to reference
-  let tiles = new Array(
+  // Self and eight surrounding tiles or chunks
+  let things = new Array(
+    tile.position,
     tile.position.west(),
     tile.position.north(),
     tile.position.east(),
@@ -298,20 +341,86 @@ Lattice.prototype.__referenceTileNeighbours = function(tile) {
     tile.position.southeast()
   );
 
-  // Add the neighbouring chunks
-  tiles.map(this.getTileFromWorldPosition, this).nullfilter().forEach(x => tile.neighbours.push(x));
+  // Set the neighbours of the tile
+  tile.neighbours = things.map(this.getTileFromWorldPosition, this).nullfilter().filter(x => !x.isBlockSolid());
+
+  // Also refresh the neighbours pathfinding: but not recursively
+  if(refreshNeighbours) {
+    tile.neighbours.forEach(tile => this.enablePathfinding(tile, false));
+  }
 
 }
 
-Lattice.prototype.__reserveChunksMemory = function() {
+Lattice.prototype.setReferences = function() {
+
+  this.__setReferences(this.__chunksPositive);
+  this.__setReferences(this.__chunksNegative);
+
+}
+
+Lattice.prototype.__setReferences = function(chunks) {
 
   /*
-   * Function Lattice.__reserveChunksMemory
-   * Generates the projected chunks for the gameworld 
+   * Function Lattice.setReferences
+   * Goes over all available chunks and references its neighbours, including tiles for pathfinding
    */
 
-  // Calculate the total amount of required chunks and fill with none
-  this.__chunks = new Array(this.nChunksWidth * this.nChunksHeight * this.nChunksDepth).fill(null);
+  chunks.forEach(function(chunk) {
+
+    // Save chunk neighbours
+    this.__referenceNeighbours(chunk, this.__getChunkFromChunkPosition);
+
+    // Go over all tiles that exist and reference its neighbours
+    chunk.layers.forEach(function(layer) {
+
+      if(layer === null) {
+        return;
+      }
+
+      layer.forEach(function(tile) {
+
+        // The tile does not exist
+        if(tile === null) {
+          return;
+        }
+
+        // Does not need pathfinding now
+        if(tile.isBlockSolid()) {
+          return;
+        }
+
+        // Enable pathfinding for this particular tile
+        this.enablePathfinding(tile, false);
+
+      }, this);
+
+    }, this);
+
+  }, this);
+
+}
+
+Lattice.prototype.__referenceNeighbours = function(thing, callback) {
+
+  /*
+   * Function Lattice.__referenceNeighbour
+   * References neighbours of a chunk or a tile
+   */
+
+  // Self and eight surrounding tiles or chunks
+  let things = new Array(
+    thing.position,
+    thing.position.west(),
+    thing.position.north(),
+    thing.position.east(),
+    thing.position.south(),
+    thing.position.northwest(),
+    thing.position.southwest(),
+    thing.position.northeast(),
+    thing.position.southeast()
+  );
+
+  thing.neighbours = things.map(callback, this).nullfilter();
 
 }
 
@@ -322,9 +431,9 @@ Lattice.prototype.__isValidChunkPosition = function(position) {
    * Returns true if the chunk position is valid
    */
 
-  return position.x >= 0 && position.x < this.nChunksWidth &&
-         position.y >= 0 && position.y < this.nChunksHeight &&
-         position.z >= 0 && position.z < this.nChunksDepth;
+  return (position.x >= 0) && (position.x < this.nChunksWidth) &&
+         (position.y >= 0) && (position.y < this.nChunksHeight) &&
+         (position.z >= 0) && (position.z < this.nChunksDepth);
 
 }
 
@@ -353,11 +462,33 @@ Lattice.prototype.__getChunkFromChunkPosition = function(position) {
     return null;
   }
 
-  // Look up per index
-  return this.__chunks[this.__getChunkIndex(position)];
+  let map = position.z === 0 ? this.__chunksPositive : this.__chunksNegative;
+
+  if(!map.has(position.xy)) {
+    return null;
+  }
+
+  return map.get(position.xy);
 
 }
 
+Lattice.prototype.withinBounds = function(position) {
+
+  /*
+   * Function Lattice.withinBounds
+   * Returns whether a position is within the accepted world bounds
+   */
+
+  // Guard against null
+  if(position === null) {
+    return false;
+  }
+  
+  return (position.x >= 0) && (position.x < this.width) &&
+         (position.y >= 0) && (position.y < this.height) &&
+         (position.z >= 0) && (position.z < this.depth);
+         
+}
 
 Lattice.prototype.__getChunkPositionFromWorldPosition = function(position) {
 

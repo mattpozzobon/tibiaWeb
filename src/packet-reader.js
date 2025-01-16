@@ -1,6 +1,8 @@
-const Outfit = require("./outfit");
-const Packet = require("./packet");
-const Position = require("./position");
+"use strict";
+
+const Outfit = requireModule("outfit");
+const Packet = requireModule("packet");
+const Position = requireModule("position");
 
 const PacketReader = function(buffer) {
 
@@ -19,8 +21,6 @@ const PacketReader = function(buffer) {
 
 PacketReader.prototype = Object.create(Packet.prototype);
 PacketReader.constructor = PacketReader;
-
-PacketReader.prototype.opcodes = require("./opcodes").CLIENT;
 
 PacketReader.prototype.readBuyOffer = function() {
 
@@ -125,17 +125,6 @@ PacketReader.prototype.isReadable = function() {
 
 }
 
-PacketReader.prototype.skip = function(bytes) {
-
-  /*
-   * Public Function PacketReader.skip
-   * Skips reading of a number of bytes
-   */
-
-  this.index += bytes;
-
-}
-
 PacketReader.prototype.seek = function(offset) {
 
   /*
@@ -188,8 +177,8 @@ PacketReader.prototype.readString16 = function() {
    */
 
   let length = this.readUInt16();
-  let string = this.buffer.slice(this.index, this.index + length).toString();
-  this.index += length;
+  let string = this.buffer.subarray(this.index, this.index + length).toString();
+  this.advance(length);
 
   return string;
 
@@ -203,8 +192,8 @@ PacketReader.prototype.readString = function() {
    */
 
   let length = this.readUInt8();
-  let string = this.buffer.slice(this.index, this.index + length).toString();
-  this.index += length;
+  let string = this.buffer.subarray(this.index, this.index + length).toString();
+  this.advance(length);
 
   return string;
 
@@ -217,10 +206,10 @@ PacketReader.prototype.readUInt8 = function() {
    * Reads a single byte unsigned integer from the packet
    */
 
-  let index = this.index;
-  this.index++;
+  let result = this.buffer.readUInt8(this.index)
+  this.advance(1);
 
-  return this.buffer.readUInt8(index);
+  return result;
 
 }
 
@@ -231,10 +220,10 @@ PacketReader.prototype.readUInt16 = function() {
    * Reads a 2 byte unsigned integer from the packet
    */
 
-  let index = this.index;
-  this.index += 2;
+  let result = this.buffer.readUInt16LE(this.index);
+  this.advance(2);
 
-  return this.buffer.readUInt16LE(index);
+  return result;
 
 }
 
@@ -245,10 +234,10 @@ PacketReader.prototype.readUInt32 = function() {
    * Reads a 4 byte unsigned integer (usually identifiers) from the packet
    */
 
-  let index = this.index;
-  this.index += 4;
+  let result = this.buffer.readUInt32LE(this.index);
+  this.advance(4);
 
-  return this.buffer.readUInt32LE(index);
+  return result;
 
 }
 
@@ -272,28 +261,16 @@ PacketReader.prototype.readOutfit = function() {
 
   return new Outfit({
     "id": this.readUInt16(),
-    "details": this.readOutfitDetails(),
+    "details":  {
+      "head": this.readUInt8(),
+      "body": this.readUInt8(),
+      "legs": this.readUInt8(),
+      "feet": this.readUInt8()
+    },
     "mount": this.readUInt16(),
     "mounted": this.readBoolean(),
     "addonOne": this.readBoolean(),
     "addonTwo": this.readBoolean()
-  });
-
-}
-
-PacketReader.prototype.readOutfitDetails = function() {
-
-  /*
-   * Function PacketReader.readLookType
-   * Reads the outfit color look type
-   */
-
-  // Four bytes
-  return new Object({
-    "head": this.readUInt8(),
-    "body": this.readUInt8(),
-    "legs": this.readUInt8(),
-    "feet": this.readUInt8()
   });
 
 }

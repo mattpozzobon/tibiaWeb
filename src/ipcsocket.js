@@ -23,6 +23,7 @@ const IPCSocket = function() {
 
   this.socket.on("connection", this.__handleConnection.bind(this));
   this.socket.on("error", this.__handleSocketError.bind(this));
+  this.socket.on("close", this.__handleSocketClose.bind(this));
 
 }
 
@@ -43,6 +44,17 @@ IPCSocket.prototype.getSocketPath = function() {
 
 }
 
+IPCSocket.prototype.__handleSocketClose = function(error) {
+
+  /*
+   * IPCSocket.__handleSocketClose
+   * Closing event of the IPC socket
+   */
+
+  console.log("The IPC Socket at %s has been closed.".format(this.getSocketPath()));
+
+}
+
 IPCSocket.prototype.__handleSocketError = function(error) {
   
   /*
@@ -50,7 +62,10 @@ IPCSocket.prototype.__handleSocketError = function(error) {
    * Handles an error
    */
 
-   console.log(error);
+  switch(error.code) {
+    case "EADDRINUSE":
+      return console.log("Could not start the IPC server: the address or port is already in use.");
+  }
 
 }
 
@@ -121,6 +136,16 @@ IPCSocket.prototype.__internalHandlePacket = function(packet) {
     case 0x03:
       process.gameServer.world.clock.changeTime(packet.readString16());
       break;
+
+    // Change of server status
+    case 0x04:
+      let status = packet.readString16();
+      if(status === "listen") {
+        process.gameServer.HTTPServer.listen();
+      } else if(status === "closed") {
+        process.gameServer.HTTPServer.close();
+      }
+      break;
   }
 
   // Always end the request
@@ -179,6 +204,7 @@ IPCSocket.prototype.close = function() {
    * Closes the IPC socket by destroying the remaining clients (if any)
    */
 
+  // Kill all the clients
   this.clients.forEach(socket => socket.destroy());
 
   // Automatically removes the sock file

@@ -100,6 +100,7 @@ Outfit.prototype.isValid = function() {
     return true;
   }
 
+  // Must be within these ranges
   return this.details.head >= 0 && this.details.head < 133 &&
          this.details.body >= 0 && this.details.body < 133 &&
          this.details.legs >= 0 && this.details.legs < 133 &&

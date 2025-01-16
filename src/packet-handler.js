@@ -1,6 +1,10 @@
-const PacketWriter = require("./packet-writer");
-const Condition = require("./condition");
-const MailboxHandler = require("./mailbox-handler");
+"use strict";
+
+const Condition = requireModule("condition");
+const MailboxHandler = requireModule("mailbox-handler");
+const Monster = requireModule("monster");
+
+const { ItemInformationPacket, CreatureInformationPacket } = requireModule("protocol");
 
 const PacketHandler = function() {
 
@@ -50,67 +54,6 @@ PacketHandler.prototype.handleLogout = function(gameSocket) {
 
 }
 
-PacketHandler.prototype.handleItemUse = function(player, packet) {
-
-  /*
-   * Function PacketHandler.handleItemUse
-   * Handles a use event for the tile
-   */
- 
-  // An invalid tile or container was requested
-  if(packet.which === null) {
-    return;
-  }
-
-  // Delegate to the appropriate handler
-  if(packet.which.constructor.name === "Tile") {
-    item = this.handleTileUse(player, packet.which);
-  } else if(packet.which.constructor.name === "Equipment" || packet.which.constructor.name === "DepotContainer" || packet.which.isContainer()) {
-    item = packet.which.peekIndex(packet.index);
-  }
-
-  if(item === null) {
-    return;
-  }
- 
-  // Emitter
-  item.emit("use", player, packet.which, packet.index, item);
-
-  if(item.isDoor()) {
-    item.toggle(player);
-  }
-
-  if(item.isMailbox()) {
-    return player.containerManager.inbox.pop(item.getPosition());
-  }
-
-  if(item.hasUniqueId()) {
-    return;
-  }
-
-  // If the item clicked is a container: toggle it
-  if(item.isContainer() || item.isDepot()) {
-    return player.containerManager.toggleContainer(item);
-  }
-
-  // Rotate the item
-  if(item.isRotateable()) {
-    return item.rotate();
-  }
-
-  // Readable
-  if(item.isReadable()) {
-
-    if(item.isHangable() && !player.canUseHangable(item)) {
-      return player.sendCancelMessage("You have to move to the other side.");
-    }
-
-    return player.write(new PacketWriter(PacketWriter.prototype.opcodes.READ_TEXT).writeReadable(item));
-
-  }
-
-}
-
 PacketHandler.prototype.__handlePushCreature = function(creature, position) {
 
   /*
@@ -129,7 +72,7 @@ PacketHandler.prototype.__handlePushCreature = function(creature, position) {
   }
 
   // Schedule the push event in the future
-  process.gameServer.world.eventQueue.addEvent(creature.push.bind(creature, position), 20);
+  gameServer.world.eventQueue.addEvent(creature.push.bind(creature, position), 20);
 
 }
 
@@ -171,17 +114,6 @@ PacketHandler.prototype.moveItem = function(player, packet) {
 
   // Guard against no item being moved
   if(fromItem === null) {
-
-    // Push of creature
-    if(fromWhere.constructor.name === "Tile" && fromWhere.monsters.size > 0) {
-      return this.__handlePushCreature(fromWhere.getMonster(), toWhere.position);
-    }
-
-    return;
-
-  }
-
-  if(fromItem.frozen) {
     return;
   }
 
@@ -193,12 +125,12 @@ PacketHandler.prototype.moveItem = function(player, packet) {
   // Moving to a place where there is a floor change (or teleporter)
   if(toWhere.constructor.name === "Tile") {
 
-    if(toWhere.itemStack.isMailbox() && this.mailboxHandler.canMailItem(fromItem)) {
+    if(toWhere.hasItems() && toWhere.itemStack.isMailbox() && this.mailboxHandler.canMailItem(fromItem)) {
       return this.mailboxHandler.sendThing(fromWhere, toWhere, player, fromItem);
     }
 
     // Thrown inside a teleport or stair?
-    toWhere = process.gameServer.world.lattice.findDestination(toWhere);
+    toWhere = gameServer.world.lattice.findDestination(player, toWhere);
 
     // No valid destination
     if(toWhere === null) {
@@ -211,7 +143,7 @@ PacketHandler.prototype.moveItem = function(player, packet) {
     }
 
     // Solid for items
-    if(toWhere.itemStack.isItemSolid()) {
+    if(toWhere.hasItems() && toWhere.itemStack.isItemSolid()) {
       return player.sendCancelMessage("You cannot add this item here.");
     }
 
@@ -249,22 +181,6 @@ PacketHandler.prototype.__addItemToMailbox = function(player, direction) {
 
 }
 
-PacketHandler.prototype.handleMovement = function(player, direction) {
-
-  /*
-   * Function GameServer.handleMovement
-   * Handles movement request from a connected game socket
-   */
-
-  // If the player has its move action locked: set the movement buffer
-  if(player.__moveLock.isLocked()) {
-    return player.setMoveBuffer(direction);
-  }
-
-  player.handleActionMove(direction);
-
-}
-
 PacketHandler.prototype.handleItemLook = function(player, packet) {
 
   /*
@@ -277,21 +193,22 @@ PacketHandler.prototype.handleItemLook = function(player, packet) {
     return;
   }
 
-  // Looking at the creature on the tile
+  // Looking at a creature on the tile
   if(packet.which.constructor.name === "Tile" && packet.which.getCreature()) {
-    return player.write(new PacketWriter(PacketWriter.prototype.opcodes.CHARACTER_INFORMATION).writeCharacterInformation(packet.which.getCreature()));
+    return player.write(new CreatureInformationPacket(packet.which.getCreature()));
   }
 
   // Get the item at the requested index
-  let item = packet.which.peekIndex(packet.index);
+  let thing = packet.which.peekIndex(packet.index);
 
-  if(item !== null) {
-    return player.write(new PacketWriter(PacketWriter.prototype.opcodes.ITEM_INFORMATION).writeItemInformation(player, packet.which, item));
+  // Overwrite with the thing itself
+  if(thing === null) {
+    thing = packet.which;
   }
 
-  if(packet.which.constructor.name === "Tile") {
-    player.write(new PacketWriter(PacketWriter.prototype.opcodes.ITEM_INFORMATION).writeItemInformation(player, packet.which, packet.which));
-  }
+  let includeDetails = !thing.hasUniqueId() && (packet.which.constructor.name !== "Tile" || player.isBesidesThing(packet.which));
+
+  return player.write(new ItemInformationPacket(thing, includeDetails));
 
 }
 
@@ -317,7 +234,12 @@ PacketHandler.prototype.handleTargetCreature = function(player, id) {
    * Handles an incoming creature target packet
    */
 
-  let creature = process.gameServer.world.getCreatureFromId(id);
+  // Cancel target
+  if(id === 0) {
+    return player.actionHandler.targetHandler.setTarget(null);
+  }
+
+  let creature = gameServer.world.creatureHandler.getCreatureFromId(id);
 
   // No creature found
   if(creature === null) {
@@ -325,13 +247,13 @@ PacketHandler.prototype.handleTargetCreature = function(player, id) {
   }
 
   // Must be of type monster
-  if(creature.constructor.name !== "Monster") {
+  if(!(creature instanceof Monster)) {
     return player.sendCancelMessage("You may not attack this creature.");
   }
 
   // Can see the target
   if(player.canSee(creature.position)) {
-    return player.setTarget(creature);
+    return player.actionHandler.targetHandler.setTarget(creature);
   }
 
 }
@@ -344,7 +266,7 @@ PacketHandler.prototype.handlePlayerSay = function(player, packet) {
    */
 
   // Write to the appropriate channel identifier
-  let channel = process.gameServer.world.channelManager.getChannel(packet.id);
+  let channel = gameServer.world.channelManager.getChannel(packet.id);
 
   // The channel must exist
   if(channel !== null) {
@@ -386,7 +308,9 @@ PacketHandler.prototype.__moveItem = function(player, fromWhere, fromIndex, toWh
 
   // We have to check each players' adjacency after the container has been moved
   if(movedItem.constructor.name === "Container") {
-    movedItem.checkPlayersAdjacency();
+    if(fromWhere.getTopParent() !== toWhere.getTopParent()) {
+      movedItem.checkPlayersAdjacency();
+    }
   }
 
   // Emit the move event for the item
@@ -402,7 +326,7 @@ PacketHandler.prototype.__addThingToTrashholder = function(fromItem, fromWhere, 
    */
 
   // Send deletion magic
-  process.gameServer.world.sendMagicEffect(toWhere.position, toWhere.getTrashEffect());
+  gameServer.world.sendMagicEffect(toWhere.position, toWhere.getTrashEffect());
 
   // Make sure to clean up the item
   fromItem.cleanup();

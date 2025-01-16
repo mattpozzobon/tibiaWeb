@@ -1,22 +1,30 @@
 "use strict";
 
-const PacketWriter = require("./packet-writer");
-const Tile = require("./tile");
+const Monster = requireModule("monster");
+const NPC = requireModule("npc");
+const Player = requireModule("player");
+const Tile = requireModule("tile");
+
+const { CreatureStatePacket, ChunkPacket } = requireModule("protocol");
 
 const Chunk = function(id, chunkPosition) {
 
   /*
+   *
    * Class Chunk
+    *
    * Container for a single chunk: an 8x8x8 area that references
    * neighbouring chunk cells. When an update happens in one chunk,
    * only adjacent chunks need to be pushed an update.
    *
    * API:
    *
-   * Chunk.broadcast - broadcasts a packet to all entities that can view the chunk (including neighbours)
+   * Chunk.addCreature - adds a creature to the chunk
+   * Chunk.broadcast - broadcasts a packet to all spectating entities
+   * Chunk.broadcastFloor - broadcasts a packet to all spectating entities on a given floor
+   * Chunk.createTile - creates a new tile in the chunk
    * Chunk.getTileFromWorldPosition - Returns the tile within the chunk based on a world position
-   * Chunk.getTileIndex - Returns index of a tile with a world position in the chunk
-   * Chunk.serialize - Serializes the tiles of the chunk to a packet
+   * Chunk.handleRequest - Serializes the tiles of the chunk to a packet
    *
    */
 
@@ -29,32 +37,33 @@ const Chunk = function(id, chunkPosition) {
   this.players = new Set();
   this.npcs = new Set();
 
-  // Reference to neighbouring chunks including self
-  this.neighbours = new Array(this);
+  // Reference to neighbouring chunks including itself
+  this.neighbours = new Array();
 
-  // Reference to slice of tiles and reserve some memory
-  this.tiles = new Array(this.WIDTH * this.HEIGHT * this.DEPTH).fill(null);
+  // Reference to slice of tiles and reserve the required memory
+  this.layers = new Array(this.DEPTH).fill(null);
 
 }
 
+// Overwrite from the configuration
 Chunk.prototype.WIDTH = CONFIG.WORLD.CHUNK.WIDTH;
 Chunk.prototype.HEIGHT = CONFIG.WORLD.CHUNK.HEIGHT;
 Chunk.prototype.DEPTH = CONFIG.WORLD.CHUNK.DEPTH;
 
-Chunk.prototype.findChunkComplement = function(chunk) {
+Chunk.prototype.difference = function(chunk) {
 
   /*
-   * Function Chunk.findChunkComplement
+   * Function Chunk.difference
    * Returns the chunks that are in the passed chunk but not in this chunk
    */
 
-  // Own neighbours
+  // Other neighbours
   let complement = new Set(chunk.neighbours);
 
-  // Delete everything that also exists in the new chunk
+  // Delete everything that also exists in this chunk
   this.neighbours.forEach(x => complement.delete(x));
 
-  // We are left with what is different
+  // We are left with what is different in the new chunk
   return complement;
 
 }
@@ -66,25 +75,18 @@ Chunk.prototype.createTile = function(position, id) {
    * Creates a tile within the chunk and returns it
    */
 
-  // Reference the tile and also the chunk from the tile in a circular way
-  return this.tiles[this.getTileIndex(position)] = new Tile(this, id, position);
+  // Determine the layer to add the tile
+  let layer = position.z % this.DEPTH;
 
-}
+  // Layer does not exist: reserve for the tiles
+  if(this.layers[layer] === null) {
+    this.layers[layer] = new Array(this.WIDTH * this.HEIGHT).fill(null);
+  }
 
-Chunk.prototype.getTileIndex = function(worldPosition) {
+  let index = this.__getTileIndex(position);
 
-  /*
-   * Function Chunk.getTileIndex
-   * Returns the index of a tile in the chunk
-   */
-
-  // Project the z-component. The coordinates are truncated to the chunk size
-  let z = (worldPosition.z % this.DEPTH);
-  let x = (worldPosition.x - z) % this.WIDTH;
-  let y = (worldPosition.y - z) % this.HEIGHT;
-
-  // Return the tile from the chunk
-  return x + (y * this.WIDTH) + (z * this.WIDTH * this.HEIGHT);
+  // Assign the tile to the correct index
+  return this.layers[layer][index] = new Tile(id, position);
 
 }
 
@@ -95,106 +97,48 @@ Chunk.prototype.getTileFromWorldPosition = function(position) {
    * Returns a tile from the chunk relative to the chunk
    */
 
-  let index = this.getTileIndex(position);
+  let layer = position.z % this.DEPTH;
 
-  // Return the tile from the chunk
-  return this.tiles[index];
+  if(this.layers[layer] === null) {
+    return null;
+  }
 
-}
+  let tileIndex = this.__getTileIndex(position);
 
-Chunk.prototype.removeCreature = function(creature) {
-
-  /*
-   * Function Chunk.removeCreature
-   * Removes an creature (player, monster) from a chunk
-   */
-
-  // Set chunk to null
-  creature.setChunk(null);
-
-  // Remove the creature from the chunk
-  this.__removeCreature(creature);
+  return this.layers[layer][tileIndex];
 
 }
 
-Chunk.prototype.forEachNPC = function(callback) {
+Chunk.prototype.serialize = function(targetSocket) {
 
   /*
-   * Function Chunk.forEachNPC
-   * Returns all NPCs that are active in a chunk & neighbours
+   * Function Chunk.serialize
+   * Introduces the creature to its new chunk (targetSocket can be a player or gameSocket)
    */
 
-  // Collect all NPCs from the (neighbouring) chunk(s)
-  this.neighbours.forEach(neighbour => neighbour.npcs.forEach(callback));
+  // Write the chunk itself
+  targetSocket.write(new ChunkPacket(this)); 
 
-}
-
-Chunk.prototype.addCreature = function(creature) {
-  
-  /*
-   * Function Chunk.addCreature
-   * Adds a creature to the respective chunk
-   */
-
-  // Reference the active chunk
-  creature.setChunk(this);
-
-  this.__addCreature(creature);
-
-}
-
-Chunk.prototype.handleRequest = function(player) {
-
-  /*
-   * Function Chunk.handleRequest
-   * Introduces the creature to its new chunk
-   */
-
-  // Serialize the chunk tiles itself (fixed size)
-  player.write(new PacketWriter(PacketWriter.prototype.opcodes.WRITE_CHUNK).writeChunk(this));
-
-  // Write all players inside the sector
-  this.players.forEach(function(chunkPlayer) {
+  for(let chunkPlayer of this.players) {
 
     // Do not send information on self
-    if(player === chunkPlayer) {
-      return;
+    if(targetSocket.player === chunkPlayer) {
+      continue;
     }
 
     // Otherwise write information on other players
-    player.write(chunkPlayer.info());
+    targetSocket.write(new CreatureStatePacket(chunkPlayer));
 
-  });
+  }
 
   // Write the other creatures (npcs & monsters)
-  this.npcs.forEach(creature => player.write(creature.info()));
-  this.monsters.forEach(creature => player.write(creature.info()));
+  for(let npc of this.npcs) {
+    targetSocket.write(new CreatureStatePacket(npc));
+  }
 
-  this.serializeTiles(player);
-
-}
-
-Chunk.prototype.serializeTiles = function(player) {
-
-  /*
-   * Function Chunk.serializeTiles
-   * Serialize the items on the individual tiles tiles
-   */
-
-  // Write all the items on the chunk
-  this.tiles.forEach(function(tile) {
-
-    // Nothing
-    if(tile === null) {
-      return;
-    }
-
-    // Write all the items in the chunk
-    tile.getItems().forEach(function(item, i) {
-      player.write(new PacketWriter(PacketWriter.prototype.opcodes.ITEM_ADD).writeItemAdd(tile.position, item, i));
-    });
-
-  });
+  for(let monster of this.monsters) {
+    targetSocket.write(new CreatureStatePacket(monster));
+  }
 
 }
 
@@ -206,7 +150,7 @@ Chunk.prototype.broadcast = function(packet) {
    */
 
   // Chunks needs to broadcast to their neighbours
-  this.neighbours.forEach(chunk => chunk.__internalBroadcast(packet));
+  this.neighbours.forEach(chunk => chunk.internalBroadcast(packet));
 
 }
 
@@ -222,10 +166,57 @@ Chunk.prototype.broadcastFloor = function(floor, packet) {
 
 }
 
-Chunk.prototype.__internalBroadcast = function(packet) {
+Chunk.prototype.removeCreature = function(creature) {
 
   /*
-   * Function Chunk.__internalBroadcast
+   * Function Chunk.removeCreature
+   * Removes the creature reference from the chunk
+   */
+
+  switch(creature.constructor) {
+    case Player: return this.players.delete(creature);
+    case Monster: return this.monsters.delete(creature);
+    case NPC: return this.npcs.delete(creature);
+  }
+
+}
+
+Chunk.prototype.addCreature = function(creature) {
+
+  /*
+   * Function Chunk.addCreature
+   * Adds a creature to the correct entity set of the chunk
+   */
+
+  switch(creature.constructor) {
+    case Player: return this.players.add(creature);
+    case Monster: return this.monsters.add(creature);
+    case NPC: return this.npcs.add(creature);
+  }
+
+}
+
+Chunk.prototype.__getTileIndex = function(worldPosition) {
+
+  /*
+   * Function Chunk.__getTileIndex
+   * Returns the index of a tile in the chunk
+   */
+
+  // Project the z-component. The coordinates are truncated to the chunk size
+  let z = (worldPosition.z % this.DEPTH);
+  let x = (worldPosition.x - z) % this.WIDTH;
+  let y = (worldPosition.y - z) % this.HEIGHT;
+
+  // Return the tile from the chunk
+  return x + (y * this.WIDTH);
+  
+}
+
+Chunk.prototype.internalBroadcast = function(packet) {
+
+  /*
+   * Function Chunk.internalBroadcast
    * Broadcasts a packet to the players within the chunk itself (not neighbours)
    */
 
@@ -245,40 +236,10 @@ Chunk.prototype.__internalBroadcastFloor = function(floor, packet) {
 
     // Check if the floor matches
     if(player.position.z === floor) {
-      player.gameSocket.write(packet);
+      player.write(packet);
     }
 
   });
-
-}
-
-Chunk.prototype.__removeCreature = function(creature) {
-
-  /*
-   * Function Chunk.__removeCreature
-   * Removes the creature reference from the chunk
-   */
-
-  switch(creature.constructor.name) {
-    case "Player": return this.players.delete(creature);
-    case "Monster": return this.monsters.delete(creature);
-    case "NPC": return this.npcs.delete(creature);
-  }
-
-}
-
-Chunk.prototype.__addCreature = function(creature) {
-
-  /*
-   * Function Chunk.__addCreature
-   * Adds a creature to the correct entity set of the chunk
-   */
-
-  switch(creature.constructor.name) {
-    case "Player": return this.players.add(creature);
-    case "Monster": return this.monsters.add(creature);
-    case "NPC": return this.npcs.add(creature);
-  }
 
 }
 

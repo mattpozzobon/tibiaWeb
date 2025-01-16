@@ -1,15 +1,15 @@
 "use strict";
 
-const BitFlag = function(flags) {
+const BitFlag = function() {
 
   /*
    * Function BitFlag
-   * Wrapper to create a bitflag class
+   * Meta class to create bit flag classes
    */
 
   // Only 31 bits in a JavaScript number..
-  if(flags.length > 31) {
-    throw("Cannot construct a bit flag with more than 31 options.");
+  if(arguments.length > 31) {
+    throw("Cannot construct a bit flag with more than 31 bits.");
   }
 
   // The internal class generator
@@ -22,7 +22,7 @@ const BitFlag = function(flags) {
   __BitFlag.prototype.flags = new Object();
 
   // Add all flags to the prototype
-  flags.forEach(function(flag, i) {
+  Array.from(arguments).forEach(function(flag, i) {
     __BitFlag.prototype.flags[flag] = 1 << i;
   });
 
@@ -79,7 +79,7 @@ BitFlag.prototype.print = function() {
 }
 
 // Define some bit flags
-module.exports.OTBBitFlag = BitFlag([
+module.exports.OTBBitFlag = BitFlag(
   "FLAG_BLOCK_SOLID", // 1
   "FLAG_BLOCK_PROJECTILE", // 2
   "FLAG_BLOCK_PATHFIND", // 4
@@ -107,14 +107,14 @@ module.exports.OTBBitFlag = BitFlag([
   "FLAG_ANIMATION", // 16777216
   "FLAG_FULLTILE", // 33554432
   "FLAG_FORCEUSE" // 67108864
-]);
+);
 
 // Tile zone bitflag
-module.exports.TileFlag = BitFlag([
+module.exports.TileFlag = BitFlag(
   "TILESTATE_PROTECTIONZONE",
   "TILESTATE_DEPRECATED",
   "TILESTATE_NOPVP",
   "TILESTATE_NOLOGOUT",
   "TILESTATE_PVPZONE",
   "TILESTATE_REFRESH"
-]);
+);

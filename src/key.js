@@ -1,12 +1,17 @@
 "use strict";
 
-const Item = require("./item");
+const Item = requireModule("item");
 
 const Key = function(id) {
 
   /*
    * Class Key
    * Wrapper for items that are keys and can open doors
+   *
+   * API:
+   *
+   * Key.handleKeyUse(player, tile) - handles use of key by player on a specific tile
+   *
    */
 
   // Inherit from container

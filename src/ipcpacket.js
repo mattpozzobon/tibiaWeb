@@ -1,8 +1,8 @@
 "use strict";
 
-const PacketWriter = require("./packet-writer");
+const PacketWriter = requireModule("packet-writer");
 
-const IPCPacket = function(packet) {
+const IPCPacket = function(packet, length) {
 
   /*
    * Class IPCPacket
@@ -10,7 +10,7 @@ const IPCPacket = function(packet) {
    */
 
   // Inherits from packet writer for writing bytes to the packet
-  PacketWriter.call(this, packet);
+  PacketWriter.call(this, packet, length);
 
 }
 
@@ -28,11 +28,20 @@ IPCPacket.prototype.PACKETS = new Object({
   // Server
   "OK": {"code": 0x00, "length": 1},
   "SERVER_RESULT": {"code": 0x01, "length": 3},
+  "CHANGE_STATUS": {"code": 0x04, "length": 255}
 });
 
 IPCPacket.prototype.writeChangeTime = function(time) {
 
   this.__writeString(time);
+
+  return this.__serializeBufferSlice();
+
+}
+
+IPCPacket.prototype.writeChangeStatus = function(status) {
+
+  this.__writeString(status);
 
   return this.__serializeBufferSlice();
 
@@ -45,7 +54,7 @@ IPCPacket.prototype.writeServerData = function(gameServer) {
    * Writes the requested server data over the channel
    */
 
-  this.writeUInt16(gameServer.server.websocketServer.__gameSockets.size);
+  this.writeUInt16(gameServer.HTTPServer.websocketServer.__connectedSockets.size);
 
   return this.serializeBuffer();
 

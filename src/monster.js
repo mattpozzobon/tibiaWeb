@@ -1,61 +1,37 @@
 "use strict";
 
-const Creature = require("./creature");
-const ActionManager = require("./action");
-const DamageMap = require("./damage-map");
-const Position = require("./position");
-const Behaviour = require("./behaviour");
+const Creature = requireModule("creature");
+const Corpse = requireModule("corpse");
+const DamageMap = requireModule("damage-map");
+const LootHandler = requireModule("monster-loot-handler");
+const MonsterBehaviour = requireModule("monster-behaviour");
 
-const Monster = function(spawn) {
+const { EmotePacket } = requireModule("protocol");
+
+const Monster = function(cid, data) {
 
   /*
    * Class Monster
    * Container for an attackable monster
    */
 
-  // Fetch data from its prototype
-  let data = process.gameServer.database.getMonster(spawn.mid);
-
   // Inherit from creature
   Creature.call(this, data.creatureStatistics);
-	
-  // Save the monster spawn information
-  this.spawn = spawn;
-  this.position = spawn.position;
 
-  // The monster type
-  this.type = Creature.prototype.TYPE.MONSTER;
+  // Save properties of the monster
+  this.cid = cid;
+  this.corpse = data.corpse;
+  this.fluidType = CONST.COLOR.RED;
+  this.experience = data.experience;
 
   // Map for damage done to the creature
-  this.damageMap = new DamageMap();
+  this.damageMap = new DamageMap(this);
+
+  // Handler for loot
+  this.lootHandler = new LootHandler(data.loot);
 
   // Container for the behaviour
-  this.behaviour = new Behaviour(this);
-  this.behaviour.setBehaviour(data.behaviour);
-
-  // Monsters have these actions to choose from
-  this.actions.add(this.handleActionMove);
-  this.actions.add(this.handleSpellAction);
-  this.actions.add(this.handleActionAttack);
-  this.actions.add(this.handleActionTarget);
-
-  // Sayings were configured
-  if(data.hasOwnProperty("sayings")) {
-    this.actions.add(this.handleActionSpeak);
-  }
-
-  // Register specific callback events
-  if(data.events && data.events.length > 0) {
-    this.__registerEvents(data.events);
-  }
-
-  // The spellbook of the creature
-  this.spellActions = new ActionManager();
-
-  // Add the spells
-  if(data.spells) {
-    this.__addSpells(data.spells);
-  }
+  this.behaviourHandler = new MonsterBehaviour(this, data.behaviour);
 
 }
 
@@ -64,7 +40,24 @@ Monster.prototype.constructor = Monster;
 
 Monster.prototype.setTarget = function(target) {
 
-  this.behaviour.setTarget(target);
+  /*
+   * Function Monster.setTarget
+   * Sets the target of the monster
+   */
+
+  // Delegate
+  this.behaviourHandler.setTarget(target);
+
+}
+
+Monster.prototype.cleanup = function() {
+
+  /*
+   * Function Monster.cleanup
+   * Call to clean up references from the monster so it can be garbage collected
+   */
+
+  this.setTarget(null);
 
 }
 
@@ -89,7 +82,7 @@ Monster.prototype.isTileOccupied = function(tile) {
   }
 
   // The tile items contain a block solid (e.g., a wall)
-  if(tile.itemStack.isBlockSolid(this.behaviour.openDoors)) {
+  if(tile.itemStack && tile.itemStack.isBlockSolid(this.behaviourHandler.openDoors)) {
     return true;
   }
 
@@ -109,27 +102,19 @@ Monster.prototype.createCorpse = function() {
    * Returns the corpse of a particular creature
    */
 
-  // Get the monster prototype (different from thing definitions)
-  let proto = this.getPrototype();
-
   // Create a new corpse based on the monster type
-  let corpse = process.gameServer.database.createThing(proto.corpse);
+  let thing = gameServer.database.createThing(this.corpse);
 
-  if(corpse.isDecaying()) {
-    corpse.scheduleDecay();
-  }
+  // Distribute the experience
+  this.damageMap.distributeExperience();
 
   // Add loot to the corpse and schedule a decay event
-  if(corpse.constructor.name === "Corpse") {
-    corpse.addLoot(proto.loot);
-    this.damageMap.distributeExperienceAndLoot(this.getPrototype(), corpse.container.__slots.nullfilter());
-  } else {
-    this.damageMap.distributeExperienceAndLoot(this.getPrototype(), []);
+  if(thing instanceof Corpse) {
+    this.lootHandler.addLoot(thing);
   }
 
   // Add the experience
-
-  return corpse;
+  return thing;
 
 }
 
@@ -140,7 +125,7 @@ Monster.prototype.getPrototype = function() {
    * Returns the prototype definition of a monster from its monster identifier
    */
 
-  return process.gameServer.database.getMonster(this.spawn.mid);
+  return gameServer.database.getMonster(this.cid);
 
 }
 
@@ -151,7 +136,7 @@ Monster.prototype.getTarget = function() {
    * Returns the target of a creature
    */
 
-  return this.behaviour.target;
+  return this.behaviourHandler.getTarget();
 
 }
 
@@ -183,129 +168,35 @@ Monster.prototype.push = function(position) {
   let slowness = this.position.isDiagonal(position) ? 2 * lockDuration : lockDuration;
 
   // Delegate to move the creature to the new tile position
-  process.gameServer.world.moveCreature(this, position);
+  gameServer.world.moveCreature(this, position);
 
   // Lock this function for a number of frames
-  this.actions.lock(this.handleActionMove, slowness);
-
-}
-
-Monster.prototype.handleActionMove = function() {
-
-  /*
-   * Function Monster.handleActionMove
-   * Cooldown function that handles the creature movement
-   */
-
-  // Let the creature decide its next strategic move
-  let tile = this.behaviour.getNextMoveTile();
-
-  // Invalid tile was returned: do nothing
-  if(tile === null) {
-    return;
-  }
-
-  if(tile.id === 0) {
-    return;
-  }
-
-  let lockDuration = this.getStepDuration(tile.getFriction());
-
-  // Number of frames to lock
-  let slowness = this.position.isDiagonal(tile.position) ? 2 * lockDuration : lockDuration;
-
-  // Delegate to move the creature to the new tile position
-  process.gameServer.world.moveCreature(this, tile.position);
-
-  // Lock this function for a number of frames
-  this.actions.lock(this.handleActionMove, slowness);
-
-}
-
-Monster.prototype.handleActionTarget = function() {
-
-  /*
-   * Function Monster.handleActionTarget
-   * Handles targeting action of the monster that is done every once in a while
-   */
-
-  // Delegate to find or drop a target
-  this.behaviour.handleTarget();
-
-  this.lockAction(this.handleActionTarget, ActionManager.prototype.GLOBAL_COOLDOWN);
-
-}
-
-Monster.prototype.handleActionSpeak = function() {
-
-  /*
-   * Function Monster.handleActionSpeak
-   * Handles speaking action of the monster
-   */
-
-  let sayings = this.getProperty("sayings");
-
-  // Say a random thing
-  if(Math.random() > 0.15) {
-    this.internalCreatureSay(sayings.texts.random(), CONST.COLOR.ORANGE);
-  }
-
-  // Lock the action for a random duration
-  this.lockAction(this.handleActionSpeak, Number.prototype.random(1, 5) * sayings.slowness);
-
-}
-
-Monster.prototype.handleActionAttack = function() {
-
-  /*
-   * Function Monster.handleActionAttack
-   * Handles the attack action for a monster
-   */
-
-  // No target or not besides target: do nothing
-  if(!this.behaviour.is(this.behaviour.BEHAVIOUR.HOSTILE)) {
-    return this.lockAction(this.handleActionAttack, ActionManager.prototype.GLOBAL_COOLDOWN);
-  }
-
-  // We do not have a target
-  if(!this.behaviour.hasTarget()) {
-    return this.lockAction(this.handleActionAttack, ActionManager.prototype.GLOBAL_COOLDOWN);
-  }
-
-  // Fetch the target
-  let target = this.getTarget();
-
-  // Target is offline or missing
-  if(!this.behaviour.canSeeTarget()) {
-    return this.lockAction(this.handleActionAttack, ActionManager.prototype.GLOBAL_COOLDOWN);
-  }
-
-  // Put the target player in combat
-  if(target.constructor.name === "Player") {
-    target.combatLock.lockSeconds(target.COMBAT_LOCK_SECONDS);
-  }
-
-  // Not yet besides the target
-  if(!this.behaviour.isBesidesTarget()) {
-    return this.lockAction(this.handleActionAttack, ActionManager.prototype.GLOBAL_COOLDOWN);
-  }
-
-  // Match the angle to the target
-  this.setDirection(this.position.getFacingDirection(target.position));
-
-  // Delegate to handle the actual combat
-  process.gameServer.world.handleCombat(this);
-
-  // And lock the attack action until next time
-  this.lockAction(this.handleActionAttack, this.attackSlowness);
+  this.behaviourHandler.actions.lock(this.handleActionMove, slowness);
 
 }
 
 Monster.prototype.hasTarget = function() {
 
-  return this.behaviour.hasTarget();
+  /*
+   * Function Monster.hasTarget
+   * Returns true if the monster has a target
+   */
+
+  return this.behaviourHandler.hasTarget();
 
 }
+
+Monster.prototype.think = function() {
+
+  /*
+   * Function Monster.think
+   * Function called when an creature should think
+   */
+
+  // Delegates to handling all the available actions
+  this.behaviourHandler.actions.handleActions(this.behaviourHandler);
+
+} 
 
 Monster.prototype.handleSpellAction = function() {
 
@@ -315,15 +206,15 @@ Monster.prototype.handleSpellAction = function() {
    */
 
   // Must have a target before casting any spells
-  if(!this.behaviour.hasTarget()) {
+  if(!this.behaviourHandler.hasTarget()) {
     return;
   }
 
   // Always lock the global spell cooldown
-  this.lockAction(this.handleSpellAction, ActionManager.prototype.GLOBAL_COOLDOWN);
+  this.lockAction(this.handleSpellAction, 1000);
 
   // Can not shoot at the target (line of sight blocked)
-  if(!this.isInLineOfSight(this.behaviour.target)) {
+  if(!this.isInLineOfSight(this.behaviourHandler.target)) {
     return;
   }
 
@@ -336,7 +227,7 @@ Monster.prototype.handleSpellAction = function() {
     }
 
     // Get the spell callback from the database and apply it
-    let cast = process.gameServer.database.getSpell(spell.id);
+    let cast = gameServer.database.getSpell(spell.id);
 
     // If casting was succesful lock it with the specified cooldown
     if(cast.call(this, spell)) {
@@ -358,38 +249,30 @@ Monster.prototype.isDistanceWeaponEquipped = function() {
 
 }
 
-Monster.prototype.decreaseHealth = function(attacker, amount, color) {
+Monster.prototype.decreaseHealth = function(source, amount) {
 
   /*
    * Function Monster.decreaseHealth
-   * Callback fired when the health of a creature decreases with a particular amount
+   * Fired when the monster loses health
    */
+
+  // Clamp
+  amount = amount.clamp(0, this.getProperty(CONST.PROPERTIES.HEALTH));
 
   // Record the attack in the damage map
-  this.damageMap.update(attacker, amount);
+  this.damageMap.update(source, amount);
 
-  // Delegate to the internal function
-  this.internalDecreaseHealth(attacker, amount, color);
+  // Change the property
+  this.incrementProperty(CONST.PROPERTIES.HEALTH, -amount);
 
   // Inform behaviour handler of the damage event
-  this.behaviour.handleDamage(attacker);
+  this.behaviourHandler.handleDamage(source);
+  this.broadcast(new EmotePacket(this, String(amount), this.fluidType));
 
-}
-
-Monster.prototype.getProperty = function(property) {
-
-  /*
-   * Function Monster.getProperty
-   * Returns a property from the monster prototype definition
-   */
-
-  let proto = this.getPrototype();
-
-  if(!proto.hasOwnProperty(property)) {
-    return null;
+  // When zero health is reached the creature is dead
+  if(this.isZeroHealth()) {
+    return gameServer.world.creatureHandler.dieCreature(this);
   }
-
-  return proto[property];
 
 }
 

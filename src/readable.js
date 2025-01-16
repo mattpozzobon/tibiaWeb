@@ -1,19 +1,16 @@
 "use strict";
 
-const Item = require("./item");
+const Item = requireModule("item");
 
 const Readable = function(id) {
 
   /*
    * Class Readable
-   * Container for weapons that inherit from an item
+   * Wrapper for items that are readable and may have text
    */
 
   // Inherit
-  Item.call(this, id, 1);
-
-  // Save the properties
-  this.content = null;
+  Item.call(this, id);
 
 }
 
@@ -22,6 +19,11 @@ Readable.prototype = Object.create(Item.prototype);
 Readable.prototype.constructor = Readable;
 
 Readable.prototype.setContent = function(content) {
+
+  /*
+   * Function Readable.setContent
+   * Sets the contents of a readable
+   */
 
   this.content = content;
 
@@ -34,11 +36,29 @@ Readable.prototype.getContent = function() {
    * Returns the content of a readable
    */
 
-  if(this.content === null) {
-    return "Nothing is written on it";
+  if(!this.content) {
+    return null; 
   }
 
   return this.content;
+
+}
+
+Readable.prototype.toJSON = function() {
+  
+  /*
+   * Function Item.toJSON
+   * Serializes an item
+   */
+  
+  // Clean up items when they are serialized
+  this.cleanup();
+
+  return new Object({
+    "id": this.id,
+    "actionId": this.actionId,
+    "content": this.content
+  });
 
 }
 

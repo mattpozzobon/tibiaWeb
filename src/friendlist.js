@@ -1,16 +1,14 @@
 "use strict";
 
-const PacketWriter = require("./packet-writer");
-
-const Friendlist = function(player, friends) {
+const Friendlist = function(friends) {
 
   /*
    * Class Friendlist
    * Wrapper for a characters friendlist
    */
 
-  this.player = player;
-  this.friends = friends;
+  // Set the friends explicitly when constructing the class
+  this.friends = new Set(friends);
 
 }
 
@@ -21,14 +19,11 @@ Friendlist.prototype.remove = function(name) {
    * Removes a character from the friendlist
    */
 
-  let index = this.friends.indexOf(name);
-
-  if(index === -1) {
+  if(!this.friends.has(name)) {
     return;
   }
 
-  this.friends.splice(index, 1);
-  this.player.write(new PacketWriter(PacketWriter.prototype.opcodes.REMOVE_FRIEND).writeString(name));
+  this.friends.delete(name);
 
 }
 
@@ -39,14 +34,11 @@ Friendlist.prototype.add = function(name) {
    * Adds a character to the existing friendlist
    */
 
-  let index = this.friends.indexOf(name);
-
-  if(index !== -1) {
+  if(this.friends.has(name)) {
     return;
-  }
-
-  this.friends.push(name);
-  this.player.write(new PacketWriter(PacketWriter.prototype.opcodes.FRIEND_STATUS).writeFriendStatus(name));
+  } 
+  
+  this.friends.add(name);
 
 }
 
@@ -57,21 +49,7 @@ Friendlist.prototype.toJSON = function() {
    * Serializes the friendlist to be saved to JSON
    */
 
-  return this.friends;
-
-}
-
-Friendlist.prototype.writeFriendList = function() {
-
-  /*
-   * Function Friendlist.writeFriendList
-   * Writes all the friends of a player to the player with the online/offline status
-   */
-
-  // Write the currently online characters to the player
-  this.friends.forEach(function(friend) {
-    this.player.write(new PacketWriter(PacketWriter.prototype.opcodes.FRIEND_STATUS).writeFriendStatus(friend));
-  }, this);
+  return Array.from(this.friends);
 
 }
 

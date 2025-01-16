@@ -17,7 +17,7 @@
   "experience": 160,
   "corpse": 1496,
   "behaviour": {
-    "type": "HOSTILE",
+    "type": "NEUTRAL",
     "fleeHealth": 0,
     "openDoors": false,
     "senseInvisible": false

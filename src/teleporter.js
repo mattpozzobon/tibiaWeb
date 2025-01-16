@@ -1,6 +1,6 @@
 "use strict";
 
-const Item = require("./item");
+const Item = requireModule("item");
 
 const Teleporter = function(id) {
 
@@ -10,8 +10,6 @@ const Teleporter = function(id) {
    */
 
   Item.call(this, id);
-
-  this.destination = null;
 
 }
 

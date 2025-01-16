@@ -5,9 +5,51 @@ const BinaryHeap = function() {
   /*
    * Class BinaryHeap
    * Implementation of a simple binary heap used as a priority queue in e.g. the A* pathfinding algorithm and the event scheduler
+   * Binary heap nodes must implement the getScore() API.
+   * See 
+   *
+   * API:
+   *
+   * BinaryHeap.hasExecutedUntil(score) - returns whether the next element is larger than the passed score
+   * BinaryHeap.isEmpty() - returns true if there are no items on the heap
+   * BinaryHeap.remove(element) - removes an element from the binary heap
+   * BinaryHeap.next() - returns a reference to the next element in the heap
+   * BinaryHeap.push(element) - pushes an element to the heap
+   * BinaryHeap.pop() - pops the next element from the heap
+   * BinaryHeap.size() - returns the total size of the heap
+   * BinaryHeap.rescoreElement(element) - rescores an element that already exists in the heap
+   *
    */
 
+  // Save the content
   this.content = new Array();
+  this.__reference = new Map();
+
+}
+
+BinaryHeap.prototype.hasExecutedUntil = function(score) {
+
+  /*
+   * Function BinaryHeap.hasExecutedUntil
+   * Returns true if the binary heap has been executed until
+   */
+
+  if(this.isEmpty()) {
+    return true;
+  }
+
+  return this.next().getScore() > score;
+
+}
+
+BinaryHeap.prototype.isEmpty = function() {
+
+  /*
+   * Function BinaryHeap.hasExecutedUntil
+   * Returns true if the binary heap has been executed until
+   */
+
+  return this.size() === 0;
 
 }
 
@@ -20,6 +62,11 @@ BinaryHeap.prototype.remove = function(node) {
 
   // Go from back to front (likely we are removing an event far in the future; otherwise cancel)
   let index = this.content.lastIndexOf(node);
+
+  if(index === -1) {
+    return console.error("Attempted to remove a node that does not exist in the heap");
+  }
+
   let end = this.content.pop();
 
   // Ending node was what we wanted to remove
@@ -31,10 +78,10 @@ BinaryHeap.prototype.remove = function(node) {
   this.content[index] = end;
 
   // Make sure the end bubbles up or sinks down
-  if(end.__f < node.__f) {
-    this.sinkDown(index);
+  if(end.getScore() < node.getScore()) {
+    this.__sinkDown(index);
   } else {
-    this.bubbleUp(index);
+    this.__bubbleUp(index);
   }
 
 }
@@ -43,7 +90,7 @@ BinaryHeap.prototype.next = function() {
 
   /*
    * Function BinaryHeap.next
-   * Returns the next scheduled event in the heap
+   * Returns a reference to next scheduled node in the heap
    */
 
   return this.content.head();
@@ -57,11 +104,15 @@ BinaryHeap.prototype.push = function(element) {
    * Adds an element to the binary heap
    */
 
+  if(!(typeof element.getScore === "function")) {
+    return console.error("Added node to binary heap that does not implement the getScore() API");
+  }
+
   // Add the new element to the end of the array.
   this.content.push(element);
 
   // Allow it to sink down.
-  this.sinkDown(this.content.length - 1);
+  this.__sinkDown(this.content.length - 1);
 
 }
 
@@ -82,7 +133,7 @@ BinaryHeap.prototype.pop = function() {
   // start, and let it bubble up.
   if(this.content.length > 0) {
     this.content[0] = end;
-    this.bubbleUp(0);
+    this.__bubbleUp(0);
   }
 
   return result;
@@ -107,14 +158,20 @@ BinaryHeap.prototype.rescoreElement = function(node) {
    * Rescores an element within the binary heap
    */
 
-  this.sinkDown(this.content.indexOf(node));
+  let index = this.content.indexOf(node);
+
+  if(index === -1) {
+    return console.error("Attempted to rescore a node that does not exist in the heap");
+  }
+
+  this.__sinkDown(index);
 
 }
 
-BinaryHeap.prototype.sinkDown = function(n) {
+BinaryHeap.prototype.__sinkDown = function(n) {
 
   /*
-   * Function BinaryHeap.sinkDown
+   * Function BinaryHeap.__sinkDown
    * Sinks an element down to its supposed location
    */
 
@@ -129,7 +186,7 @@ BinaryHeap.prototype.sinkDown = function(n) {
     let parent = this.content[parentN];
 
     // Found a parent that is less, no need to sink any further.
-    if(element.__f >= parent.__f) {
+    if(element.getScore() >= parent.getScore()) {
       break;
     }
 
@@ -142,17 +199,17 @@ BinaryHeap.prototype.sinkDown = function(n) {
 
 }
 
-BinaryHeap.prototype.bubbleUp = function(n) {
+BinaryHeap.prototype.__bubbleUp = function(n) {
 
   /*
-   * Function BinaryHeap.bubbleUp
+   * Function BinaryHeap.__bubbleUp
    * Bubbles up an element
    */
 
   // Look up the target element and its score.
   let length = this.content.length;
   let element = this.content[n];
-  let elemScore = element.__f;
+  let elemScore = element.getScore();
 
   while(true) {
 
@@ -169,7 +226,7 @@ BinaryHeap.prototype.bubbleUp = function(n) {
 
       // Look it up and compute its score.
       let child1 = this.content[child1N];
-      child1Score = child1.__f;
+      child1Score = child1.getScore();
 
       // If the score is less than our element's, we need to swap.
       if(child1Score < elemScore) {
@@ -182,7 +239,7 @@ BinaryHeap.prototype.bubbleUp = function(n) {
     if(child2N < length) {
 
       let child2 = this.content[child2N];
-      let child2Score = child2.__f;
+      let child2Score = child2.getScore();
 
       if(child2Score < (swap === null ? elemScore : child1Score)) {
         swap = child2N;

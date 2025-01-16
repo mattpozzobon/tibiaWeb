@@ -1,5 +1,5 @@
-const BaseContainer = require("./base-container");
-const Key = require("./key");
+const BaseContainer = requireModule("base-container");
+const Key = requireModule("key");
 
 const Keyring = function(id, player, keyring) {
 
@@ -162,7 +162,7 @@ Keyring.prototype.__addKeys = function(keys) {
       return;
     }
  
-    this.addThing(process.gameServer.database.parseThing(item), index);
+    this.addThing(gameServer.database.parseThing(item), index);
 
   }, this);
 

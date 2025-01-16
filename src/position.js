@@ -1,5 +1,7 @@
 "use strict";
 
+const Geometry = requireModule("geometry");
+
 const Position = function(x, y, z) {
 
   /*
@@ -17,7 +19,6 @@ const Position = function(x, y, z) {
    * Position.equals(position) - returns true if the two positions are equal
    * Position.add(position) - adds a Position to another Position
    * Position.subtract(position) - subtracts a Position to another Position
-   * 
    * Position.north - returns north of current position
    * Position.east - returns east of current position
    * Position.south - returns south of current position
@@ -32,17 +33,21 @@ const Position = function(x, y, z) {
    *
    */
 
-  // Save the three components
-  this.x = x;
-  this.y = y;
+  // Save the three components (combine, x and y 16-bit to single 32-bit integer) to save some memory
+  this.xy = x + ((y << 16) >>> 0);
   this.z = z;
 
 }
 
-Position.prototype.NORTH = 0x00;
-Position.prototype.EAST = 0x01;
-Position.prototype.SOUTH = 0x02;
-Position.prototype.WEST = 0x03;
+// Extract x-coordinate
+Object.defineProperty(Position.prototype, "x", {
+  "get": function() { return this.xy & ((1 << 16) - 1); }
+});
+
+// Extract y-coordinate
+Object.defineProperty(Position.prototype, "y", {
+  "get": function() { return this.xy >>> 16; }
+});
 
 Position.prototype.isSameFloor = function(other) {
 
@@ -55,7 +60,7 @@ Position.prototype.isSameFloor = function(other) {
 
 }
 
-Position.prototype.inLineOfSight = function(other) {
+Position.prototype.inLineOfSight = function(target) {
 
   /*
    * Function Position.inLineOfSight
@@ -63,38 +68,26 @@ Position.prototype.inLineOfSight = function(other) {
    */
 
   // Always true if two characters are adjacent
-  if(this.besides(other)) {
+  if(this.besides(target)) {
     return true;
   }
 
   // The positions must be on the same floor
-  if(this.z !== other.z) {
+  if(this.z !== target.z) {
     return false;
   }
 
-  // Linear interpolate between the coordinates
-  let xLerp = other.x - this.x;
-  let yLerp = other.y - this.y;
-  let z = this.z;
+  // Interpolate the positions
+  for(let position of Geometry.prototype.interpolate(this, target)) {
 
-  // Determine the number of interpolation steps to make
-  let steps = Math.max(Math.abs(xLerp), Math.abs(yLerp)) + 1;
-
-  // Linear interpolation
-  for(let i = 0; i < steps; i++) {
-
-    let fraction = i / (steps - 1);
-    let x = this.x + Math.round(fraction * xLerp);
-    let y = this.y + Math.round(fraction * yLerp);
-
-    let tile = process.gameServer.world.getTileFromWorldPosition(new Position(x, y, z));
+    let tile = gameServer.world.getTileFromWorldPosition(position);
 
     if(tile === null) {
-      continue;
+      return;
     }
 
     // Found a tile that blocks projectiles
-    if(tile.itemStack.isBlockProjectile()) {
+    if(tile.isBlockProjectile()) {
       return false;
     }
 
@@ -123,12 +116,7 @@ Position.prototype.getSquare = function(size) {
    * Returns the relative positions in a square of size { s } around { 0, 0 }
    */
 
-  switch(size) {
-    case 1: return this.__square1;
-    case 2: return this.__square2;
-    case 3: return this.__square3;
-    default: return new Array();
-  }
+  return Geometry.prototype.getSquare(this, size);
 
 }
 
@@ -139,13 +127,7 @@ Position.prototype.getRadius = function(radius) {
    * Returns the relative positions in a circle of size { r } around { 0, 0 }
    */
 
-  switch(radius) {
-    case 2: return this.__radius2;
-    case 3: return this.__radius3;
-    case 4: return this.__radius4;
-    case 5: return this.__radius5;
-    default: return new Array();
-  }
+  return Geometry.prototype.getRadius(this, radius);
 
 }
 
@@ -182,6 +164,17 @@ Position.prototype.equals = function(position) {
 
 }
 
+Position.prototype.addVector = function(x, y, z) {
+
+  /*
+   * Function Position.addVector
+   * Adds an x y z vector to the position
+   */
+
+  return new Position(this.x + x, this.y + y, this.z + z);
+
+}
+
 Position.prototype.add = function(position) {
 
   /*
@@ -190,6 +183,22 @@ Position.prototype.add = function(position) {
    */
 
   return new Position(this.x + position.x, this.y + position.y, this.z + position.z);
+
+}
+
+Position.prototype.getNESW = function() {
+
+  /*
+   * Function Position.getNESW
+   * Returns the north east south and west positions
+   */
+
+  return new Array(
+    this.north(),
+    this.east(),
+    this.south(),
+    this.west()
+  );
 
 }
 
@@ -204,6 +213,27 @@ Position.prototype.subtract = function(position) {
 
 }
 
+Position.prototype.getPositionFromDirection = function(direction) {
+
+  /*
+   * Function Position.getPositionFromDirection
+   * Returns the position based on the passed direction
+   */
+
+  switch(direction) { 
+    case CONST.DIRECTION.NORTH: return this.north();
+    case CONST.DIRECTION.EAST: return this.east();
+    case CONST.DIRECTION.SOUTH: return this.south();
+    case CONST.DIRECTION.WEST: return this.west();
+    case CONST.DIRECTION.NORTHWEST: return this.northwest();
+    case CONST.DIRECTION.NORTHEAST: return this.northeast();
+    case CONST.DIRECTION.SOUTHEAST: return this.southeast();
+    case CONST.DIRECTION.SOUTHWEST: return this.southwest();
+    default: return null;
+  }
+
+}
+
 Position.prototype.getFacingDirection = function(position) {
 
   /*
@@ -211,19 +241,7 @@ Position.prototype.getFacingDirection = function(position) {
    * Returns the face direction to another position based on the angle
    */
 
-  // Calculate the angle between the positions
-  let angle = Math.atan2(this.y - position.y, this.x - position.x) / Math.PI;
-
-  // Determine the quadrant and thus the look direction
-  if(angle >= -0.75 && angle < -0.25) {
-    return this.SOUTH;
-  } else if(angle >= -0.25 && angle < 0.25) {
-    return this.WEST;
-  } else if(angle >= 0.25 && angle < 0.75) {
-    return this.NORTH;
-  } else {
-    return this.EAST;
-  }
+  return Geometry.prototype.getAngleBetween(this, position);
 
 }
 
@@ -286,7 +304,7 @@ Position.prototype.down = function() {
 
   /*
    * Function Position.down
-   * Returns up position
+   * Returns the downward position
    */
 
   return new Position(this.x, this.y, this.z - 1);
@@ -339,7 +357,12 @@ Position.prototype.southwest = function() {
 
 Position.prototype.ladderNorth = function() {
 
-  return this.north().up();
+  /*
+   * Function Position.ladderNorth
+   * Returns the position taking a ladder and north
+   */
+
+  return new Position(this.x, this.y - 1, this.z + 1);
 
 }
 
@@ -350,7 +373,7 @@ Position.prototype.ladder = function() {
    * Returns the position after clicking a ladder which is up and south
    */
 
-  return this.south().up();
+  return new Position(this.x, this.y + 1, this.z + 1);
 
 }
 
@@ -457,71 +480,26 @@ Position.prototype.besides = function(position) {
 
 }
 
-Position.prototype.isReachable = function(position) {
+Position.prototype.isVisible = function(position, x, y) {
 
   /*
-   * Function Position.isReachable
-   * Returns true if one position is reachable from another
+   * Function Position.isVisible
+   * Returns true whether the position can be seen within the range
    */
 
-  // Must be within viewing range and on the same floor
-  return this.z === position.z && Math.abs(this.x - position.x) < 8 && Math.abs(this.y - position.y) < 6;
+  return (Math.abs(this.x - position.x) < x) && (Math.abs(this.y - position.y) < y);
 
 }
 
-Position.prototype.__getSquare = function(size) {
+Position.prototype.rotate2D = function(direction, x, y) {
 
   /*
-   * Function Position.__getSquare
-   * Internal function that generates positions within a circle around 0, 0
+   * Function Position.__getSpellPosition
+   * Rotates a relative 2D position around 90-degrees (positions are defined with character facing NORTH)
    */
 
-  let positions = new Array();
-
-  for(let x = -size; x <= size; x++) {
-    for(let y = -size; y <= size; y++) {
-      positions.push(new Position(x, y, 0));
-    }
-  }
-
-  return positions;
+  return Geometry.prototype.rotate2D(this, direction, x, y);
 
 }
-
-Position.prototype.__getRadius = function(radius) {
-
-  /*
-   * Function Position.__getRadius
-   * Internal function that generates positions within a circle around 0, 0
-   */
-
-  let positions = new Array();
-
-  for(let x = -radius; x <= radius; x++) {
-    for(let y = -radius; y <= radius; y++) {
-
-      // Only include what is inside the circle
-      if((x * x + y * y) > (radius * radius)) {
-        continue;
-      }
-
-      positions.push(new Position(x, y, 0));
-
-    }
-  }
-  
-  return positions;
-
-}
-
-// Cache radius positions so we do not have to generate them every time they are requested
-Position.prototype.__radius2 = Position.prototype.__getRadius(2);
-Position.prototype.__radius3 = Position.prototype.__getRadius(3);
-Position.prototype.__radius4 = Position.prototype.__getRadius(4);
-Position.prototype.__radius5 = Position.prototype.__getRadius(5);
-
-Position.prototype.__square1 = Position.prototype.__getSquare(1);
-Position.prototype.__square2 = Position.prototype.__getSquare(2);
-Position.prototype.__square3 = Position.prototype.__getSquare(3);
 
 module.exports = Position;

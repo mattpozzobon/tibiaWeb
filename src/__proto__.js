@@ -7,6 +7,17 @@ Array.prototype.random = function() {
    * Returns a random element from the array
    */
 
+  // No elements
+  if(this.length === 0) {
+    return null;
+  }
+
+  // One element
+  if(this.length === 1) {
+    return this[0];
+  }
+
+  // Random element
   return this[Math.floor(this.length * Math.random())];
 
 }
@@ -28,6 +39,11 @@ Array.prototype.popRandom = function() {
    * Function Array.popRandom
    * Pops a random element from the array
    */
+
+  // Not possible
+  if(this.length === 0) {
+    return null;
+  }
 
   return this.splice(Number.prototype.random(0, this.length - 1), 1).pop();
 
@@ -93,10 +109,15 @@ String.prototype.capitalize = function() {
 Array.prototype.head = function() {
 
   /*
-   * Function Array.last
-   * Returns a reference to the last element in an array
+   * Function Array.head
+   * Returns a reference to the first element in an array
    */
 
+  if(this.length === 0) {
+    return null;
+  }
+
+  // First element
   return this[0];
 
 }
@@ -107,6 +128,10 @@ Array.prototype.last = function() {
    * Function Array.last
    * Returns a reference to the last element in an array
    */
+
+  if(this.length === 0) {
+    return null;
+  }
 
   return this[this.length - 1];
 
@@ -121,10 +146,86 @@ String.prototype.format = function() {
 
   let string = this;
 
-  Array.from(arguments).forEach(function(argument) {
-    string = string.replace("%s", argument);
-  });
+  Array.from(arguments).forEach(argument => string = string.replace("%s", argument));
 
   return string;
+
+}
+
+Array.prototype.range = function(min, max) {
+
+  /*
+   * Array.range
+   * Returns a range of integers from min to max (both inclusive)
+   */
+
+  return Array(max - min + 1).fill(0).map((x, i) => min + i);
+
+}
+
+Array.prototype.getClosestDown = function(element) {
+
+  /*
+   * Array.getClosestDown
+   * Returns the closest number in an array rounded down
+   */
+
+  let low = 0;
+  let high = this.length - 1;
+
+  while(low <= high) {
+
+    let i = (low + ((high - low) >> 1));
+
+    if(this[i] == element) {
+      return i + 1;
+    }
+
+    if(this[i] > element)  {
+      high = i - 1;
+    } else {
+      low = i + 1;
+    }
+
+  }
+
+  return low;
+
+}
+
+Set.prototype.toJSON = function() {
+
+  /*
+   * Set.toJSON
+   * Implements serialization for sets
+   */
+
+  return Array.from(this);
+
+}
+
+String.prototype.escapeHTML = function() {
+
+  /*
+   * Function String.escapeHTML
+   * Escapes unsafe HTML characters to prevent XSS attacks
+   */
+
+  return this.replaceAll("&", "&amp;")
+             .replaceAll("<", "&lt;")
+             .replaceAll(">", "&gt;")
+             .replaceAll("'", "&apos;")
+             .replaceAll('"', "&quot;");
+
+}
+
+Uint8Array.prototype.getEncodedLength = function() {
+
+  /*
+   * Function Uint8Array.getEncodedLength
+   * Returns buffer length plus 2-byte prefix of its length
+   */
+
+  return 2 + this.length;
 
 }

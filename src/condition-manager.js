@@ -1,5 +1,7 @@
-const PacketWriter = require("./packet-writer");
+"use strict";
+
 const Condition = require("./condition");
+const { ToggleConditionPacket } = requireModule("protocol");
 
 const ConditionManager = function(creature) {
 
@@ -22,6 +24,17 @@ ConditionManager.prototype.extendCondition = function(id, ticks) {
   condition.numberTicks += ticks;
 
 }
+
+ConditionManager.prototype.isDrunk = function() {
+
+  /*
+   * Function Creature.isDrunk
+   * Returns true if the creature has the drunk condition
+   */
+  
+  return this.__conditions.has(CONST.CONDITION.DRUNK) && !this.__conditions.has(CONST.CONDITION.SUPPRESS_DRUNK);
+
+} 
 
 ConditionManager.prototype.replace = function(condition, properties) {
 
@@ -133,7 +146,7 @@ ConditionManager.prototype.add = function(condition, properties) {
 
   // Players need to be informed
   if(this.__creature.isPlayer()) {
-    this.__creature.broadcast(new PacketWriter(PacketWriter.prototype.opcodes.TOGGLE_CONDITION).writeCondition(true, this.__creature.guid, condition.id));
+    this.__creature.broadcast(new ToggleConditionPacket(true, this.__creature.guid, condition.id));
   }
 
 }
@@ -164,7 +177,7 @@ ConditionManager.prototype.__tickCondition = function(condition) {
   condition.numberTicks--;
 
   // Save a ref. to the event and schedule the next tick
-  condition.__applyEvent = process.gameServer.world.eventQueue.addEvent(this.__tickCondition.bind(this, condition), condition.tickDuration);
+  condition.__applyEvent = gameServer.world.eventQueue.addEvent(this.__tickCondition.bind(this, condition), condition.tickDuration);
 
 }
 
@@ -193,8 +206,29 @@ ConditionManager.prototype.__expireCondition = function(condition) {
 
   // Players need to be informed
   if(this.__creature.isPlayer()) {
-    this.__creature.broadcast(new PacketWriter(PacketWriter.prototype.opcodes.TOGGLE_CONDITION).writeCondition(false, this.__creature.guid, condition.id));
+    this.__creature.broadcast(new ToggleConditionPacket(false, this.__creature.guid, condition.id));
   }
+
+}
+
+ConditionManager.prototype.addCondition = function(id, ticks, duration, properties) {
+
+  /*
+   * Function Creature.addCondition
+   * Adds a condition to the creature
+   */
+
+  let condition = new Condition(id, ticks, duration);
+
+  // The condition is already applied: remove it first
+  if(this.hasCondition(condition.id)) {
+    return this.conditions.replace(condition, properties);
+  }
+
+  // Add the condition
+  this.conditions.add(condition, properties);
+
+  return true;
 
 }
 

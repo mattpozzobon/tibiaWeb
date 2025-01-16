@@ -1,21 +1,26 @@
 "use strict";
 
-const AchievementManager = require("./achievement-manager");
-const CharacterStats = require("./stat-manager");
-const Condition = require("./condition");
-const Creature = require("./creature");
-const ContainerManager = require("./container-manager");
-const ActionManager = require("./action.js");
-const Friendlist = require("./friendlist.js");
-const FluidContainer = require("./fluidcontainer.js");
-const GenericLock = require("./generic-lock");
-const PacketWriter = require("./packet-writer");
-const PacketReader = require("./packet-reader");
-const Position = require("./position");
-const Spellbook = require("./spellbook");
-const Equipment = require("./equipment");
+const Condition = requireModule("condition");
+const Creature = requireModule("creature");
+const ContainerManager = requireModule("container-manager");
+const Friendlist = requireModule("friendlist.js");
+const PacketReader = requireModule("packet-reader");
+const Spellbook = requireModule("spellbook");
 
-const Player = function(gameSocket, data) {
+const PlayerIdleHandler = requireModule("player-idle-handler");
+const CharacterProperties = requireModule("player-properties");
+const SocketHandler = requireModule("player-socket-handler");
+const PlayerMovementHandler = requireModule("player-movement-handler");
+const ChannelManager = requireModule("player-channel-manager");
+const CombatLock = requireModule("player-combat-lock");
+const ActionHandler = requireModule("player-action-handler");
+const UseHandler = requireModule("player-use-handler");
+const Skills = requireModule("skills");
+const Position = requireModule("position");
+
+const { EmotePacket, ContainerClosePacket, ContainerOpenPacket, CancelMessagePacket, CreatureStatePacket } = requireModule("protocol");
+
+const Player = function(data) {
 
   /*
    * Class Player
@@ -29,60 +34,121 @@ const Player = function(gameSocket, data) {
    */
 
   // Inherit from Creature class
-  Creature.call(this, data.creatureStatistics);
+  Creature.call(this, data.properties);
 
-  this.type = this.TYPE.PLAYER;
+  this.templePosition = Position.prototype.fromLiteral(data.templePosition);
 
-  // Set the position of the player
-  this.setPosition(Position.prototype.fromLiteral(data.characterStatistics.position));
+  // Add the player properties
+  this.addPlayerProperties(data.properties);
 
-  // Circular referencing
-  this.gameSocket = gameSocket;
-  gameSocket.player = this;
+  // The player skills and experience
+  this.skills = new Skills(this, data.skills);
 
-  // Manage for the character statistics (e.g., level, experience)
-  this.characterStatistics = new CharacterStats(this, data.characterStatistics);
-
-  // The players' friendlist
-  this.friendlist = new Friendlist(this, data.friends);
-
-  // Manager for player containers
-  this.containerManager = new ContainerManager(this, data.depot, data.equipment, data.keyring, data.inbox);
-
-  // Achievement properties
-  this.achievementManager = new AchievementManager(this, data.achievements);
-
-  // This represents the handler for the player spells
+  // Child classes with data for player handlers
+  this.socketHandler = new SocketHandler(this);
+  this.friendlist = new Friendlist(data.friends);
+  this.containerManager = new ContainerManager(this, data.containers);
   this.spellbook = new Spellbook(this, data.spellbook);
 
-  // Add the available player actions that are checked every frame
-  this.actions.add(this.handleActionAttack);
-  this.actions.add(this.handleActionRegeneration);
-
-  // The map of opened (global) channels
-  this.__openedChannels = new Map();
-
-  // The use with lcok
-  this.__useWithLock = new GenericLock();
-
-  // The movement lock
-  this.__moveLock = new GenericLock();
-  this.__moveLock.on("unlock", this.__handleActionUnlock.bind(this));
-  this.__clientMoveBuffer = null;
+  // Non-data handlers
+  this.idleHandler = new PlayerIdleHandler(this);
+  this.movementHandler = new PlayerMovementHandler(this);
+  this.channelManager = new ChannelManager(this);
+  this.actionHandler = new ActionHandler(this);
+  this.combatLock = new CombatLock(this);
+  this.useHandler = new UseHandler(this);
 
   // Last visited
   this.lastVisit = data.lastVisit;
-
-  // Create a lock for combat
-  this.__createCombatLock();
 
 }
 
 Player.prototype = Object.create(Creature.prototype);
 Player.prototype.constructor = Player;
 
-Player.prototype.COMBAT_LOCK_SECONDS = 3;
-Player.prototype.REGENERATION_DURATION = 100;
+Player.prototype.addPlayerProperties = function(properties) {
+
+  /*
+   * Player.addPlayerProperties
+   * Adds the properties of the player to the available properties
+   */
+
+  // Add these properties
+  this.properties.add(CONST.PROPERTIES.MOUNTS, properties.availableMounts);
+  this.properties.add(CONST.PROPERTIES.OUTFITS, properties.availableOutfits);
+  this.properties.add(CONST.PROPERTIES.SEX, properties.sex);
+  this.properties.add(CONST.PROPERTIES.ROLE, properties.role);
+  this.properties.add(CONST.PROPERTIES.VOCATION, properties.vocation);
+
+}
+
+Player.prototype.getTarget = function() {
+
+  return this.actionHandler.targetHandler.getTarget();
+
+}
+
+Player.prototype.getTextColor = function() {
+
+  /*
+   * Function Player.getTextColor
+   * Returns the text color of the player
+   */
+
+  return this.getProperty(CONST.PROPERTIES.ROLE) === CONST.ROLES.ADMIN ? CONST.COLOR.RED : CONST.COLOR.YELLOW;
+
+}
+
+Player.prototype.getLevel = function() {
+
+  /*
+   * Function Player.getLevel
+   * Returns the level of the player
+   */
+
+  return this.skills.getSkillLevel(CONST.PROPERTIES.EXPERIENCE)
+
+}
+
+Player.prototype.setLevel = function(level) {
+  
+  /*
+   * Function Player.setLevel
+   * Sets the level of a player character
+   */
+
+  // Set the level & experience
+  this.characterStatistics.skills.setSkillLevel(CONST.SKILL.EXPERIENCE, level);
+
+} 
+
+Player.prototype.getExperiencePoints = function() {
+
+  /*
+   * Function Player.getExperience
+   * Returns the number of experience points a player has
+   */
+
+  return this.characterStatistics.skills.getSkillPoints(CONST.SKILL.EXPERIENCE);
+
+}
+
+Player.prototype.think = function() {
+
+  this.actionHandler.actions.handleActions(this.actionHandler);
+
+}
+
+Player.prototype.getVocation = function() {
+
+  /*
+   * Function Player.getVocation
+   * Returns the vocation of the player
+   */
+
+  return this.getProperty(CONST.PROPERTIES.VOCATION);
+
+}
 
 Player.prototype.extendCondition = function(id, ticks, duration) {
 
@@ -92,21 +158,6 @@ Player.prototype.extendCondition = function(id, ticks, duration) {
   }
 
   this.conditions.extendCondition(id, ticks);
-
-}
-
-Player.prototype.setTarget = function(target) {
-
-  /*
-   * Function Creature.setTarget
-   * Sets the target of the creature
-   */
-
-  this.__target = target;
-
-  let id = target === null ? 0 : target.guid;
-
-  this.write(new PacketWriter(PacketWriter.prototype.opcodes.SET_TARGET).writeSetTarget(id));
 
 }
 
@@ -122,16 +173,17 @@ Player.prototype.isInvisible = function() {
 
 }
 
-Player.prototype.enterNewChunk = function(newChunks) {
+Player.prototype.enterNewChunks = function(newChunks) {
 
   /*
    * Function Player.enterNewChunk
    * Necessary functions to call when a creature enters a new chunk
    */
 
-  // Introduce self to the new chunk
-  newChunks.forEach(chunk => chunk.handleRequest(this));
-  newChunks.forEach(chunk => chunk.__internalBroadcast(this.info()));
+  // Get the serialized chunks
+  newChunks.forEach(chunk => chunk.serialize(this));
+
+  newChunks.forEach(chunk => chunk.internalBroadcast(new CreatureStatePacket(this)));
 
 }
 
@@ -187,7 +239,7 @@ Player.prototype.isTileOccupied = function(tile) {
   }
 
   // The tile items contain a block solid (e.g., a wall)
-  if(tile.itemStack.isBlockSolid()) {
+  if(tile.hasItems() && tile.itemStack.isBlockSolid()) {
     return true;
   }
 
@@ -208,7 +260,8 @@ Player.prototype.openContainer = function(id, name, baseContainer) {
    */
 
   baseContainer.addSpectator(this);
-  this.write(new PacketWriter(PacketWriter.prototype.opcodes.OPEN_CONTAINER).writeOpenContainer(id, name, baseContainer));
+
+  this.write(new ContainerOpenPacket(id, name, baseContainer));
 
 }
 
@@ -220,7 +273,8 @@ Player.prototype.closeContainer = function(baseContainer) {
    */
 
   baseContainer.removeSpectator(this);
-  this.write(new PacketWriter(PacketWriter.prototype.opcodes.CONTAINER_CLOSE).writeContainerClose(baseContainer.guid));
+ 
+  this.write(new ContainerClosePacket(baseContainer.guid));
 
 }
 
@@ -235,38 +289,15 @@ Player.prototype.isInCombat = function() {
 
 }
 
-Player.prototype.handleActionRegeneration = function() {
+Player.prototype.isOnline = function() {
 
   /*
-   * Function Player.handleActionRegeneration
-   * Handles default health generation of players
+   * Function Player.isOnline
+   * Returns true if the player is online and connected to the gameworld
    */
 
-  if(!this.isFullHealth()) {
-
-    let regeneration = this.getEquipmentAttribute("healthGain");
-    
-    // If not full health
-    if(!this.isInCombat() && this.hasCondition(Condition.prototype.SATED)) {
-      regeneration += 5;
-    }
-
-    this.increaseHealth(regeneration);
-
-  }
-
-  this.lockAction(this.handleActionRegeneration, this.REGENERATION_DURATION);
-  
-}
-
-Player.prototype.isOffline = function() {
-
-  /*
-   * Function Player.isOffline
-   * Returns true if the creature is moving and does not have the move action available
-   */
-
-  return !process.gameServer.server.websocketServer.connectedSockets().has(this.gameSocket);
+  // Check with the world
+  return gameServer.world.creatureHandler.isPlayerOnline(this);
 
 }
 
@@ -277,138 +308,7 @@ Player.prototype.isMoving = function() {
    * Returns true if the creature is moving and does not have the move action available
    */
 
-  return this.__moveLock.isLocked();
-
-}
-
-Player.prototype.handleActionAttack = function() {
-
-  /*
-   * Function Player.handleActionAttack
-   * Handles attack action
-   */
-
-  // No target
-  if(!this.hasTarget()) {
-    return;
-  }
-
-  // Drop the target if it is dead
-  if(this.__target.isZeroHealth()) {
-    return this.setTarget(null);
-  }
-
-  // Not besides target and not distance fighting
-  if(!this.isBesidesTarget() && !this.isDistanceWeaponEquipped()) {
-    return;
-  }
-
-  // Confirm player can see the creature for distance (or normal) fighting
-  if(!this.isInLineOfSight(this.__target)) {
-    return;
-  }
-
-  // Lock
-  this.combatLock.lockSeconds(this.COMBAT_LOCK_SECONDS);
-
-  // Handle combat with the target
-  process.gameServer.world.handleCombat(this);
-
-  // Lock the action for the inverse of the attack speed of the player
-  this.lockAction(this.handleActionAttack, this.attackSlowness);
-
-}
-
-Player.prototype.directionToPosition = function(direction) {
-
-  /*
-   * Function Player.directionToPosition
-   * Maps a particular direction (N, E, S, W) to a world position
-   */
-
-  // Map the requested direction
-  switch(direction) {
-    case PacketReader.prototype.opcodes.MOVE_NORTH.code: return this.position.north();
-    case PacketReader.prototype.opcodes.MOVE_EAST.code: return this.position.east();
-    case PacketReader.prototype.opcodes.MOVE_SOUTH.code: return this.position.south();
-    case PacketReader.prototype.opcodes.MOVE_WEST.code: return this.position.west();
-    case PacketReader.prototype.opcodes.MOVE_NORTHWEST.code: return this.position.northwest();
-    case PacketReader.prototype.opcodes.MOVE_NORTHEAST.code: return this.position.northeast();
-    case PacketReader.prototype.opcodes.MOVE_SOUTHEAST.code: return this.position.southeast();
-    case PacketReader.prototype.opcodes.MOVE_SOUTHWEST.code: return this.position.southwest();
-    default: return null;
-  }
-
-}
-
-Player.prototype.handleActionMove = function(direction) {
-
-  /*
-   * Function Player.handleActionMove
-   * Callback fired when an action is ended
-   */
-
-  let tile = process.gameServer.world.getTileFromWorldPosition(this.directionToPosition(direction));
-
-  let stepDuration = (tile === null || tile.id === 0) ? 10 : this.getStepDuration(tile.getFriction());
-
-  // Lock movement action
-  this.__moveLock.lock(stepDuration);
-
-  // Move the player by walking!
-  let success = process.gameServer.world.moveCreature(this, this.directionToPosition(direction));
-
-  // Not succesful: teleport to the current position
-  if(!success) {
-    process.gameServer.world.teleportCreature(this, this.position);
-  }
-
-}
-
-Player.prototype.handleActionUseWith = function(packet) {
-
-  /*
-   * Function Player.handleActionUseWith
-   * Called when a client request is made to use an item with another item
-   */
-
-  // This function is not available
-  if(this.__useWithLock.isLocked()) {
-    return this.sendCancelMessage("You cannot use this object yet.");
-  }
-
-  // Both must be present in the packet
-  if(packet.fromWhere === null || packet.toWhere === null) {
-    return;
-  }
-
-  // Must be besides the from (using) item
-  if(!this.isBesidesThing(packet.fromWhere)) {
-    return this.sendCancelMessage("You have to move closer to use this item.");
-  }
-
-  // Fetch the item
-  let item = packet.fromWhere.peekIndex(packet.fromIndex);
-
-  // If there is no item there is nothing to do
-  if(item === null) {
-    return;
-  }
-
-  // Emit the event for the prototype listeners
-  item.emit("useWith", this, item, packet.toWhere, packet.toIndex);
-
-  // Explicitly handle key uses
-  if(item.constructor.name === "Key") {
-    item.handleKeyUse(this, packet.toWhere);
-  }
-
-  if(item.constructor.name === "FluidContainer") {
-    item.handleUseWith(this, item, packet.toWhere, packet.toIndex);
-  }
-
-  // Lock the action for the coming global cooldown
-  this.__useWithLock.lock(ActionManager.prototype.GLOBAL_COOLDOWN);
+  return this.movementHandler.isMoving();
 
 }
 
@@ -419,19 +319,70 @@ Player.prototype.canUseHangable = function(thing) {
    * Delegates to the internal function
    */
 
-  return (thing.isHorizontal() && this.position.y >= thing.getPosition().y) || (thing.isVertical() && this.position.x >= thing.getPosition().x);
+  return (thing.isHorizontal() && this.position.y >= thing.getPosition().y) ||
+         (thing.isVertical() && this.position.x >= thing.getPosition().x);
 
 }
 
-Player.prototype.decreaseHealth = function(attacker, amount, color) {
+Player.prototype.decreaseHealth = function(source, amount) {
 
   /*
    * Function Player.decreaseHealth
-   * Delegates to the internal function
+   * Decreases the health of the player
    */
 
-  // Record the attack in the damage map
-  this.internalDecreaseHealth(attacker, amount, color);
+  // Put the target player in combat
+  this.combatLock.activate()
+
+  // Change the property 
+  this.incrementProperty(CONST.PROPERTIES.HEALTH, -amount);
+
+  // Send damage color to the player
+  this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.RED));
+
+  // Zero health means disconnect the player 
+  if(this.isZeroHealth()) {
+    return this.handleDeath();
+  }
+
+}
+
+Player.prototype.getCorpse = function() {
+
+  /*
+   * Function Player.getCorpse
+   * Returns either the male or female corpse
+   */
+
+  const CORPSE_MALE = 3058;
+  const CORPSE_FEMALE = 3065;
+
+  return this.getProperty(CONST.PROPERTIES.SEX) === CONST.SEX.MALE ? CORPSE_MALE : CORPSE_MALE;
+
+}
+
+Player.prototype.handleDeath = function() {
+
+  /*
+   * Function Player.handleDeath
+   * Called when the player dies because of zero health
+   */
+
+  // Restore the player to full health and mana
+  this.setFull(CONST.PROPERTIES.HEALTH);
+  this.setFull(CONST.PROPERTIES.MANA);
+
+  // Human corpse
+  let corpse = gameServer.database.createThing(this.getCorpse());
+
+  gameServer.world.addTopThing(this.getPosition(), corpse);
+  gameServer.world.addSplash(2016, this.getPosition(), corpse.getFluidType());
+
+  // Set the position
+  gameServer.world.creatureHandler.teleportCreature(this, this.templePosition);
+
+  // Disconnect the socket
+  this.socketHandler.disconnect();
 
 }
 
@@ -442,7 +393,7 @@ Player.prototype.consumeAmmunition = function() {
    * Consumes a single piece of ammunition
    */
 
-  return this.containerManager.equipment.removeIndex(Equipment.prototype.SLOTS.QUIVER, 1);
+  return this.containerManager.equipment.removeIndex(CONST.EQUIPMENT.QUIVER, 1);
 
 }
 
@@ -475,7 +426,7 @@ Player.prototype.sendCancelMessage = function(message) {
    * Writes a cancel message to the player
    */
 
-  this.write(new PacketWriter(PacketWriter.prototype.opcodes.CANCEL_MESSAGE).writeString(message));
+  this.write(new CancelMessagePacket(message));
 
 }
 
@@ -487,10 +438,10 @@ Player.prototype.cleanup = function() {
    */
 
   // Leave all channels
-  this.__openedChannels.forEach(channel => channel.leave(this));
+  this.channelManager.cleanup();
 
   // Close all containers
-  this.containerManager.closeAll();
+  this.containerManager.cleanup();
 
   // Cancel events scheduled by the condition manager
   this.conditions.cleanup();
@@ -498,20 +449,17 @@ Player.prototype.cleanup = function() {
   // Cancel events scheduled by the combat lock
   this.combatLock.cleanup();
 
+  // Idle events
+  this.idleHandler.cleanup();
+
+  // Disconnect all connected sockets
+  this.socketHandler.disconnect();
+
+  // Remaining actions
+  this.actionHandler.cleanup();
+
   // Emit the logout event for the player
   this.emit("logout");
-
-}
-
-Player.prototype.handleDeath = function() {
-
-  /*
-   * Function Player.handleDeath
-   * Handles the death of the player
-   */
-
-  // Disconnect the player on death
-  this.gameSocket.close();
 
 }
 
@@ -524,27 +472,23 @@ Player.prototype.toJSON = function() {
 
   // Individual classes implement the toJSON interface too
   return new Object({
+    "position": this.position,
     "achievements": this.achievementManager,
-    "creatureStatistics": {
-      "attack": this.attack,
-      "attackSlowness": this.attackSlowness,
-      "defense": this.defense,
-      "direction": this.direction,
-      "health": this.health,
-      "maxHealth": this.maxHealth,
-      "name": this.name,
-      "outfit": this.outfit,
-      "speed": this.speed
-    },
+    "skills": this.skills,
+    "properties": this.properties,
     "lastVisit": Date.now(),
-    "inbox": this.containerManager.inbox,
-    "depot": this.containerManager.depot,
+    "containers": this.containerManager,
     "characterStatistics": this.characterStatistics,
     "spellbook": this.spellbook,
-    "equipment": this.containerManager.equipment,
-    "keyring": this.containerManager.keyring,
-    "friends": this.friendlist
+    "friends": this.friendlist,
+    "templePosition": this.templePosition
   });
+
+}
+
+Player.prototype.disconnect = function() {
+
+  this.socketHandler.disconnect();
 
 }
 
@@ -555,18 +499,7 @@ Player.prototype.write = function(packet) {
    * Delegates write to the websocket connection to write a packet
    */
 
-  this.gameSocket.write(packet);
-
-}
-
-Player.prototype.enterNewZone = function(zid) {
-
-  /*
-   * Function Player.enterNewZone
-   * Trigger that is fired when a player character enters a new zone
-   */
-
-  this.write(new PacketWriter(PacketWriter.prototype.opcodes.ENTER_ZONE).writeZoneInformation(zid));
+  this.socketHandler.write(packet);
 
 }
 
@@ -588,7 +521,8 @@ Player.prototype.getSpeed = function() {
    * Returns the speed of the player
    */
 
-  let base = this.speed + this.getEquipmentAttribute("speed");
+  // The base speed
+  let base = this.getProperty(CONST.PROPERTIES.SPEED);
 
   if(this.hasCondition(Condition.prototype.HASTE)) {
     base *= 1.3;
@@ -598,14 +532,48 @@ Player.prototype.getSpeed = function() {
 
 }
 
+Player.prototype.getBaseDamage = function() {
+
+  /*
+   * Function Player.getBaseDamage
+   * Returns the base damage based on the level of the player 
+   * https://tibia.fandom.com/wiki/Formulae#Base_Damage_and_Healing
+   */
+
+  let level = this.skills.getSkillLevel(CONST.PROPERTIES.EXPERIENCE);
+
+  // One base point per 5 levels
+  return Math.floor(level / 5);
+
+}
+
 Player.prototype.getAttack = function() {
 
   /*
    * Function Player.getAttack
-   * Returns the attack of a creature
+   * Returns the attack of the player 
+   * https://tibia.fandom.com/wiki/Formulae#Melee
    */
 
-  return this.attack + this.getEquipmentAttribute("attack");
+  // States of player
+  const OFFENSIVE = 0;
+  const BALANCED = 1;
+  const DEFENSIVE = 2;
+
+  let mode = OFFENSIVE;
+
+  let B = this.getBaseDamage();
+  let W = 20;
+  let weaponType = this.containerManager.equipment.getWeaponType();
+  let S = this.skills.getSkillLevel(weaponType);
+
+  switch(mode) {
+    case OFFENSIVE: return B + Math.floor(Math.floor(W * (6 / 5)) * ((S + 4) / 28));
+    case BALANCED: return B + Math.floor(W * ((S + 4) / 28));
+    case DEFENSIVE: return B + Math.floor(Math.ceil(W * (3 / 5)) * ((S + 4) / 28));
+  }
+
+  return 0;
 
 }
 
@@ -616,7 +584,7 @@ Player.prototype.getDefense = function() {
    * Returns the attack of a creature
    */
 
-  return this.defense + this.getEquipmentAttribute("armor");
+  return this.getProperty(CONST.PROPERTIES.DEFENSE);
 
 }
 
@@ -651,6 +619,17 @@ Player.prototype.purchase = function(offer, count) {
 
 }
 
+Player.prototype.getCapacity = function() {
+
+  /*
+   * Function Player.getCapacity
+   * Returns the available capacity for the player
+   */
+
+  return this.getProperty(CONST.PROPERTIES.CAPACITY);
+
+}
+
 Player.prototype.hasSufficientCapacity = function(thing) {
 
   /*
@@ -658,7 +637,7 @@ Player.prototype.hasSufficientCapacity = function(thing) {
    * Returns true if the player has sufficient capacity to carry the thing
    */
 
-  return this.characterStatistics.capacity >= thing.getWeight();
+  return this.getCapacity() >= thing.getWeight();
 
 }
 
@@ -680,7 +659,7 @@ Player.prototype.handleBuyOffer = function(packet) {
    * Opens trade window with a friendly NPC
    */
 
-  let creature = process.gameServer.world.getCreatureFromId(packet.id);
+  let creature = gameServer.world.creatureHandler.getCreatureFromId(packet.id);
 
   // The creature does not exist
   if(creature === null) {
@@ -692,17 +671,16 @@ Player.prototype.handleBuyOffer = function(packet) {
     return;
   }
 
-  // Not in range
-  if(!this.isWithinRangeOf(creature, creature.hearingRange)) {
+  if(!creature.isWithinHearingRange(this)) {
     return;
   }
 
   // Get the current offer
-  let offer = creature.getTradeItem(packet.index);
+  let offer = creature.conversationHandler.tradeHandler.getTradeItem(packet.index);
 
   // Try to make the purchase
   if(this.purchase(offer, packet.count)) {
-    creature.internalCreatureSay("Here you go!", CONST.COLOR.YELLOW);
+    creature.speechHandler.internalCreatureSay("Here you go!", CONST.COLOR.YELLOW);
   }
 
 }
@@ -714,18 +692,7 @@ Player.prototype.getFluidType = function() {
    * Returns the fluid type of a player which is always blood
    */
 
-  return FluidContainer.prototype.FLUID_TYPES.BLOOD;
-
-}
-
-Player.prototype.setMoveBuffer = function(direction) {
-
-  /*
-   * Function Player.setMoveBuffer
-   * Updates the server-side movement buffer of the player
-   */
-
-  this.__clientMoveBuffer = direction;
+  return CONST.FLUID.BLOOD;
 
 }
 
@@ -740,39 +707,6 @@ Player.prototype.__handleCreatureKill = function(creature) {
 
 }
 
-Player.prototype.__handleActionUnlock = function(action) {
-
-  /*
-   * Function Player.__handleActionUnlock
-   * Callback fired when a particular function is unlocked
-   */
-
-  // Movement buffer actions must have special handling
-  if(this.__clientMoveBuffer === null) {
-    return;
-  }
-
-  this.handleActionMove(this.__clientMoveBuffer);
-  this.setMoveBuffer(null);
-
-}
-
-
-Player.prototype.__createCombatLock = function() {
-
-  /*
-   * Function Player.__createCombatLock
-   * Creates and configured the combat lock for the player: this prevents players from logging out after having been in combat
-   */
-
-  this.combatLock = new GenericLock();
-
-  // Event callbacks
-  this.combatLock.on("unlock", this.__writeChangeCombat.bind(this, false));
-  this.combatLock.on("lock", this.__writeChangeCombat.bind(this, true));
-
-}
-
 Player.prototype.changeCapacity = function(value) {
 
   /*
@@ -780,31 +714,18 @@ Player.prototype.changeCapacity = function(value) {
    * Changes the available capacity of a player by a value
    */
 
-  this.characterStatistics.capacity += value;
+  this.setProperty(CONST.PROPERTIES.CAPACITY, this.getProperty(CONST.PROPERTIES.CAPACITY) + value);
 
   if(!this.containerManager) {
     return;
   }
 
-  this.write(new PacketWriter(PacketWriter.prototype.opcodes.PLAYER_STATISTICS).writePlayerStatistics(this));
-  
 }
 
 Player.prototype.changeSlowness = function(speed) {
 
   this.speed = this.speed + speed;
-  this.write(new PacketWriter(PacketWriter.prototype.opcodes.PLAYER_STATISTICS).writePlayerStatistics(this));
-
-}
-
-Player.prototype.__writeChangeCombat = function(bool) {
- 
-  /*
-   * Function Player.__writeChangeCombat
-   * Writes a packet to the client to update the state of the combat lock
-   */
-
-  return this.write(new PacketWriter(PacketWriter.prototype.opcodes.COMBAT_LOCK).writeCombatLock(bool));
+  this.write(new CreaturePropertyPacket(this.getId(), CONST.PROPERTIES.SPEED, this.speed));
 
 }
 

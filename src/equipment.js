@@ -1,8 +1,9 @@
 "use strict";
 
-const Item = require("./item");
-const BaseContainer = require("./base-container");
-const Condition = require("./condition");
+const Item = requireModule("item");
+const BaseContainer = requireModule("base-container");
+const Condition = requireModule("condition");
+const Enum = requireModule("enum");
 
 const Equipment = function(cid, player, equipment) {
 
@@ -21,7 +22,7 @@ const Equipment = function(cid, player, equipment) {
   this.__player = player;
 
   // A base container to keep all the items
-  this.container = new BaseContainer(cid, equipment.length);
+  this.container = new BaseContainer(cid, 10);
 
   // Add the equipment from the database
   this.__addEquipment(equipment);
@@ -30,20 +31,6 @@ const Equipment = function(cid, player, equipment) {
   this.container.spectators.add(player);
 
 }
-
-// Slot indices
-Equipment.prototype.SLOTS = new Object({
-  "HELMET": 0,
-  "ARMOR": 1,
-  "LEGS": 2,
-  "BOOTS": 3,
-  "HAND_RIGHT": 4,
-  "HAND_LEFT": 5,
-  "BACKPACK": 6,
-  "NECKLACE": 7,
-  "RING": 8,
-  "QUIVER": 9
-});
 
 Equipment.prototype.getTopParent = function() {
 
@@ -75,7 +62,18 @@ Equipment.prototype.toJSON = function() {
    */
 
   // Simply return the slots which is an array of items
-  return this.container.__slots;
+  return this.container.__slots.map(function(item, index) {
+
+    if(item === null) {
+      return null;
+    }
+
+    return new Object({
+      "slot": index,
+      "item": item
+    });
+
+  }).nullfilter();
 
 }
 
@@ -97,7 +95,7 @@ Equipment.prototype.handleChangeThing = function(thing, change) {
    * Handles changing an item on equip event
    */
 
-  let newThing = process.gameServer.database.createThing(change);
+  let newThing = gameServer.database.createThing(change);
 
   // Copy over the properties
   thing.copyProperties(newThing);
@@ -191,6 +189,12 @@ Equipment.prototype.peekIndex = function(index) {
 
 }
 
+Equipment.prototype.getWeaponType = function() {
+
+  return CONST.PROPERTIES.CLUB;
+
+}
+
 Equipment.prototype.addThing = function(thing, index) {
 
   /*
@@ -274,7 +278,7 @@ Equipment.prototype.isAmmunitionEquipped = function() {
    */
 
   // Take a look at the quiver
-  let ammunition = this.peekIndex(this.SLOTS.QUIVER);
+  let ammunition = this.peekIndex(CONST.EQUIPMENT.QUIVER);
 
   // If nothing is equipped there is no ammunition
   if(ammunition === null) {
@@ -282,7 +286,7 @@ Equipment.prototype.isAmmunitionEquipped = function() {
   }
 
   // Confirm the ammunition of the right type
-  let weapon = this.peekIndex(this.SLOTS.HAND_LEFT);
+  let weapon = this.peekIndex(CONST.EQUIPMENT.HAND_LEFT);
 
   // Weapon does not match ammunition type
   if(!weapon.isRightAmmunition(ammunition)) {
@@ -301,7 +305,7 @@ Equipment.prototype.isDistanceWeaponEquipped = function() {
    */
 
   // Take a look at the weapon in the left hand slot
-  let thing = this.peekIndex(this.SLOTS.HAND_LEFT);
+  let thing = this.peekIndex(CONST.EQUIPMENT.HAND_LEFT);
 
   if(thing === null) {
     return false;
@@ -319,7 +323,7 @@ Equipment.prototype.hasSufficientResources = function(resource, amount) {
    * Returns true if the player has a number of sufficient resources (e.g., gold)
    */
 
-  let backpack = this.peekIndex(this.SLOTS.BACKPACK);
+  let backpack = this.peekIndex(CONST.EQUIPMENT.BACKPACK);
 
   if(backpack === null) {
     return false;
@@ -363,7 +367,7 @@ Equipment.prototype.payWithResource = function(resource, amount) {
    * Pays with a number of resources from the player's equipped backpack
    */
 
-  let backpack = this.peekIndex(this.SLOTS.BACKPACK);
+  let backpack = this.peekIndex(CONST.EQUIPMENT.BACKPACK);
 
   if(backpack === null) {
     return false;
@@ -411,7 +415,7 @@ Equipment.prototype.canPushItem = function(thing) {
    */
 
   // Take a look if there is a backpack equipped
-  let backpack = this.peekIndex(this.SLOTS.BACKPACK);
+  let backpack = this.peekIndex(CONST.EQUIPMENT.BACKPACK);
 
   // If the item cannot be added to the backpack just drop it on the ground
   if(backpack === null) {
@@ -440,7 +444,7 @@ Equipment.prototype.pushItem = function(thing) {
    */
 
   // Take a look if there is a backpack equipped
-  let backpack = this.peekIndex(this.SLOTS.BACKPACK);
+  let backpack = this.peekIndex(CONST.EQUIPMENT.BACKPACK);
 
   if(backpack === null) {
     return;
@@ -492,16 +496,16 @@ Equipment.prototype.__isRightType = function(item, slot) {
   let proto = item.getPrototype();
 
   switch(slot) {
-    case this.SLOTS.HELMET: return proto.properties.slotType === "head";
-    case this.SLOTS.ARMOR: return proto.properties.slotType === "body";
-    case this.SLOTS.LEGS: return proto.properties.slotType === "legs";
-    case this.SLOTS.BOOTS: return proto.properties.slotType === "feet";
-    case this.SLOTS.HAND_RIGHT: return proto.properties.weaponType === "shield";	
-    case this.SLOTS.HAND_LEFT: return proto.properties.weaponType === "sword" || proto.properties.weaponType === "distance";
-    case this.SLOTS.BACKPACK: return proto.properties.slotType === "backpack";
-    case this.SLOTS.NECKLACE: return proto.properties.slotType === "necklace";
-    case this.SLOTS.RING: return proto.properties.slotType === "ring";
-    case this.SLOTS.QUIVER: return proto.properties.weaponType === "ammunition";
+    case CONST.EQUIPMENT.HELMET: return proto.properties.slotType === "head";
+    case CONST.EQUIPMENT.ARMOR: return proto.properties.slotType === "body";
+    case CONST.EQUIPMENT.LEGS: return proto.properties.slotType === "legs";
+    case CONST.EQUIPMENT.BOOTS: return proto.properties.slotType === "feet";
+    case CONST.EQUIPMENT.HAND_RIGHT: return proto.properties.weaponType === "shield";	
+    case CONST.EQUIPMENT.HAND_LEFT: return proto.properties.weaponType === "sword" || proto.properties.weaponType === "distance";
+    case CONST.EQUIPMENT.BACKPACK: return proto.properties.slotType === "backpack";
+    case CONST.EQUIPMENT.NECKLACE: return proto.properties.slotType === "necklace";
+    case CONST.EQUIPMENT.RING: return proto.properties.slotType === "ring";
+    case CONST.EQUIPMENT.QUIVER: return proto.properties.weaponType === "ammunition";
     default: return false;
   }
 
@@ -527,15 +531,12 @@ Equipment.prototype.__addEquipment = function(equipment) {
    */
 
   // Go over all the equipment slots from the database
-  equipment.forEach(function(item, index) {
+  equipment.forEach(function(entry) {
 
-    if(item === null) {
-      return;
-    }
- 
-    let thing = process.gameServer.database.parseThing(item);
+    // Create the thing from the equipped item
+    let thing = process.gameServer.database.parseThing(entry.item);
 
-    this.addThing(thing, index);
+    this.addThing(thing, entry.slot);
 
     // Adding something with invisible attribute
     if(thing.getAttribute("invisible")) {

@@ -1,6 +1,6 @@
 "use strict";
 
-const ServerLogger = require("./logger");
+const ServerLogger = requireModule("logger");
 
 const GameLoop = function(interval, callback) {
 
@@ -12,6 +12,9 @@ const GameLoop = function(interval, callback) {
   this.__gameLoopStart = null;
   this.__gameLoopEnd = null;
   this.__loopTimeout = null
+
+  // The loop counter
+  this.__internalTickCounter = 0;
 
   // Callback function fired every loop tick at an interval
   this.__callback = callback;
@@ -30,6 +33,7 @@ GameLoop.prototype.initialize = function() {
    * Delegates to the internal looping function
    */
 
+  // Start the loop
   this.__internalLoop();
 
 }
@@ -41,7 +45,21 @@ GameLoop.prototype.getCurrentFrame = function() {
    * Returns the current game server frame from the event queue
    */
 
-  return process.gameServer.world.eventQueue.__internalCounter;
+  return this.__internalTickCounter;
+
+}
+
+GameLoop.prototype.getDataDetails = function() {
+
+  /*
+   * Function WebsocketServer.getDataDetails
+   * Gets the data details (received & sent) from the network manager
+   */
+
+  return new Object({
+    "drift": this.__drift,
+    "tick": this.__internalTickCounter,
+  });
 
 }
 
@@ -49,8 +67,7 @@ GameLoop.prototype.tickModulus = function(modulus) {
 
   /*
    * Function GameLoop.tickModulus
-   * Only returns TRUE when the tick counter passes through the modulus parameter.
-   * This function can be used to execute functions only every Nth tick.
+   * Only returns TRUE when the tick counter passes through the modulus parameter
    */
 
   return (this.getCurrentFrame() % modulus) === 0;
@@ -72,8 +89,8 @@ GameLoop.prototype.__estimateLoopDrift = function() {
     return 0;
   }
 
-  // Estimate the setTimeout drift to keep the tick interval
-  this.__drift = Math.max(-this.__interval, this.__drift + (this.__gameLoopStart - this.__gameLoopEnd) - this.__interval);
+  // Estimate the setTimeout drift to keep the tick interval but drop frames if the drift becomes too large
+  this.__drift = (this.__drift + (this.__gameLoopStart - this.__gameLoopEnd) - this.__interval) % -this.__interval;
 
 }
 
@@ -104,9 +121,12 @@ GameLoop.prototype.__internalLoop = function() {
    * This is the main looping function for the game server that is executed every server tick
    */
 
+  // Increment the tick counter
+  this.__internalTickCounter++
+
   // Server was closed: abort the loop
-  if(process.gameServer.server.isClosed()) {
-    return;
+  if(process.gameServer.isClosed()) {
+    return console.log("Game loop has been aborted.");
   }
 
   // Estimate the drift from the previous call
@@ -116,17 +136,20 @@ GameLoop.prototype.__internalLoop = function() {
   this.__callback();
 
   // Delegate to the logger every 20th frame
-  if(this.tickModulus(ServerLogger.prototype.LOG_FRAMES)) {
+  if(this.tickModulus(CONFIG.LOGGING.INTERVAL)) {
     this.logger.log();
   }
 
   // Send a ping to all clients
-  if(this.tickModulus(60)) {
-    process.gameServer.server.websocketServer.ping();
+  if(this.tickModulus(CONFIG.SERVER.PING_INTERVAL)) {
+    gameServer.HTTPServer.websocketServer.socketHandler.ping();
   }
 
   // Schedule the next tick
-  this.__loopTimeout = setTimeout(this.__internalLoop.bind(this), Math.min(this.__interval, this.__estimateNextTimeout()));
+  this.__loopTimeout = setTimeout(
+    this.__internalLoop.bind(this),
+    Math.min(this.__interval, this.__estimateNextTimeout())
+  );
 
 }
 

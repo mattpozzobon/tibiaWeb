@@ -1,3 +1,5 @@
+"use strict";
+
 const Inbox = function(player, inbox) {
 
   /*

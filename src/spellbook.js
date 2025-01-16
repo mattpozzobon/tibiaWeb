@@ -1,6 +1,6 @@
 "use strict";
 
-const PacketWriter = require("./packet-writer");
+const { SpellAddPacket, SpellCastPacket } = requireModule("protocol");
 
 const Spellbook = function(player, data) {
 
@@ -78,8 +78,7 @@ Spellbook.prototype.addAvailableSpell = function(sid) {
   // Inform the player they have learned a new spell
   this.player.sendCancelMessage("You have learned a new spell!");
 
-  // Write the spells again
-  this.player.write(new PacketWriter(PacketWriter.prototype.opcodes.WRITE_SPELLS).writeAvailableSpells(this.__availableSpells));
+  this.player.write(new SpellAddPacket(sid));
 
 }
 
@@ -96,7 +95,7 @@ Spellbook.prototype.handleSpell = function(sid) {
   }
 
   // Try to get the spell
-  let spell = process.gameServer.database.getSpell(sid);
+  let spell = gameServer.database.getSpell(sid);
 
   // Does not exist
   if(spell === null) {
@@ -117,7 +116,7 @@ Spellbook.prototype.handleSpell = function(sid) {
   }
 
   // Write a packet to the player that the spell needs to be put on cooldown by a number of frames
-  this.player.write(new PacketWriter(PacketWriter.prototype.opcodes.CAST_SPELL).writeCastSpell(sid, cooldown));
+  this.player.write(new SpellCastPacket(sid, cooldown));
 
   // Lock it
   this.__lockSpell(sid, cooldown);
@@ -158,9 +157,20 @@ Spellbook.prototype.applyCooldowns = function() {
 
     // Lock and inform
     this.__internalLockSpell(sid, cooldown);
-    this.player.write(new PacketWriter(PacketWriter.prototype.opcodes.CAST_SPELL).writeCastSpell(sid, cooldown));
+    this.player.write(new SpellCastPacket(sid, cooldown));
 
   }, this);
+
+}
+
+Spellbook.prototype.writeSpells = function(gameSocket) {
+
+  /*
+   * Function Spellbook.writeSpells
+   * Serializes the spellbook as a binary packet
+   */
+
+  this.__availableSpells.forEach(sid => gameSocket.write(new SpellAddPacket(sid)));
 
 }
 
@@ -171,7 +181,7 @@ Spellbook.prototype.__internalLockSpell = function(sid, duration) {
    * Internal function actually schedule the lock
    */
 
-  this.__spellCooldowns.set(sid, process.gameServer.world.eventQueue.addEvent(this.__unlockSpell.bind(this, sid), duration));
+  this.__spellCooldowns.set(sid, gameServer.world.eventQueue.addEvent(this.__unlockSpell.bind(this, sid), duration));
 
 }
 

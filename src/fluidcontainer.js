@@ -1,7 +1,7 @@
 "use strict";
 
-const Item = require("./item");
-const Condition = require("./condition");
+const Item = requireModule("item");
+const Condition = requireModule("condition");
 
 const FluidContainer = function(id) {
 
@@ -21,29 +21,6 @@ const FluidContainer = function(id) {
 FluidContainer.prototype = Object.create(Item.prototype);
 FluidContainer.prototype.constructor = FluidContainer;
 
-// The fluid types
-FluidContainer.prototype.FLUID_TYPES = new Object({
-  "NONE": 0,
-  "WATER": 1,
-  "BLOOD": 2,
-  "BEER": 3,
-  "SLIME": 4,
-  "LEMONADE": 5,
-  "MILK": 6,
-  "MANA": 7,
-  "WATER2": 9,
-  "HEALTH": 10,
-  "OIL": 11,
-  "SLIME2": 12,
-  "URINE": 13,
-  "COCONUTMILK": 14,
-  "WINE": 15,
-  "MUD": 19,
-  "FRUITJUICE": 21,
-  "LAVA": 26,
-  "RUM": 27
-});
-
 FluidContainer.prototype.handleUseWith = function(player, item, tile, index) {
 
   /*
@@ -57,9 +34,9 @@ FluidContainer.prototype.handleUseWith = function(player, item, tile, index) {
   }
 
   // Drinking?
-  if(tile.getPlayer() === player) {
+  if(tile.getCreature() === player) {
 
-    player.internalCreatureSay(this.__getDrinkText(), CONST.COLOR.YELLOW);
+    player.speechHandler.internalCreatureSay(this.__getDrinkText(), CONST.COLOR.YELLOW);
 
     // Add drunk condition to the player
     if(this.isAlcohol()) {
@@ -108,19 +85,34 @@ FluidContainer.prototype.handleUseWith = function(player, item, tile, index) {
 
 FluidContainer.prototype.isOil = function() {
 
-  return this.count === this.FLUID_TYPES.OIL;
+  /*
+   * Function FluidContainer.isOil
+   * Returns true if the fluid container has oil in it
+   */
+
+  return this.count === CONST.FLUID.OIL;
 
 }
 
 FluidContainer.prototype.isLava = function() {
 
-  return this.count === this.FLUID_TYPES.LAVA;
+  /*
+   * Function FluidContainer.isOil
+   * Returns true if the fluid container has lava in it
+   */
+
+  return this.count === CONST.FLUID.LAVA;
 
 }
 
 FluidContainer.prototype.isSlime = function() {
 
-  return this.count === this.FLUID_TYPES.SLIME;
+  /*
+   * Function FluidContainer.isOil
+   * Returns true if the fluid container has slime in it
+   */
+
+  return this.count === CONST.FLUID.SLIME;
 
 }
 
@@ -131,9 +123,9 @@ FluidContainer.prototype.isAlcohol = function() {
    * Returns true if the fluid being consumed is alcoholic
    */
 
-  return this.count === this.FLUID_TYPES.BEER ||
-         this.count === this.FLUID_TYPES.WINE ||
-         this.count === this.FLUID_TYPES.RUM;
+  return this.count === CONST.FLUID.BEER ||
+         this.count === CONST.FLUID.WINE ||
+         this.count === CONST.FLUID.RUM;
 
 }
 
@@ -144,8 +136,8 @@ FluidContainer.prototype.__empty = function() {
    * Callback fired when the fluid container is used with something
    */
 
-  this.setFluidType(this.FLUID_TYPES.NONE);
-  let thing = process.gameServer.database.createThing(this.id);
+  this.setFluidType(CONST.FLUID.NONE);
+  let thing = gameServer.database.createThing(this.id);
 
   this.replace(thing);
 
@@ -158,7 +150,7 @@ FluidContainer.prototype.isEmpty = function() {
    * Returns true if the fluid container is empty
    */
 
-  return this.count === this.FLUID_TYPES.NONE;
+  return this.count === CONST.FLUID.NONE;
 
 }
 
@@ -213,7 +205,7 @@ FluidContainer.prototype.__swapLiquid = function(item) {
 
   // And clear itself with count is zero
   let itself = process.gameServer.database.createThing(this.id);
-  itself.setFluidType(this.FLUID_TYPES.NONE);
+  itself.setFluidType(CONST.FLUID.NONE);
   this.replace(itself);
 
 }
@@ -242,10 +234,10 @@ FluidContainer.prototype.__mapString = function(string) {
    */
 
   switch(string) {
-    case "blood": return this.FLUID_TYPES.BLOOD;
-    case "water": return this.FLUID_TYPES.WATER;
-    case "slime": return this.FLUID_TYPES.SLIME;
-    default: return this.FLUID_TYPES.NONE;
+    case "blood": return CONST.FLUID.BLOOD;
+    case "water": return CONST.FLUID.WATER;
+    case "slime": return CONST.FLUID.SLIME;
+    default: return CONST.FLUID.NONE;
   }
 
 }
@@ -258,8 +250,8 @@ FluidContainer.prototype.__getDrinkText = function() {
    */
 
   switch(this.count) {
-    case this.FLUID_TYPES.WATER: return "Gulp..";
-    case this.FLUID_TYPES.SLIME: return "Ugh!";
+    case CONST.FLUID.WATER: return "Gulp..";
+    case CONST.FLUID.SLIME: return "Ugh!";
     default: return "Ahhh..";
   }
 

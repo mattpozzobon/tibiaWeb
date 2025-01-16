@@ -1,3 +1,5 @@
+"use strict";
+
 const GenericLock = function() {
 
   /*
@@ -21,12 +23,11 @@ const GenericLock = function() {
 
   // State of the lock
   this.__lockEvent = null;
-  this.__extendedLockFrame = null;
+  this.__extendedLockFrame = 0;
 
   // These are callbacks that may be attached
   this.__unlockCallback = null;
   this.__lockCallback = null;
-
 
 }
 
@@ -38,7 +39,7 @@ GenericLock.prototype.remainingFrames = function() {
    */
 
   // No event
-  if(this.__lockEvent === null) {
+  if(!this.isLocked()) {
     return 0;
   }
 
@@ -117,9 +118,9 @@ GenericLock.prototype.cancel = function() {
   }
 
   // Cancel the schedule unlocking event
-  this.__lockEvent.cancel();
+  this.__lockEvent.remove();
   this.__lockEvent = null;
-  this.__extendedLockFrame = null;
+  this.__extendedLockFrame = 0;
 
 }
 
@@ -131,7 +132,7 @@ GenericLock.prototype.lockSeconds = function(seconds) {
    */
 
   // Delegate to lock but convert seconds to frames
-  this.lock(Math.floor(seconds * (1000 / CONFIG.SERVER.MS_TICK_INTERVAL)));
+  this.lock(Math.round(seconds * (1000 / CONFIG.SERVER.MS_TICK_INTERVAL)));
 
 }
 
@@ -142,7 +143,7 @@ GenericLock.prototype.lock = function(amount) {
    * Call the lock function to either schedule an unlock or extend it
    */
 
-  // If the lock is locked again after being locked we have to extend it by a numb
+  // If the lock is locked again after being locked we have to extend it
   if(this.isLocked()) {
     return this.__extendLock(amount);
   }
@@ -163,13 +164,8 @@ GenericLock.prototype.__extendLock = function(amount) {
    * Extends the lock with until a number of frames
    */
 
-  let extension = amount - this.__lockEvent.remainingFrames();
-
-  if(extension <= 0) {
-    return;
-  }
-
-  return this.__extendedLockFrame = extension;
+  // Determine how long it needs to be extended for and save the state
+  this.__extendedLockFrame = Math.max(0, amount - this.__lockEvent.remainingFrames());
 
 }
 
@@ -181,10 +177,10 @@ GenericLock.prototype.__lock = function(amount) {
    */
 
   // Reset the lock extension
-  this.__extendedLockFrame = null;
+  this.__extendedLockFrame = 0;
 
   // Schedule the new unlock event
-  this.__lockEvent = process.gameServer.world.eventQueue.addEvent(this.__unlock.bind(this), amount);
+  this.__lockEvent = gameServer.world.eventQueue.addEvent(this.__unlock.bind(this), amount);
 
 }
 
@@ -195,8 +191,8 @@ GenericLock.prototype.__unlock = function() {
    * Callback executed when the player has left combat
    */
 
-  // The lock was extended and we have to reschedule the lock
-  if(this.__extendedLockFrame !== null && this.__extendedLockFrame > 0) {
+  // The lock was extended and we have to reschedule the lock again
+  if(this.__extendedLockFrame > 0) {
     return this.__lock(this.__extendedLockFrame);
   }
 

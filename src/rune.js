@@ -1,6 +1,6 @@
 "use strict";
 
-const Item = require("./item");
+const Item = requireModule("item");
 
 const Rune = function(id) {
 

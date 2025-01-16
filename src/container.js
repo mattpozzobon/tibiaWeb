@@ -1,8 +1,8 @@
 "use strict";
 
-const Item = require("./item");
-const PacketWriter = require("./packet-writer");
-const BaseContainer = require("./base-container");
+const Item = requireModule("item");
+const BaseContainer = requireModule("base-container");
+const { ContainerOpenPacket, ContainerClosePacket } = requireModule("protocol");
 
 const Container = function(id, size) {
 
@@ -26,13 +26,24 @@ const Container = function(id, size) {
   this.__childWeight = 0;
 
   // Create a base container to handle adding & removing items from the container. Every container has a unique identifier for lookup
-  this.container = new BaseContainer(process.gameServer.world.assignUID(), size);
+  this.container = new BaseContainer(gameServer.world.creatureHandler.assignUID(), size);
 
 }
 
 Container.prototype = Object.create(Item.prototype);
 Container.prototype.constructor = Container;
-Container.prototype.MAXIMUM_DEPTH = 1;
+Container.prototype.MAXIMUM_DEPTH = 2;
+
+Container.prototype.getNumberItems = function() {
+
+  /*
+   * Function Container.getNumberItems
+   * Returns the number of items in the container
+   */
+
+  return this.getSlots().filter(x => x !== null).length;
+
+}
 
 Container.prototype.addFirstEmpty = function(thing) {
 
@@ -209,8 +220,7 @@ Container.prototype.openBy = function(player) {
   // Add the player as a spectator
   this.container.addSpectator(player);
 
-  // Write the container information to the player
-  player.write(new PacketWriter(PacketWriter.prototype.opcodes.OPEN_CONTAINER).writeOpenContainer(this.id, this.getName(), this.container));
+  player.write(new ContainerOpenPacket(this.id, this.getName(), this.container));
 
 }
 
@@ -224,7 +234,7 @@ Container.prototype.closeBy = function(player) {
   // Remove the player as a spectator
   this.container.removeSpectator(player);
 
-  player.write(new PacketWriter(PacketWriter.prototype.opcodes.CONTAINER_CLOSE).writeContainerClose(this.container.guid));
+  player.write(new ContainerClosePacket(this.container.guid));
 
 }
 
@@ -403,7 +413,7 @@ Container.prototype.cleanup = function() {
   this.closeAllSpectators();
 
   // Delegate to the internal handler for extra cleanups
-  if(this.__scheduledDecayEvent !== null) {
+  if(this.__scheduledDecayEvent) {
     this.__scheduledDecayEvent.cancel();
   }
 
@@ -500,6 +510,25 @@ Container.prototype.__getParentCount = function() {
     current = current.getParent();
 
   }
+
+}
+
+Container.prototype.toJSON = function() {
+
+  /*
+   * Function Container.toJSON
+   * Serializes a container with items
+   */
+
+  // Clean up items when they are serialized
+  this.cleanup();
+
+  return new Object({
+    "id": this.id,
+    "actionId": this.actionId,
+    "duration": this.duration,
+    "items": this.container.__slots
+  });
 
 }
 

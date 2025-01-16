@@ -7,8 +7,6 @@ const EventEmitter = function() {
    * Subscribes to events and wait for emit
    */
 
-  this.__events = new Object();
-
 }
 
 EventEmitter.prototype.emit = function() {
@@ -55,7 +53,7 @@ EventEmitter.prototype.hasEvent = function(which) {
    * Returns true if the creature has an event subscribed
    */
 
-  return this.__events.hasOwnProperty(which) && this.__events[which].size > 0;
+  return this.__events && this.__events.hasOwnProperty(which) && this.__events[which].size > 0;
 
 }
 
@@ -65,6 +63,10 @@ EventEmitter.prototype.__emit = function(which, ...args) {
    * Function EventEmitter.emit
    * Emits a call to the event emitter and executes callbacks
    */
+
+  if(!this.__events) {
+    return true;
+  }
 
   // If the event is not available
   if(!this.__events.hasOwnProperty(which)) {
@@ -84,6 +86,11 @@ EventEmitter.prototype.on = function(which, callback) {
    * Function EventEmitter.on
    * Subscribes a callback to an event
    */
+
+  // Create the property when it is requested
+  if(!this.hasOwnProperty("__events")) {
+    this.__events = new Object(); 
+  }
 
   // Create a new event of this type
   if(!this.__events.hasOwnProperty(which)) {
@@ -105,6 +112,11 @@ EventEmitter.prototype.off = function(which, callback) {
    * Unsubscribe a callback from an event
    */
 
+  // Does not exist
+  if(!this.hasOwnProperty("__events")) {
+    return;
+  }
+
   // Not available
   if(!this.__events.hasOwnProperty(which)) {
     return;
@@ -120,6 +132,11 @@ EventEmitter.prototype.clear = function() {
    * Function EventEmitter.clear
    * Clears an event emitter
    */
+
+  // Does not exist
+  if(!this.hasOwnProperty("__events")) {
+    return;
+  }
 
   this.__events = new Object();
 

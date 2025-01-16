@@ -1,6 +1,6 @@
 "use strict";
 
-const Item = require("./item");
+const Item = requireModule("item");
 
 const Door = function(id) {
 
@@ -51,6 +51,7 @@ Door.prototype.open = function() {
     return;
   }
 
+  // Change the identifier to the closed door
   return this.__change(+1);
 
 }
@@ -117,7 +118,7 @@ Door.prototype.handleEnterExpertiseDoor = function(player) {
     return player.sendCancelMessage("Only the worthy may pass!");
   }
 
-  if(player.characterStatistics.level < (this.actionId - 100)) {
+  if(player.getLevel() < (this.actionId - 100)) {
     return player.sendCancelMessage("Only the worthy may pass!");
   }
 
@@ -229,7 +230,8 @@ Door.prototype.__change = function(direction) {
    * Replaces the door with its open/closed counterpart
    */
 
-  let thing = process.gameServer.database.createThing(this.id + direction);
+  // Create the changed door
+  let thing = gameServer.database.createThing(this.id + direction);
 
   // Must copy over the action identifier to the door
   if(this.hasActionId()) {
