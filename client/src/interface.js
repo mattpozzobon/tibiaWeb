@@ -419,6 +419,7 @@ Interface.prototype.isRaining = function() {
   return gameClient.renderer.weatherCanvas.isRaining();
 
 }
+
 Interface.prototype.getSpriteScaling = function() {
 
   /*
@@ -612,7 +613,6 @@ Interface.prototype.__handleVisibiliyChange = function(event) {
   return gameClient.renderer.__handleVisibiliyChange(event);
 
 }
-
 
 Interface.prototype.__handleResizeWindow = function() {
 

@@ -10,7 +10,6 @@ window.onload = function windowOnLoad() {
   
   // Create the game client class and attach it to the window
   window.gameClient = new GameClient();
-
 }
 
 document.addEventListener("DOMContentLoaded", function DOMContentLoaded() {

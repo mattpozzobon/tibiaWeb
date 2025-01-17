@@ -210,16 +210,11 @@ ModalManager.prototype.isOpened = function() {
 }
 
 ModalManager.prototype.open = function(id, options) {
-
-  /*
-   * Function ModalManager.open
-   * Opens modal with the requested identifier and passes options
-   */
-
-  // Does not exist
   if(!this.__modals.hasOwnProperty(id)) {
     return null;
   }
+
+  console.log(id);
 
   // Already opened: close the previous modal
   if(this.isOpened()) {
@@ -231,5 +226,4 @@ ModalManager.prototype.open = function(id, options) {
   this.__openedModal.handleOpen(options);
 
   return this.__openedModal;
-
 }
