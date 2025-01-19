@@ -218,9 +218,11 @@ Keyboard.prototype.__handleReturnKey = function() {
    * Callback event fired when the return key is pressed
    */
   
-  // Enter game on Ender
-  gameClient.interface.modalManager.open("floater-enter");
-  gameClient.interface.enterGame();
+  // Enter game on Enter
+  if(!gameClient.interface.modalManager.isOpened() && !gameClient.isConnected()) {
+    gameClient.interface.modalManager.open("floater-enter");
+    gameClient.interface.enterGame();
+  }
 
   // Enter when modal is opened: handle confirmation
   if(gameClient.interface.modalManager.isOpened()) {

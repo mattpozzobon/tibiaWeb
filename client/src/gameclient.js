@@ -229,6 +229,7 @@ GameClient.prototype.handleAcceptLogin = function(packet) {
   this.interface.modalManager.close();
 
   // Create a new player with a particular server identifier
+  console.log('server packet: ', packet);
   this.player = new Player(packet);
 
   // Add the player to the game world

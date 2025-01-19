@@ -33,6 +33,7 @@ const Player = function(data) {
    *
    */
 
+  console.log('palyer data : ', data);
   // Inherit from Creature class
   Creature.call(this, data.properties);
 

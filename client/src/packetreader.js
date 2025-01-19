@@ -92,6 +92,7 @@ PacketReader.prototype.readCastSpell = function() {
   });
 
 }
+
 PacketReader.prototype.readSingleTradeOffer = function() {
 
   /*
@@ -947,7 +948,9 @@ PacketReader.prototype.readPlayerInfo = function() {
     "outfit": this.readOutfit(),
     "health": this.readUInt8(),
     "maxHealth": this.readUInt8(),
-    "conditions": this.readConditions()
+    "mana": this.readUInt8(),
+    "maxMana": this.readUInt8(),
+    "conditions": this.readConditions(),
   });
 
 }

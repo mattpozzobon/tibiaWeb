@@ -820,7 +820,6 @@ const PlayerStatePacket = function(player) {
    * Class PlayerStatePacket
    * Wrapper for a packet that describes an outfit change 
    */
-
   let stringEncoded = this.encodeString(player.getProperty(CONST.PROPERTIES.NAME));
 
   // Inherits from packet writer

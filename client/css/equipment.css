@@ -53,7 +53,7 @@
 }
 
 .character-health {
-  background-color: #FF7F7F;
+  background-color: #ea0c0c;
   width: 100%;
   height: 100%;
   border-radius: 8px;
@@ -61,7 +61,15 @@
 }
 
 .character-mana {
-  background-color: lightblue;
+  background-color: rgb(11, 28, 225);
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  position: absolute;
+}
+
+.character-energy {
+  background-color: rgb(209, 240, 32);
   width: 100%;
   height: 100%;
   border-radius: 8px;

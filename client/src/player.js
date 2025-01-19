@@ -1,16 +1,5 @@
 const Player = function(data) {
-
-  /*
-   * Function Player
-   * Container for the gameclient player character
-   *
-   * API:
-   *
-   *
-   */
-
-  // Inherit from creature
-  Creature.call(this, data);
+  Creature.call(this, data); // Call the parent constructor
 
   this.type = 0;
   this.setState(data);
@@ -27,13 +16,50 @@ const Player = function(data) {
   // Can only work again if the server has confirmed
   this.__serverWalkConfirmation = true;
 
-  // Container for the players friendlist
+  // Container for the player's friend list
   this.friendlist = new Friendlist(data.friendlist);
-
-}
+};
 
 Player.prototype = Object.create(Creature.prototype);
 Player.prototype.constructor = Player;
+
+
+Player.prototype.setState = function(data) {
+
+  /*
+   * Function Player.setState
+   * Sets the mana status to the DOM
+   */
+
+  // Keep player state
+  this.skills = new Skills(data.skills);
+  this.mounts = data.mounts;
+  this.outfits = data.outfits;
+
+  // Capacity
+  this.state.add("capacity", this.setCapacity.bind(this));
+  
+  this.state.add("maxHealth", this.setHealthStatus.bind(this));
+  this.state.add("mana", this.setManaStatus.bind(this));
+  this.state.add("maxMana", this.setManaStatus.bind(this));
+
+  // Other skills
+  this.state.add("armor", this.setLevelSkillValue.bind(this, "armor"));
+  this.state.add("attack", this.setLevelSkillValue.bind(this, "attack"));
+  this.state.add("speed", this.setLevelSkillValue.bind(this, "speed"));
+
+  // Set defaults
+  this.state.maxCapacity = data.maxCapacity;
+  this.state.capacity = data.capacity;
+  this.state.health = data.health;
+  this.state.maxHealth = data.maxHealth;
+  this.state.mana = data.mana;
+  this.state.maxMana = data.maxMana;
+  this.state.speed = data.speed;
+  this.state.armor = 0;
+  this.state.attack = 0;
+
+}
 
 Player.prototype.getSpeed = function() {
 
@@ -91,45 +117,12 @@ Player.prototype.getMaxFloor = function() {
 }
 
 Player.prototype.setCapacity = function(value) {
-
   /*
    * Function Player.setCapacity
    * Sets the capacity of the respective player
    */
-
   // Keep the DOM in sync
   document.getElementById("player-capacity").innerHTML = "Cap: <br> %s".format(Math.round(value / 100));
-
-}
-
-Player.prototype.setState = function(data) {
-
-  /*
-   * Function Player.setState
-   * Sets the mana status to the DOM
-   */
-
-  // Keep player state
-  this.skills = new Skills(data.skills);
-  this.mounts = data.mounts;
-  this.outfits = data.outfits;
-
-  // Capacity
-  this.state.add("capacity", this.setCapacity.bind(this));
-
-  // Other skills
-  this.state.add("armor", this.setLevelSkillValue.bind(this, "armor"));
-  this.state.add("attack", this.setLevelSkillValue.bind(this, "attack"));
-  this.state.add("speed", this.setLevelSkillValue.bind(this, "speed"));
-
-  // Set defaults
-  this.state.maxCapacity = data.maxCapacity;
-  this.state.capacity = data.capacity;
-  this.state.health = data.health;
-  this.state.speed = data.speed;
-  this.state.armor = 0;
-  this.state.attack = 0;
-
 }
 
 Player.prototype.setLevelSkillValue = function(which, value) {
@@ -158,30 +151,25 @@ Player.prototype.setBarStatus = function(bar) {
 }
 
 Player.prototype.setManaStatus = function() {
+  const currentMana = this.state.mana;
+  const maxMana = this.state.maxMana;
 
-  /*
-   * Function Player.setManaStatus
-   * Sets the mana status to the DOM
-   */
+  const manaBar = document.getElementById("mana-bar");
 
-  this.setBarStatus(document.getElementById("mana-bar"));
+  manaBar.firstElementChild.style.width = (currentMana / maxMana) * 100 + "%";
+  manaBar.lastElementChild.innerHTML = `${currentMana} / ${maxMana}`;
 
 }
 
 Player.prototype.setHealthStatus = function() {
+  const currentHealth = this.state.health;
+  const maxHealth = this.state.maxHealth;
 
-  /*
-   * Function Player.setHealthStatus
-   * Sets the health status to the DOM where required
-   */
+  const healthBar = document.getElementById("health-bar");
 
-  // The health bar on the side
-  this.setBarStatus(document.getElementById("health-bar"));
-
-  // Gamescreen
-  this.characterElement.setDefault();
-
-}
+  healthBar.firstElementChild.style.width = (currentHealth / maxHealth) * 100 + "%";
+  healthBar.lastElementChild.innerHTML = `${currentHealth} / ${maxHealth}`;
+};
 
 Player.prototype.setAmbientSound = function() {
 
@@ -363,7 +351,6 @@ Player.prototype.closeAllContainers = function() {
   }, this);
 
 }
-
 
 Player.prototype.removeContainer = function(container) {
 
