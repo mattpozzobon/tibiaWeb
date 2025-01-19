@@ -33,7 +33,6 @@ const Player = function(data) {
    *
    */
 
-  console.log('palyer data : ', data);
   // Inherit from Creature class
   Creature.call(this, data.properties);
 
@@ -75,6 +74,7 @@ Player.prototype.addPlayerProperties = function(properties) {
    */
 
   // Add these properties
+
   this.properties.add(CONST.PROPERTIES.MOUNTS, properties.availableMounts);
   this.properties.add(CONST.PROPERTIES.OUTFITS, properties.availableOutfits);
   this.properties.add(CONST.PROPERTIES.SEX, properties.sex);
@@ -471,6 +471,8 @@ Player.prototype.toJSON = function() {
    * Implements the JSON.Stringify interface
    */
 
+  console.log('');
+
   // Individual classes implement the toJSON interface too
   return new Object({
     "position": this.position,
@@ -627,7 +629,7 @@ Player.prototype.getCapacity = function() {
    * Returns the available capacity for the player
    */
 
-  return this.getProperty(CONST.PROPERTIES.CAPACITY);
+  return this.getProperty(CONST.PROPERTIES.CAPACITY) - this.getProperty(CONST.PROPERTIES.MAX_CAPACITY);
 
 }
 

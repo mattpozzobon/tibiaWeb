@@ -172,7 +172,9 @@
     "DISTANCE": 23,
     "SHIELDING": 24,
     "FISHING": 25,
-    "EXPERIENCE": 26
+    "EXPERIENCE": 26,
+    "ENERGY": 27,
+    "ENERGY_MAX": 28
   },
   "SEX": {
     "MALE": 0,

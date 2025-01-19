@@ -81,7 +81,6 @@ Creature.prototype.setFull = function(type) {
    * Function Creature.prototype.isFull
    * Returns the property of a specific type
    */
-
   switch(type) {
     case CONST.PROPERTIES.HEALTH:
       return this.setProperty(CONST.PROPERTIES.HEALTH, this.getProperty(CONST.PROPERTIES.HEALTH_MAX));
@@ -455,16 +454,13 @@ Creature.prototype.incrementProperty = function(type, amount) {
 }
 
 Creature.prototype.broadcast = function(packet) {
-
-  /*
-   * Function Creature.broadcast
-   * Broadcasts a packet to all spectators: delegates to the sector class
-   */
-
-  // Broadcast in the current active sector
-  this.getChunk().broadcast(packet);
-
-}
+  const chunk = this.getChunk();
+  if (chunk) {
+      chunk.broadcast(packet);
+  } else {
+      console.warn("Cannot broadcast: Chunk is null for creature", this.getId());
+  }
+};
 
 Creature.prototype.broadcastFloor = function(packet) {
 

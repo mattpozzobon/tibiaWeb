@@ -2,7 +2,7 @@
   "compilerOptions": {
     "baseUrl": ".",          // Base directory for resolving paths
     "paths": {
-      "*": ["src/*"]         // Map all modules to the src directory
+      "*": ["*"]         // Map all modules to the src directory
     }
   },
   "include": ["**/*"],        // Include all files in the project

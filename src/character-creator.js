@@ -17,6 +17,7 @@ const CharacterCreator = function() {
       "vocation": CONST.VOCATION.NONE,
       "role": CONST.ROLES.NONE,
       "sex": CONST.SEX.MALE,
+      "capacity": 2000,
       "maxCapacity": 2000,
       "availableMounts": [],
       "availableOutfits": [],
@@ -26,7 +27,11 @@ const CharacterCreator = function() {
       "defense": 2,
       "direction": CONST.DIRECTION.NORTH,
       "health": 150,
+      "maxHealth": 150,
       "mana": 35,
+      "maxMana": 35,
+      "energy": 35,
+      "maxEnergy": 35,
       "outfit": new Outfit({
         "id": 0,
         "details": {

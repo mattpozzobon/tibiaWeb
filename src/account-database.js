@@ -84,6 +84,11 @@ AccountDatabase.prototype.__createNewDatabase = function(callback) {
     // Create a default character
     if(CONFIG.DATABASE.DEFAULT_CHARACTER.ENABLED) {
       this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER);
+      this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER1);
+      this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER2);
+      this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER3);
+      this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER4);
+      this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER5);
     }
 
   }.bind(this));
@@ -224,7 +229,10 @@ AccountDatabase.prototype.saveCharacter = function(gameSocket, callback) {
    */
 
   // Serialize the player character
+
+
   let character = JSON.stringify(gameSocket.player);
+  console.log('character save: ', character);
 
   this.db.run("UPDATE accounts SET character = ? WHERE account = ?", [character, gameSocket.account], callback);
 

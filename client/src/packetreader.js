@@ -940,6 +940,7 @@ PacketReader.prototype.readPlayerInfo = function() {
     "attack": this.readUInt8(),
     "attackSlowness": this.readUInt8(),
     "equipment": this.readEquipment(),
+    "capacity": this.readUInt32(),
     "maxCapacity": this.readUInt32(),
     "mounts": this.readOutfits(),
     "outfits": this.readOutfits(),
@@ -950,6 +951,8 @@ PacketReader.prototype.readPlayerInfo = function() {
     "maxHealth": this.readUInt8(),
     "mana": this.readUInt8(),
     "maxMana": this.readUInt8(),
+    "energy": this.readUInt8(),
+    "maxEnergy": this.readUInt8(),
     "conditions": this.readConditions(),
   });
 

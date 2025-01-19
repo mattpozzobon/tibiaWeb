@@ -20,6 +20,8 @@ const CreatureProperties = function(creature, properties) {
    * 
    */
 
+  console.log('CreatureProperties: ',properties );
+
   // Reference parent
   this.__creature = creature;
 
@@ -39,9 +41,12 @@ const CreatureProperties = function(creature, properties) {
   this.add(CONST.PROPERTIES.HEALTH, properties.health);
   this.add(CONST.PROPERTIES.HEALTH_MAX, properties.health);
   this.add(CONST.PROPERTIES.MANA, properties.mana);
-  this.add(CONST.PROPERTIES.MANA_MAX, properties.mana);
+  this.add(CONST.PROPERTIES.MANA_MAX, properties.maxMana);
   this.add(CONST.PROPERTIES.OUTFIT, new Outfit(properties.outfit));
-
+  this.add(CONST.PROPERTIES.ENERGY, properties.energy);
+  this.add(CONST.PROPERTIES.ENERGY_MAX, properties.maxEnergy);
+  this.add(CONST.PROPERTIES.CAPACITY, properties.capacity);
+  this.add(CONST.PROPERTIES.CAPACITY_MAX, properties.maxCapacity);
 }
 
 CreatureProperties.prototype.getId = function() {
@@ -57,6 +62,7 @@ CreatureProperties.prototype.getId = function() {
 
 CreatureProperties.prototype.incrementProperty = function(type, amount) {
 
+  console.log('SOMETHING INCREMENTING. ', type);
   /*
    * Function CreatureProperties.incrementProperty
    * Adds an amount to the property 
@@ -82,9 +88,11 @@ CreatureProperties.prototype.setProperty = function(type, value) {
 
   let property = this.getProperty(type);
 
+
   if(property === null) {
     return console.warn("Property of unknown type %s with value %s.".format(type, value));
   }
+  console.log(`[setProperty] Setting ${type} to ${value}, previous value: ${property}`);
 
   // Unchanged: do nothing
   if(property === value) {
@@ -102,8 +110,10 @@ CreatureProperties.prototype.setProperty = function(type, value) {
 
   // Special handling
   if(type === CONST.PROPERTIES.HEALTH_MAX) {
+    console.log(`[setProperty] Updating maxMana from ${this.getProperty(type)} to ${value}`);
     this.setProperty(CONST.PROPERTIES.HEALTH, this.getProperty(CONST.PROPERTIES.HEALTH));
   } else if(type === CONST.PROPERTIES.MANA_MAX) {
+    console.log(`[setProperty] Updating maxMana from ${this.getProperty(type)} to ${value}`);
     this.setProperty(CONST.PROPERTIES.MANA, this.getProperty(CONST.PROPERTIES.MANA));
   }
 
@@ -200,7 +210,13 @@ CreatureProperties.prototype.toJSON = function() {
   return new Object({
     "name": this.__properties.get(CONST.PROPERTIES.NAME),
     "health": this.__properties.get(CONST.PROPERTIES.HEALTH),
+    "maxHealth": this.__properties.get(CONST.PROPERTIES.HEALTH_MAX),
     "mana": this.__properties.get(CONST.PROPERTIES.MANA),
+    "maxMana": this.__properties.get(CONST.PROPERTIES.MANA_MAX),
+    "energy": this.__properties.get(CONST.PROPERTIES.ENERGY),
+    "maxEnergy": this.__properties.get(CONST.PROPERTIES.ENERGY_MAX),
+    "capacity": this.__properties.get(CONST.PROPERTIES.CAPACITY),
+    "maxCapacity": this.__properties.get(CONST.PROPERTIES.CAPACITY_MAX),
     "speed": this.__properties.get(CONST.PROPERTIES.SPEED),
     "defense": this.__properties.get(CONST.PROPERTIES.DEFENSE),
     "attack": this.__properties.get(CONST.PROPERTIES.ATTACK),
@@ -211,7 +227,7 @@ CreatureProperties.prototype.toJSON = function() {
     "vocation": this.__properties.get(CONST.PROPERTIES.VOCATION),
     "sex": this.__properties.get(CONST.PROPERTIES.SEX),
     "availableMounts": this.__properties.get(CONST.PROPERTIES.MOUNTS),
-    "availableOutfits": this.__properties.get(CONST.PROPERTIES.OUTFITS)
+    "availableOutfits": this.__properties.get(CONST.PROPERTIES.OUTFITS),
   });
 
 }

@@ -26,6 +26,41 @@
       "PASSWORD": "tibia",
       "SEX": "male",
       "NAME": "God"
+    },
+    "DEFAULT_CHARACTER1": {
+      "ENABLED": true,
+      "ACCOUNT": "1",
+      "PASSWORD": "1",
+      "SEX": "male",
+      "NAME": "1"
+    },
+    "DEFAULT_CHARACTER2": {
+      "ENABLED": true,
+      "ACCOUNT": "2",
+      "PASSWORD": "2",
+      "SEX": "male",
+      "NAME": "2"
+    },
+    "DEFAULT_CHARACTER3": {
+      "ENABLED": true,
+      "ACCOUNT": "3",
+      "PASSWORD": "3",
+      "SEX": "male",
+      "NAME": "3"
+    },
+    "DEFAULT_CHARACTER4": {
+      "ENABLED": true,
+      "ACCOUNT": "4",
+      "PASSWORD": "4",
+      "SEX": "male",
+      "NAME": "4"
+    },
+    "DEFAULT_CHARACTER5": {
+      "ENABLED": true,
+      "ACCOUNT": "5",
+      "PASSWORD": "5",
+      "SEX": "male",
+      "NAME": "5"
     }
   },
   "SERVER": {
