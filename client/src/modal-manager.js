@@ -214,8 +214,6 @@ ModalManager.prototype.open = function(id, options) {
     return null;
   }
 
-  console.log(id);
-
   // Already opened: close the previous modal
   if(this.isOpened()) {
     this.close();

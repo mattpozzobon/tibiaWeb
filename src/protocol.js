@@ -847,8 +847,6 @@ const PlayerStatePacket = function(player) {
   this.writeUInt8(player.getProperty(CONST.PROPERTIES.ATTACK_SPEED));
 
   this.writeEquipment(player.containerManager.equipment);
-  console.log('packet cap: ',player.getProperty(CONST.PROPERTIES.CAPACITY));
-  console.log('packet max cap: ',player.getProperty(CONST.PROPERTIES.CAPACITY_MAX));
   this.writeUInt32(player.getProperty(CONST.PROPERTIES.CAPACITY));
   this.writeUInt32(player.getProperty(CONST.PROPERTIES.CAPACITY_MAX));
 
@@ -869,8 +867,6 @@ const PlayerStatePacket = function(player) {
   this.writeUInt8(player.getProperty(CONST.PROPERTIES.HEALTH));
   this.writeUInt8(player.getProperty(CONST.PROPERTIES.HEALTH_MAX));
 
-  console.log('packet mana: ', player.getProperty(CONST.PROPERTIES.MANA));
-  console.log('packet maxMana: ', player.getProperty(CONST.PROPERTIES.MANA_MAX));
   this.writeUInt8(player.getProperty(CONST.PROPERTIES.MANA));
   this.writeUInt8(player.getProperty(CONST.PROPERTIES.MANA_MAX));
   this.writeUInt8(player.getProperty(CONST.PROPERTIES.ENERGY));
@@ -878,7 +874,6 @@ const PlayerStatePacket = function(player) {
 
   // Conditions
   this.writeUInt8(0);
-
 }
 
 PlayerStatePacket.prototype = Object.create(PacketWriter.prototype);

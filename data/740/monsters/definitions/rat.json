@@ -1,10 +1,10 @@
 {
   "creatureStatistics": {
     "name": "Rat",
-    "health": 2,
+    "health": 20,
     "mana": 0,
     "maxMana": 0,
-    "maxHealth": 2000,
+    "maxHealth": 20,
     "attack": 20,
     "attackSpeed": 40,
     "defense": 5,

@@ -51,8 +51,31 @@ NetworkManager.prototype.readPacket = function(packet) {
 
   this.state.nPackets++;
 
+  const operationCode = packet.readUInt8();
+
+  try {
+    function getNameByNumber(data, number) {
+      for (const [key, value] of Object.entries(data)) {
+        if (typeof value === "object") {
+          // Recursively search within nested objects
+          const result = getNameByNumber(value, number);
+          if (result) return result;
+        } else if (value === number) {
+          return key;
+        }
+      }
+      return null; // Return null if not found
+    }
+  
+    const operationName = getNameByNumber(CONST.PROTOCOL.SERVER, operationCode) || 'Unknown';
+  
+    console.log(`Packet Code: ${operationCode} (${operationName})`);
+  } catch (error) {
+    console.error("Error processing packet:", error);
+  }
+
   // What operation the server sends is the first byte
-  switch(packet.readUInt8()) {
+  switch(operationCode) {
   
     case CONST.PROTOCOL.SERVER.SPELL_ADD: {
       return gameClient.interface.updateSpells(packet.readUInt16());
@@ -403,6 +426,7 @@ NetworkManager.prototype.__handlePacket = function(event) {
    * Function NetworkManager.__handlePacket
    * Handles an incoming binary message
    */
+
 
   // Wrap the buffer in a readable packet
   let packet = new PacketReader(event.data);

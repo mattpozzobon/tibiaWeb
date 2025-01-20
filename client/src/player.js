@@ -38,10 +38,9 @@ Player.prototype.setState = function(data) {
 
   // Capacity
   this.state.add("capacity", this.setCapacity.bind(this));
-  
-  this.state.add("maxHealth", this.setHealthStatus.bind(this));
-  this.state.add("mana", this.setManaStatus.bind(this));
+
   this.state.add("maxMana", this.setManaStatus.bind(this));
+  this.state.add("maxEnergy", this.setEnergyStatus.bind(this));
 
   // Other skills
   this.state.add("armor", this.setLevelSkillValue.bind(this, "armor"));
@@ -52,9 +51,10 @@ Player.prototype.setState = function(data) {
   this.state.maxCapacity = data.maxCapacity;
   this.state.capacity = data.capacity;
   this.state.health = data.health;
-  this.state.maxHealth = data.maxHealth;
   this.state.mana = data.mana;
   this.state.maxMana = data.maxMana;
+  this.state.energy = data.energy;
+  this.state.maxEnergy = data.maxEnergy;
   this.state.speed = data.speed;
   this.state.armor = 0;
   this.state.attack = 0;
@@ -158,17 +158,29 @@ Player.prototype.setManaStatus = function() {
 
   manaBar.firstElementChild.style.width = (currentMana / maxMana) * 100 + "%";
   manaBar.lastElementChild.innerHTML = `${currentMana} / ${maxMana}`;
+}
+
+Player.prototype.setEnergyStatus = function() {
+  const currentEnergy = this.state.energy;
+  const maxEnergy = this.state.maxEnergy;
+
+  const energyBar = document.getElementById("energy-bar");
+
+  energyBar.firstElementChild.style.width = (currentEnergy / maxEnergy) * 100 + "%";
+  energyBar.lastElementChild.innerHTML = `${currentEnergy} / ${maxEnergy}`;
 
 }
 
 Player.prototype.setHealthStatus = function() {
   const currentHealth = this.state.health;
-  const maxHealth = this.state.maxHealth;
+  const maxHealth = this.maxHealth;
 
   const healthBar = document.getElementById("health-bar");
 
   healthBar.firstElementChild.style.width = (currentHealth / maxHealth) * 100 + "%";
   healthBar.lastElementChild.innerHTML = `${currentHealth} / ${maxHealth}`;
+
+  this.characterElement.setDefault();
 };
 
 Player.prototype.setAmbientSound = function() {

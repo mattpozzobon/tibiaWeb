@@ -62,7 +62,6 @@ CreatureProperties.prototype.getId = function() {
 
 CreatureProperties.prototype.incrementProperty = function(type, amount) {
 
-  console.log('SOMETHING INCREMENTING. ', type);
   /*
    * Function CreatureProperties.incrementProperty
    * Adds an amount to the property 
@@ -94,8 +93,9 @@ CreatureProperties.prototype.setProperty = function(type, value) {
   }
   console.log(`[setProperty] Setting ${type} to ${value}, previous value: ${property}`);
 
+
   // Unchanged: do nothing
-  if(property === value) {
+  if(property === value || value < 0) {
     return;
   }
 
@@ -110,10 +110,8 @@ CreatureProperties.prototype.setProperty = function(type, value) {
 
   // Special handling
   if(type === CONST.PROPERTIES.HEALTH_MAX) {
-    console.log(`[setProperty] Updating maxMana from ${this.getProperty(type)} to ${value}`);
     this.setProperty(CONST.PROPERTIES.HEALTH, this.getProperty(CONST.PROPERTIES.HEALTH));
   } else if(type === CONST.PROPERTIES.MANA_MAX) {
-    console.log(`[setProperty] Updating maxMana from ${this.getProperty(type)} to ${value}`);
     this.setProperty(CONST.PROPERTIES.MANA, this.getProperty(CONST.PROPERTIES.MANA));
   }
 

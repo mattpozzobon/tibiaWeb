@@ -59,7 +59,6 @@ const Creature = function(data) {
   this.__animations = new Set();
 
   this.state.health = data.health;
-
 }
 
 Creature.prototype.removeCondition = function(cid) {
@@ -282,9 +281,20 @@ Creature.prototype.getHealthFraction = function() {
    * Function Creature.getHealthFraction
    * Returns the health fraction of a creature
    */
-
   // Clamp the fraction between 0 and 1
+
   return (this.state.health / this.maxHealth).clamp(0, 1);
+
+}
+
+Creature.prototype.getManaFraction = function() {
+
+  /*
+   * Function Creature.getHealthFraction
+   * Returns the health fraction of a creature
+   */
+  // Clamp the fraction between 0 and 1
+  return (this.mana / this.maxMana).clamp(0, 1);
 
 }
 
@@ -421,7 +431,6 @@ Creature.prototype.getMoveOffset = function() {
   }
 
 }
-
 
 Creature.prototype.moveTo = function(position, speed) {
 
@@ -667,5 +676,4 @@ Creature.prototype.__createCharacterElement = function() {
 
   // Make sure to update it directly
   this.characterElement.setHealthFraction(this.getHealthFraction());
-
 }

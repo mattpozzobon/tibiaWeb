@@ -50,6 +50,7 @@ CharacterElement.prototype.setHealthFraction = function(fraction) {
    */
 
   // Set the color of the health bar too
+
   let color = (fraction > 0.50) ? Interface.prototype.COLORS.LIGHTGREEN :
               (fraction > 0.25) ? Interface.prototype.COLORS.ORANGE :
               (fraction > 0.10) ? Interface.prototype.COLORS.RED : Interface.prototype.COLORS.DARKRED;
@@ -86,7 +87,6 @@ CharacterElement.prototype.setManaFraction = function(fraction) {
    */
 
   this.element.querySelector(".value-mana").style.width = fraction.toPercentage() + "%";
-
 }
 
 CharacterElement.prototype.setNameColor = function(color) {
