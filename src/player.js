@@ -151,6 +151,12 @@ Player.prototype.getVocation = function() {
 
 }
 
+Player.prototype.getHealth = function() {
+
+  return this.getProperty(CONST.PROPERTIES.HEALTH);
+
+}
+
 Player.prototype.extendCondition = function(id, ticks, duration) {
 
   // Does not exist yet?
@@ -325,7 +331,7 @@ Player.prototype.canUseHangable = function(thing) {
 
 }
 
-Player.prototype.decreaseHealth = function(source, amount) {
+Player.prototype.decreaseHealth = function(amount) {
 
   /*
    * Function Player.decreaseHealth
@@ -335,9 +341,15 @@ Player.prototype.decreaseHealth = function(source, amount) {
   // Put the target player in combat
   this.combatLock.activate()
 
-  // Change the property 
-  this.incrementProperty(CONST.PROPERTIES.HEALTH, -amount);
+  let currentHealth = this.getProperty(CONST.PROPERTIES.HEALTH);
 
+  if (currentHealth >= amount){
+    this.incrementProperty(CONST.PROPERTIES.HEALTH, -amount);
+  }
+  else{
+    this.incrementProperty(CONST.PROPERTIES.HEALTH, -currentHealth);
+  }
+  
   // Send damage color to the player
   this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.RED));
 
@@ -347,6 +359,53 @@ Player.prototype.decreaseHealth = function(source, amount) {
   }
 
 }
+
+Player.prototype.decreaseMana = function(amount) {
+
+  /*
+   * Function Player.decreaseHealth
+   * Decreases the health of the player
+   */
+
+  // Put the target player in combat
+  this.combatLock.activate()
+
+  let currentMana = this.getProperty(CONST.PROPERTIES.MANA);
+
+  if (currentMana >= amount){
+    this.incrementProperty(CONST.PROPERTIES.MANA, -amount);
+  }
+  else {
+    this.incrementProperty(CONST.PROPERTIES.MANA, -currentMana);
+  }
+  
+  // Send damage color to the player
+  this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.BLUE));
+}
+
+Player.prototype.decreaseEnergy = function(amount) {
+
+  /*
+   * Function Player.decreaseHealth
+   * Decreases the health of the player
+   */
+
+  // Put the target player in combat
+  this.combatLock.activate()
+
+  let currentEnergy = this.getProperty(CONST.PROPERTIES.ENERGY);
+
+  if (currentEnergy >= amount){
+    this.incrementProperty(CONST.PROPERTIES.ENERGY, -amount);
+  }
+  else {
+    this.incrementProperty(CONST.PROPERTIES.ENERGY, -currentEnergy);
+  }
+  
+  // Send damage color to the player
+  this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.BLUE));
+}
+
 
 Player.prototype.getCorpse = function() {
 

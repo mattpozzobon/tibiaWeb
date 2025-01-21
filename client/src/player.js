@@ -1,7 +1,6 @@
 const Player = function(data) {
   Creature.call(this, data); // Call the parent constructor
 
-  this.type = 0;
   this.setState(data);
 
   // Players have equipment
@@ -18,6 +17,9 @@ const Player = function(data) {
 
   // Container for the player's friend list
   this.friendlist = new Friendlist(data.friendlist);
+
+  this.characterElement.addManaBar((this.state.mana / this.state.maxMana) * 100 + "%");
+  this.characterElement.addEnergyBar((this.state.energy / this.state.maxEnergy) * 100 + "%");
 };
 
 Player.prototype = Object.create(Creature.prototype);
@@ -39,7 +41,10 @@ Player.prototype.setState = function(data) {
   // Capacity
   this.state.add("capacity", this.setCapacity.bind(this));
 
+  this.state.add("mana", this.setManaStatus.bind(this));
   this.state.add("maxMana", this.setManaStatus.bind(this));
+ 
+  this.state.add("energy",  this.setEnergyStatus.bind(this));
   this.state.add("maxEnergy", this.setEnergyStatus.bind(this));
 
   // Other skills
@@ -56,9 +61,37 @@ Player.prototype.setState = function(data) {
   this.state.energy = data.energy;
   this.state.maxEnergy = data.maxEnergy;
   this.state.speed = data.speed;
-  this.state.armor = 0;
+  this.state.armor = 90;
   this.state.attack = 0;
 
+}
+
+Player.prototype.setManaStatus = function() {
+  const currentMana = this.state.mana;
+  const maxMana = this.state.maxMana;
+  const fraction = (currentMana / maxMana) * 100 + "%"
+
+  // above characther bars
+  this.characterElement.setDefaultMana(fraction);
+
+  // panel bars
+  const manaBar = document.getElementById("mana-bar");
+  manaBar.firstElementChild.style.width = (fraction);
+  manaBar.lastElementChild.innerHTML = `${currentMana} / ${maxMana}`;
+}
+
+Player.prototype.setEnergyStatus = function() {
+  const currentEnergy = this.state.energy;
+  const maxEnergy = this.state.maxEnergy;
+  const fraction = (currentEnergy / maxEnergy) * 100 + "%"
+
+  // above characther bars
+  this.characterElement.setDefaultEnergy(fraction);
+
+  // panel bars
+  const manaBar = document.getElementById("energy-bar");
+  manaBar.firstElementChild.style.width = (fraction);
+  manaBar.lastElementChild.innerHTML = `${currentEnergy} / ${maxEnergy}`;
 }
 
 Player.prototype.getSpeed = function() {
@@ -133,41 +166,6 @@ Player.prototype.setLevelSkillValue = function(which, value) {
    */
 
   gameClient.interface.windowManager.getWindow("skill-window").setSkillValue(which, value);
-
-}
-
-Player.prototype.setBarStatus = function(bar) {
-
-  /*
-   * Function Player.setBarStatus
-   * Sets the mana status to the DOM
-   */
-
-  let percentage = this.getHealthPercentage().clamp(0, 100);
-
-  bar.firstElementChild.style.width = percentage + "%";
-  bar.lastElementChild.innerHTML = percentage + "%";
-
-}
-
-Player.prototype.setManaStatus = function() {
-  const currentMana = this.state.mana;
-  const maxMana = this.state.maxMana;
-
-  const manaBar = document.getElementById("mana-bar");
-
-  manaBar.firstElementChild.style.width = (currentMana / maxMana) * 100 + "%";
-  manaBar.lastElementChild.innerHTML = `${currentMana} / ${maxMana}`;
-}
-
-Player.prototype.setEnergyStatus = function() {
-  const currentEnergy = this.state.energy;
-  const maxEnergy = this.state.maxEnergy;
-
-  const energyBar = document.getElementById("energy-bar");
-
-  energyBar.firstElementChild.style.width = (currentEnergy / maxEnergy) * 100 + "%";
-  energyBar.lastElementChild.innerHTML = `${currentEnergy} / ${maxEnergy}`;
 
 }
 

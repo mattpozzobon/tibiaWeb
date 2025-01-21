@@ -217,6 +217,22 @@ GameClient.prototype.isSelf = function(creature) {
 
 }
 
+GameClient.prototype.isSelfID = function(creature) {
+
+  /*
+   * Function GameClient.isSelf
+   * Returns true if the passed creature is the player
+   */
+
+  return this.player.id === creature.id;
+}
+
+GameClient.prototype.getSelfID = function() {
+  return this.player.id;
+}
+
+
+
 GameClient.prototype.handleAcceptLogin = function(packet) {
 
   /*
@@ -229,7 +245,6 @@ GameClient.prototype.handleAcceptLogin = function(packet) {
   this.interface.modalManager.close();
 
   // Create a new player with a particular server identifier
-  console.log('server packet: ', packet);
   this.player = new Player(packet);
 
   // Add the player to the game world

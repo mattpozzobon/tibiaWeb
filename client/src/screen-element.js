@@ -1,5 +1,4 @@
 const ScreenElement = function(id) {
-
   /*
    * Class ScreenElement
    * Base class for DOM elements on the game screen
@@ -9,7 +8,6 @@ const ScreenElement = function(id) {
    * ScreenElement.remove() - removes the screen element DOM
    * ScreenElement.hide() - hides the screen element DOM
    * ScreenElement.show() - shows the screen element DOM
-   *
    */
 
   // Specific classes implement and create the element
@@ -17,44 +15,57 @@ const ScreenElement = function(id) {
 
   // Show the element when it is spawned
   this.show();
-
-}
+};
 
 ScreenElement.prototype.remove = function() {
-
   /*
    * Function ScreenElement.remove
    * Removes the element from the DOM
    */
-
   this.element.remove();
-
-}
+};
 
 ScreenElement.prototype.hide = function() {
-
   /*
    * Function ScreenElement.hide
    * Hides the element from the game screen
    */
-
   this.element.style.display = "none";
-
-}
+};
 
 ScreenElement.prototype.show = function() {
-
   /*
    * Function ScreenElement.show
    * Shows the element on the game screen
    */
-
   this.element.style.display = "block";
+};
 
-}
+ScreenElement.prototype.addBar = function(barType) {
+  /*
+   * Function ScreenElement.addBar
+   * Dynamically adds a bar to the screen element
+   *
+   * @param {string} barType - The type of bar to add (e.g., "mana", "health")
+   * @returns {HTMLElement} - The newly added bar element
+   */
+
+  // Create the bar container
+  const barContainer = document.createElement("div");
+  barContainer.className = "character-element-bar";
+
+  // Create the inner bar
+  const barValue = document.createElement("div");
+  barValue.className = `value-${barType}`;
+  barContainer.appendChild(barValue);
+
+  // Append to the main element
+  this.element.appendChild(barContainer);
+
+  return barValue; // Return the inner bar for direct manipulation
+};
 
 ScreenElement.prototype.__updateTextPosition = function(offset) {
-
   /*
    * Function ScreenElement.__updateTextPosition
    * Actually applies the transform
@@ -71,11 +82,9 @@ ScreenElement.prototype.__updateTextPosition = function(offset) {
 
   // Defer showing the element to prevent glitchy behavior
   setTimeout(() => this.show());
-
-}
+};
 
 ScreenElement.prototype.__getAbsoluteOffset = function(position) {
-
   /*
    * Function ScreenElement.__getAbsoluteOffset
    * Returns the offset of the screen element based on its properties and the screen size
@@ -89,6 +98,5 @@ ScreenElement.prototype.__getAbsoluteOffset = function(position) {
   let top = (fraction * position.y) - (0.5 * this.element.offsetHeight);
 
   // Return the new offsets
-  return { left, top } 
-
-}
+  return { left, top };
+};

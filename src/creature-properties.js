@@ -119,7 +119,7 @@ CreatureProperties.prototype.setProperty = function(type, value) {
   let packet = this.__getCreaturePropertyPacket(type, value);
 
   // All property types above 12 are private to the player
-  if(type > 12) {
+  if(type > 12 && type <= 26) {
     return this.__creature.write(packet);
   }
 
@@ -149,6 +149,8 @@ CreatureProperties.prototype.__getCreaturePropertyPacket = function(type, value)
     case CONST.PROPERTIES.HEALTH_MAX:
     case CONST.PROPERTIES.MANA:
     case CONST.PROPERTIES.MANA_MAX:
+    case CONST.PROPERTIES.ENERGY:
+    case CONST.PROPERTIES.ENERGY_MAX:
     case CONST.PROPERTIES.SPEED:
     case CONST.PROPERTIES.DEFENSE:
     case CONST.PROPERTIES.ATTACK:

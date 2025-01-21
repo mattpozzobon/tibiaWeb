@@ -17,7 +17,7 @@ const Creature = function(data) {
 
   // Save properties to the instance
   this.id = data.id;
-  this.type = data.type;
+  this.type = data.type != null ? data.type : 0;
   this.name = data.name;
   this.__position = data.position;
   this.maxHealth = data.maxHealth;
@@ -110,9 +110,7 @@ Creature.prototype.blockHit = function() {
 }
 
 Creature.prototype.setHealthStatus = function() {
-
   this.characterElement.setDefault();
-
 }
 
 Creature.prototype.getMaxFloor = function() {

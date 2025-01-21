@@ -76,6 +76,15 @@ CommandHandler.prototype.handle = function(player, message) {
     return gameServer.world.creatureHandler.spawnCreature(id, player.getPosition());
   }
 
+  if(message[0] === "/add") {
+
+    player.decreaseHealth(1);
+    player.decreaseMana(1);
+    player.decreaseEnergy(1);
+    gameServer.world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.TELEPORT);
+    return;
+  }
+
   if(message[0] === "/path") {
     let a = player.getPosition();
     let b = a.add(new Position(Number(message[1]), Number(message[2]), 0));

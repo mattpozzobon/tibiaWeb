@@ -26,8 +26,22 @@ CharacterElement.prototype.setDefault = function() {
    */
 
   this.setHealthFraction(this.__creature.getHealthFraction());
-  this.setManaColor(Interface.prototype.COLORS.BLUE);
+  //this.setManaColor(Interface.prototype.COLORS.BLUE);
 
+}
+
+CharacterElement.prototype.setDefaultEnergy = function(value) {
+  if (this.energyBar){
+    let energyBar = this.element.querySelector(".value-energy");
+    energyBar.style.width = value;
+  }
+}
+
+CharacterElement.prototype.setDefaultMana = function(value) {
+  if (this.manaBar){
+    let manaBar = this.element.querySelector(".value-mana");
+    manaBar.style.width = value;
+  }
 }
 
 CharacterElement.prototype.setGrey = function() {
@@ -73,22 +87,6 @@ CharacterElement.prototype.setHealthColor = function(color) {
 
 }
 
-CharacterElement.prototype.setManaColor = function(color) {
-
-  this.element.querySelector(".value-mana").style.backgroundColor = Interface.prototype.getHexColor(color);
-
-}
-
-CharacterElement.prototype.setManaFraction = function(fraction) {
-
-  /*
-   * Class CharacterElement.setManaFraction
-   * Sets the fraction of the mana bar width
-   */
-
-  this.element.querySelector(".value-mana").style.width = fraction.toPercentage() + "%";
-}
-
 CharacterElement.prototype.setNameColor = function(color) {
 
   /*
@@ -129,3 +127,32 @@ CharacterElement.prototype.setTextPosition = function() {
   this.__updateTextPosition(offset);
 
 }
+
+CharacterElement.prototype.addManaBar = function(value) {
+
+  /*
+   * Function CharacterElement.addManaBar
+   * Dynamically adds a mana bar to the character element
+   */
+
+  if (!this.manaBar) {
+    this.manaBar = this.addBar("mana");
+  } 
+
+  this.setDefaultMana(value);
+};
+
+CharacterElement.prototype.addEnergyBar = function(value) {
+
+  /*
+   * Function CharacterElement.addManaBar
+   * Dynamically adds a mana bar to the character element
+   */
+
+  if (!this.energyBar) {
+    this.energyBar = this.addBar("energy");
+  }
+
+  this.setDefaultEnergy(value);
+};
+

@@ -12,15 +12,23 @@ PacketHandler.prototype.handlePropertyChange = function(packet) {
 
   let creature = gameClient.world.getCreature(packet.guid);
 
+  console.log('creature: ', creature);
   if(creature === null) {
     return;
   }
+
+  console.log(`property: ${packet.property}, value: ${packet.value}`);
+
 
   switch(packet.property) {
     case CONST.PROPERTIES.HEALTH: 
       return creature.state.health = packet.value;
     case CONST.PROPERTIES.HEALTH_MAX: 
       return creature.maxHealth = packet.value;
+    case CONST.PROPERTIES.MANA: 
+      return creature.state.mana = packet.value
+    case CONST.PROPERTIES.ENERGY: 
+      return creature.state.energy = packet.value
   }
 
 }
@@ -990,9 +998,8 @@ PacketHandler.prototype.handleEntityReference = function(packet) {
     return gameClient.world.addCreature(gameClient.player);
   }
 
+  console.log('handleEntityReference: ', packet);
   gameClient.world.createCreature(packet.id, new Creature(packet));
-
-
 }
 
 PacketHandler.prototype.handleCreatureTurn = function(packet) {

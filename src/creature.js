@@ -426,7 +426,7 @@ Creature.prototype.isZeroHealth = function() {
    * Returns true if the creature has 0 health and is therefore slain
    */
 
-  return this.getProperty(CONST.PROPERTIES.HEALTH) === 0;
+  return this.getProperty(CONST.PROPERTIES.HEALTH) === 0 || this.getProperty(CONST.PROPERTIES.HEALTH) === null || this.getProperty(CONST.PROPERTIES.HEALTH) === undefined;
 
 }
 
