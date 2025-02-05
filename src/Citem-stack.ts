@@ -137,7 +137,6 @@ class ItemStack {
   }
 
   isValidIndex(index: number): boolean {
-    console.log('this.__items.length', this.__items.length);
     return (
       index === ItemStack.TOP_INDEX || (index >= 0 && index <= this.__items.length)
     );

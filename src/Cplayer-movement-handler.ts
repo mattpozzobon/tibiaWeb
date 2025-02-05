@@ -67,7 +67,7 @@ class PlayerMovementHandler {
     // Not successful: teleport to the current position
     if (!success) {
       getGameServer().world.creatureHandler.teleportCreature(this.__player, this.__player.position);
-    }
+    } 
   }
 
   private __unlockMovementAction(): void {

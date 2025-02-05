@@ -71,28 +71,24 @@ class Tile extends Thing implements ITile{
     if(!this.itemStack?.isValidIndex(index)) {
       return;
     }
-    console.log('terceiro');
-    console.log('1');
     // Guard: tile is full
     if(this.isFull()) {
       return this.eliminateItem(thing);
     }
-    console.log('2');
     // Do not allow items to be added on expertise doors
     if(this.itemStack.hasMagicDoor()) {
       return;
     }
-    console.log('3');
+
     if (this.itemStack.hasMagicDoor()) return;
 
-    console.log('4');
     if (thing.isMagicDoor()) {
       const door = thing as IDoor;
       if (door.isOpened()) {
         this.once("exit", door.close.bind(door));
       }
     }
-    console.log('5');
+
     thing.setParent(this);
     const currentThing = this.peekIndex(index);
     if (currentThing && thing.isStackable() && currentThing.id === thing.id) {
@@ -196,7 +192,9 @@ class Tile extends Thing implements ITile{
     if (!this.hasItems()) {
       return -1;
     }
-  
+
+    console.log('thing', thing.id);
+    console.log(this.itemStack?.getItems().indexOf(thing));
     const index = this.itemStack?.getItems().indexOf(thing) ?? -1;
     if (index === -1) {
       return -1;
@@ -279,10 +277,11 @@ class Tile extends Thing implements ITile{
     this.itemStack?.deleteThing(index);
     this.broadcast(new ItemRemovePacket(this.position, index, thing.getCount()));
   }
+
   hasItems(): boolean {
     return !!this.itemStack;
   }
-  
+
   isOccupied(): boolean {
     if (this.isBlockSolid()) {
       return true;
@@ -463,7 +462,7 @@ class Tile extends Thing implements ITile{
      * Removes a creature's reference from the tile
      */
     this.creatures?.delete(creature);
-  
+    this.emit("exit", creature);
     if (this.creatures?.size === 0) {
       delete this.creatures;
     }

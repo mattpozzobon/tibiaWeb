@@ -4,6 +4,7 @@ import { getGameServer } from "./helper/appContext";
 import { IThing } from "interfaces/IThing";
 import { IPlayer } from "interfaces/IPlayer";
 import Item from "./Citem";
+import { ICreature } from "interfaces/ICreature";
 
 class Door extends Item implements IDoor {
   constructor(id: number) {
@@ -86,6 +87,10 @@ class Door extends Item implements IDoor {
     player.sendCancelMessage("The gate of expertise pulls you in.");
     player.movementHandler.lock(player.getStepDuration(tile.getFriction()));
     getGameServer().world.creatureHandler.moveCreature(player, tile.position);
+    
+    tile.once("exit", () => {
+      this.forceReplace();
+    })
   }
 
   isHouseDoor(): boolean {
@@ -158,23 +163,17 @@ class Door extends Item implements IDoor {
   }
 
   private __change(direction: number): IThing | null {
-    /*
-     * Function Door.__change
-     * Replaces the door with its open/closed counterpart
-     */
-    console.log('direction:',direction);
     const thing = getGameServer().database.createThing(this.id + direction);
-
-    if(thing){
-      if(this.actionId ){
+    if (thing) {
+      if (this.actionId) {
         thing.setActionId(this.actionId);
       }
-      
       this.replace(thing);
+      console.log(`Door now has id ${this.id}`);
     }
-
     return thing;
   }
+
 }
 
 export default Door;

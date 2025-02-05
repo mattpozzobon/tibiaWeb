@@ -30,6 +30,7 @@ export interface IThing {
   setActionId(actionId: number): void;
   setUniqueId(uid: number): void;
   setDuration(duration: number): void;
+  forceReplace(n:number): void;
   setParent(parent: any): void;
   setContent(content: any): void;
   getShootType(): any;

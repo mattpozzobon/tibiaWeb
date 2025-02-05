@@ -8,7 +8,6 @@ import { IThingPrototype } from "interfaces/IThing-prototype";
 import { IPosition } from "interfaces/IPosition";
 import { IDoor } from "interfaces/IDoor";
 import ITile from "interfaces/ITile";
-import Keyring from "./Ckeyring";
 import BaseContainer from "Cbase-container";
 
 class Thing extends ThingEmitter implements IThing{
@@ -272,6 +271,19 @@ class Thing extends ThingEmitter implements IThing{
     this.parent?.addThing(thing, this.remove());
     this.cleanup();
     return thing;
+  }
+
+  // Expertise Door
+  forceReplace(): void {
+    const newThing = getGameServer().database.createThing(this.id); 
+    const c = this.parent!.peekIndex(0)
+    if (this.actionId && newThing) {
+      newThing.setActionId(this.actionId);
+    }
+    if (newThing) {
+      c.remove();
+      this.parent?.addThing(newThing, 0);
+    }
   }
 
   rotate(): void {
