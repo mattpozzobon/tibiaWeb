@@ -62,6 +62,7 @@ GameClient.prototype.setServerData = function(packet) {
 
   let serverData = packet.readServerData();
 
+  console.log('serverData: ', serverData);
   // The server suggested client version must match the local version
   if(serverData.clientVersion !== this.spriteBuffer.getVersion() || serverData.clientVersion !== this.dataObjects.getVersion()) {
     gameClient.disconnect();

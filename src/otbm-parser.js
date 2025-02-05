@@ -282,6 +282,8 @@ OTBMParser.prototype.readNode = function(parentNode, data) {
 
   }
 
+  return i;
+
 }
 
 module.exports = OTBMParser;

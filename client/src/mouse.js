@@ -237,10 +237,11 @@ Mouse.prototype.__handleCanvasMouseUp = function(event) {
       return this.__handleMouseClick();
     }
 
-    // The position where the item is used must be besides the player
-    if(!this.__mouseDownObject.which.getPosition().besides(gameClient.player.getPosition())) {
-      return gameClient.interface.setCancelMessage("You have to move closer.");
-    }
+    // The position where the item is used must be besides the player 
+    // Server does this check
+    // if(!this.__mouseDownObject.which.getPosition().besides(gameClient.player.getPosition())) {
+    //   return gameClient.interface.setCancelMessage("You have to move closer.");
+    // }
 
   }
 

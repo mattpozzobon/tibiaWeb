@@ -131,6 +131,7 @@ World.prototype.__handleCreatureMove = function(id, position, speed) {
    * Handles movement of a creature with a particular identifier to position
    */
 
+  console.log('__handleCreatureMove 1', speed);
   // Fetch the creature
   let creature = this.getCreature(id);
 
@@ -158,6 +159,7 @@ World.prototype.__handleCreatureMove = function(id, position, speed) {
   tile.addCreature(creature);
 
   // Actually update the actual creature position
+  console.log('__handleCreatureMove 2', speed);
   creature.moveTo(position, speed);
 
   // Check ambient sound

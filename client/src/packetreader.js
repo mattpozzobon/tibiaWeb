@@ -411,13 +411,14 @@ PacketReader.prototype.readEntityMove = function() {
    * Function PacketReader.readEntityMove
    * Reads an entity move event towards a position with a particular speed
    */
-
-  return new Object({
+  const t = new Object({
     "id": this.readUInt32(),
     "position": this.readPosition(),
     "speed": this.readUInt16()
   });
 
+  console.log('Speed from server: ', t.speed);
+  return t
 }
 
 PacketReader.prototype.__readChunkTiles = function() {
@@ -870,7 +871,7 @@ PacketReader.prototype.readItemInformation = function() {
    * Reads item information from a packet
    */
 
-  return new Object({
+  var t = new Object({
     "sid": this.readUInt16(),
     "cid":  this.readUInt16(),
     "weight": this.readUInt16(),
@@ -880,8 +881,13 @@ PacketReader.prototype.readItemInformation = function() {
     "article": this.readString(),
     "name": this.readString(),
     "description": this.readString(),
-    "count": this.readUInt8()
-  });
+    "count": this.readUInt8(),
+    "x": this.readUInt16(),
+    "y": this.readUInt16(),
+    "z": this.readUInt16(),
+  })
+  console.log('Item info:',t);
+  return t;
 
 }
 

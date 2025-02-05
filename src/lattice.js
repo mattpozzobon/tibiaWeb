@@ -352,7 +352,6 @@ Lattice.prototype.enablePathfinding = function(tile, refreshNeighbours) {
 }
 
 Lattice.prototype.setReferences = function() {
-
   this.__setReferences(this.__chunksPositive);
   this.__setReferences(this.__chunksNegative);
 

@@ -437,6 +437,7 @@ Creature.prototype.moveTo = function(position, speed) {
    * Moves a creature to the given position
    */
 
+  console.log('moveTo speed1, ',speed);
   // Cancel event if we are not within the world bounds
   if(!gameClient.world.isValidWorldPosition(position)) {
     return false;
@@ -450,6 +451,7 @@ Creature.prototype.moveTo = function(position, speed) {
     this.__movementEvent.cancel();
   }
 
+  console.log('moveTo speed 2, ',speed);
   // Calculate the speed. This is doubled when moving diagonally (effectively 2 squares)
   let modSlowness = (this.getPosition().isDiagonal(position) ? 2 : 1) * speed;
 

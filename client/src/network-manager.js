@@ -52,8 +52,7 @@ NetworkManager.prototype.readPacket = function(packet) {
   this.state.nPackets++;
 
   const operationCode = packet.readUInt8();
-
-  let debug = false;
+  let debug = true;
   
   if(debug === true){
     try {

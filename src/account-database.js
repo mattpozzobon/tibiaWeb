@@ -84,6 +84,7 @@ AccountDatabase.prototype.__createNewDatabase = function(callback) {
     // Create a default character
     if(CONFIG.DATABASE.DEFAULT_CHARACTER.ENABLED) {
       this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER);
+      this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER0);
       this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER1);
       this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER2);
       this.__createDefaultCharacter(CONFIG.DATABASE.DEFAULT_CHARACTER3);
@@ -106,7 +107,8 @@ AccountDatabase.prototype.__createDefaultCharacter = function(DEFAULT_CHARACTER)
     "account": DEFAULT_CHARACTER.ACCOUNT,
     "password": DEFAULT_CHARACTER.PASSWORD,
     "name": DEFAULT_CHARACTER.NAME,
-    "sex": DEFAULT_CHARACTER.SEX
+    "sex": DEFAULT_CHARACTER.SEX,
+    "role": DEFAULT_CHARACTER.ROLE
   })
 
   // Add a default account
@@ -209,7 +211,7 @@ AccountDatabase.prototype.createAccount = function(queryObject, callback) {
       // Creates a new character from a blueprint
       let account = queryObject.account.toLowerCase();
       let name = queryObject.name.capitalize();
-      let character = this.characterCreator.create(name, queryObject.sex);
+      let character = this.characterCreator.create(name, queryObject.sex, queryObject.role);
       let values = new Array(account, hash, name, character);
 
       // Insert in to the database (may conflict)

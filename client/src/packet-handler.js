@@ -29,6 +29,8 @@ PacketHandler.prototype.handlePropertyChange = function(packet) {
       return creature.state.mana = packet.value
     case CONST.PROPERTIES.ENERGY: 
       return creature.state.energy = packet.value
+    case CONST.PROPERTIES.DIRECTION: 
+      return creature.__setLookDirection(packet.value);
   }
 
 }
@@ -728,6 +730,10 @@ PacketHandler.prototype.handleItemInformation = function(packet) {
   if(gameClient.renderer.debugger.isActive()) {
     message += " (SID: %s, CID: %s)".format(packet.sid, packet.cid);
   }
+  
+  if(packet.x && packet.y) {
+    message += " (X: %s, Y: %s, Z: %s)".format(packet.x, packet.y, packet.z);
+  }
 
   // Show a server message
   gameClient.interface.notificationManager.setServerMessage(
@@ -896,6 +902,7 @@ PacketHandler.prototype.handleCreatureServerMove = function(packet) {
     return;
   }
 
+  console.log('__handleCreatureMove', packet.speed);
   // Execute movement
   gameClient.world.__handleCreatureMove(packet.id, packet.position, packet.speed);
 
