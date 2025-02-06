@@ -2,6 +2,7 @@ import { PacketHandler } from "./Cpacket-handler";
 import { PacketReader } from "./Cpacket-reader";
 import { createWriteStream, WriteStream } from "fs";
 import { CONFIG, CONST, getGameServer } from "./helper/appContext";
+import GameSocket from "Cgamesocket";
 
 export class NetworkManager {
   private packetHandler: PacketHandler;
@@ -23,19 +24,19 @@ export class NetworkManager {
     this.packetStream = createWriteStream("packets.wal");
   }
 
-  writeOutgoingBuffer(gameSocket: any): void {
+  writeOutgoingBuffer(gameSocket: GameSocket): void {
     /*
      * Function writeOutgoingBuffer
      * Flushes the outgoing network buffer to the client
      */
-    if (gameSocket.socket.destroyed) return;
+    if (gameSocket.socket.readyState !== (gameSocket.socket.constructor as typeof WebSocket).OPEN) return;
     if (gameSocket.outgoingBuffer.isEmpty()) return;
 
     const message = gameSocket.outgoingBuffer.flush();
     gameSocket.socket.send(message);
   }
 
-  handleIO(gameSocket: any): void {
+  handleIO(gameSocket: GameSocket): void {
     /*
      * Function handleIO
      * Handles buffered input and output for a game socket
@@ -44,7 +45,7 @@ export class NetworkManager {
     this.writeOutgoingBuffer(gameSocket);
   }
 
-  readIncomingBuffer(gameSocket: any): void {
+  readIncomingBuffer(gameSocket: GameSocket): void {
     /*
      * Function readIncomingBuffer
      * Flushes the incoming network message buffer
@@ -60,11 +61,11 @@ export class NetworkManager {
     const packet = new PacketReader(buffer);
 
     if (packet.isReadable()) {
-      gameSocket.player.idleHandler.extend();
+      gameSocket.player?.idleHandler.extend();
     }
 
     while (packet.isReadable()) {
-      if (gameSocket.socket.destroyed) return;
+      if (gameSocket.socket.readyState !== (gameSocket.socket.constructor as typeof WebSocket).OPEN) return;
       try {
         this.__readPacket(gameSocket, packet);
       } catch (exception) {
@@ -75,60 +76,69 @@ export class NetworkManager {
     }
   }
 
-  private __readPacket(gameSocket: any, packet: PacketReader): void {
+  private __readPacket(gameSocket: GameSocket, packet: PacketReader): void {
     /*
-     * Function __readPacket
-     * Reads a single packet from the passed buffer
+     * Reads a single packet from the passed buffer using a lookup table.
      */
     const opcode = packet.readUInt8();
+  
+    // Early return if there is no player.
+    if (!gameSocket.player) {
+      return;
+    }
+  
+    const handlers: Record<number, (gs: GameSocket, p: PacketReader) => void> = {
+      [CONST.PROTOCOL.CLIENT.BUY_OFFER]: (gs, p) =>
+        gs.player!.handleBuyOffer(p.readBuyOffer()),
+  
+      // TODO
+      // [CONST.PROTOCOL.CLIENT.TARGET_CANCEL]: (gs, p) => gs.player!.setTarget(null),
+      [CONST.PROTOCOL.CLIENT.MOVE]:                     (gs, p) => gs.player!.movementHandler.handleMovement(p.readUInt8()),
+  
+      [CONST.PROTOCOL.CLIENT.FRIEND_ADD]:               (gs, p) => gs.player!.friendlist.add(p.readString()),
+  
+      [CONST.PROTOCOL.CLIENT.FRIEND_REMOVE]:            (gs, p) => gs.player!.friendlist.remove(p.readString()),
+  
+      [CONST.PROTOCOL.CLIENT.THING_USE]:                (gs, p) => gs.player!.useHandler.handleItemUse(p.readPositionAndIndex(gs.player!)),
+  
+      [CONST.PROTOCOL.CLIENT.THING_USE_WITH]:           (gs, p) => gs.player!.useHandler.handleActionUseWith(p.readItemUseWith(gs.player!)),
+  
+      [CONST.PROTOCOL.CLIENT.OUTFIT]:                   (gs, p) => gs.player!.changeOutfit(p.readOutfit()),
+  
+      [CONST.PROTOCOL.CLIENT.CAST_SPELL]:               (gs, p) => gs.player!.spellbook.handleSpell(p.readUInt16()),
+  
+      [CONST.PROTOCOL.CLIENT.TURN]:                     (gs, p) => gs.player!.setDirection(p.readUInt8()),
+  
+      [CONST.PROTOCOL.CLIENT.OPEN_KEYRING]:             (gs, p) => gs.player!.containerManager.openKeyring(),
 
-    switch (opcode) {
-      case CONST.PROTOCOL.CLIENT.BUY_OFFER:
-        return gameSocket.player.handleBuyOffer(packet.readBuyOffer());
-      case CONST.PROTOCOL.CLIENT.TARGET_CANCEL:
-        return gameSocket.player.setTarget(null);
-      case CONST.PROTOCOL.CLIENT.FRIEND_ADD:
-        return gameSocket.player.friendlist.add(packet.readString());
-      case CONST.PROTOCOL.CLIENT.FRIEND_REMOVE:
-        return gameSocket.player.friendlist.remove(packet.readString());
-      case CONST.PROTOCOL.CLIENT.THING_LOOK:
-        return this.packetHandler.handleItemLook(gameSocket.player, packet.readPositionAndIndex(gameSocket.player));
-      case CONST.PROTOCOL.CLIENT.THING_USE:
-        return gameSocket.player.useHandler.handleItemUse(packet.readPositionAndIndex(gameSocket.player));
-      case CONST.PROTOCOL.CLIENT.THING_USE_WITH:
-        return gameSocket.player.useHandler.handleActionUseWith(packet.readItemUseWith(gameSocket.player));
-      case CONST.PROTOCOL.CLIENT.OUTFIT:
-        return gameSocket.player.changeOutfit(packet.readOutfit());
-      case CONST.PROTOCOL.CLIENT.CHANNEL_LEAVE:
-        return getGameServer().world.channelManager.leaveChannel(gameSocket.player, packet.readUInt8());
-      case CONST.PROTOCOL.CLIENT.CHANNEL_JOIN:
-        return getGameServer().world.channelManager.joinChannel(gameSocket.player, packet.readUInt8());
-      case CONST.PROTOCOL.CLIENT.CAST_SPELL:
-        return gameSocket.player.spellbook.handleSpell(packet.readUInt16());
-      case CONST.PROTOCOL.CLIENT.THING_MOVE:
-        return this.packetHandler.moveItem(gameSocket.player, packet.readMoveItem(gameSocket.player));
-      case CONST.PROTOCOL.CLIENT.TURN:
-        return gameSocket.player.setDirection(packet.readUInt8());
-      case CONST.PROTOCOL.CLIENT.CONTAINER_CLOSE:
-        return this.packetHandler.handleContainerClose(gameSocket.player, packet.readUInt32());
-      case CONST.PROTOCOL.CLIENT.OPEN_KEYRING:
-        return gameSocket.player.containerManager.openKeyring();
-      case CONST.PROTOCOL.CLIENT.TARGET:
-        return this.packetHandler.handleTargetCreature(gameSocket.player, packet.readUInt32());
+  
+      [CONST.PROTOCOL.CLIENT.TARGET]:                   (gs, p) => this.packetHandler.handleTargetCreature(gs.player!, p.readUInt32()),
+  
+      [CONST.PROTOCOL.CLIENT.CHANNEL_MESSAGE]:          (gs, p) => this.packetHandler.handlePlayerSay(gs.player!, p.readClientMessage()),
+  
+      [CONST.PROTOCOL.CLIENT.LOGOUT]:                   (gs, p) => this.packetHandler.handleLogout(gs),
+
+      [CONST.PROTOCOL.CLIENT.THING_LOOK]:               (gs, p) => this.packetHandler.handleItemLook(gs.player!, p.readPositionAndIndex(gs.player!)),
       
-      // TODO: 
-      // case CONST.PROTOCOL.CLIENT.CLIENT_USE_TILE:
-      //   return this.packetHandler.handleTileUse(gameSocket.player, packet.readWorldPosition());
-      case CONST.PROTOCOL.CLIENT.CHANNEL_MESSAGE:
-        return this.packetHandler.handlePlayerSay(gameSocket.player, packet.readClientMessage());
-      case CONST.PROTOCOL.CLIENT.LOGOUT:
-        return this.packetHandler.handleLogout(gameSocket);
-      case CONST.PROTOCOL.CLIENT.CHANNEL_PRIVATE_MESSAGE:
-        return getGameServer().world.channelManager.handleSendPrivateMessage(gameSocket.player, packet.readPrivateMessage());
-      case CONST.PROTOCOL.CLIENT.MOVE:
-        return gameSocket.player.movementHandler.handleMovement(packet.readUInt8());
-      default:
-        gameSocket.close();
+      [CONST.PROTOCOL.CLIENT.THING_MOVE]:               (gs, p) => this.packetHandler.moveItem(gs.player!, p.readMoveItem(gs.player!)),
+
+      [CONST.PROTOCOL.CLIENT.CONTAINER_CLOSE]:          (gs, p) => this.packetHandler.handleContainerClose(gs.player!, p.readUInt32()),
+
+  
+      [CONST.PROTOCOL.CLIENT.CHANNEL_PRIVATE_MESSAGE]:  (gs, p) => getGameServer().world.channelManager.handleSendPrivateMessage(gs.player!, p.readPrivateMessage()),
+
+      [CONST.PROTOCOL.CLIENT.CHANNEL_LEAVE]:            (gs, p) => getGameServer().world.channelManager.leaveChannel(gs.player!, p.readUInt8()),
+  
+      [CONST.PROTOCOL.CLIENT.CHANNEL_JOIN]:             (gs, p) => getGameServer().world.channelManager.joinChannel(gs.player!, p.readUInt8()),
+  
+    };
+  
+    const handler = handlers[opcode];
+    if (handler) {
+      return handler(gameSocket, packet);
+    } else {
+      gameSocket.close();
     }
   }
+    
 }

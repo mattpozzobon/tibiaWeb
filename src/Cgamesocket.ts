@@ -9,17 +9,18 @@ import {
 } from "./Cprotocol"
 import { CONST, getGameServer, Print } from "./helper/appContext";
 import PacketBuffer from "./Cpacket-buffer";
+import { IPlayer } from "./interfaces/IPlayer";
 
 class GameSocket {
   public socket: WebSocket;
   public account: string;
-  public player: any = null;
-  private __controller: boolean = false;
+  public player: IPlayer | undefined;
+  public __controller: boolean = false;
   public __address: string;
-  private __connected: number;
-  private __alive: boolean = true;
-  private incomingBuffer: PacketBuffer;
-  private outgoingBuffer: PacketBuffer;
+  public __connected: number;
+  public __alive: boolean = true;
+  public incomingBuffer: PacketBuffer;
+  public outgoingBuffer: PacketBuffer;
 
   constructor(socket: WebSocket, account: string) {
     /*
@@ -57,7 +58,7 @@ class GameSocket {
   }
 
   public isController(): boolean {
-    return this.player !== null && this === this.player.socketHandler.getController();
+    return this.player !== null && this === this.player?.socketHandler.getController();
   }
 
   public getLastPacketReceived(): number {

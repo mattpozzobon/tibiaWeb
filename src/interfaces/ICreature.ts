@@ -36,7 +36,7 @@ export interface ICreature {
   enterNewChunks(newChunks: any[]): void;
   canSee(position: IPosition): boolean;
   setPosition(position: IPosition): void;
-  setDirection(direction: string): void;
+  setDirection(direction: number): void;
   isWithinRangeOf(creature: ICreature, range: number): boolean;
   is(name: string): boolean;
   isWithinChunk(chunk: any): boolean;

@@ -331,7 +331,7 @@ class Thing extends ThingEmitter implements IThing{
     }
   }
 
-  private isTopParent(thing: any): boolean {
+  isTopParent(thing: any): boolean {
     return (
       !thing ||
       thing.constructor.name === "DepotContainer" ||

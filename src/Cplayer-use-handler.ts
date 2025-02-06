@@ -1,10 +1,11 @@
 "use strict";
 
+import { IPlayer } from "interfaces/IPlayer";
 import GenericLock from "./Cgeneric-lock";
 import { ReadTextPacket } from "./Cprotocol";
 
 class UseHandler {
-  private __player: any;
+  private __player: IPlayer;
   private __useWithLock: GenericLock;
   readonly GLOBAL_USE_COOLDOWN: number = 20;
 

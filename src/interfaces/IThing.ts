@@ -1,9 +1,10 @@
 import { IBaseContainer } from "./IBase-container";
 import { IPlayer } from "./IPlayer";
 import { IPosition } from "./IPosition";
+import { IThingEmitter } from "./IThing-emitter";
 import { IThingPrototype } from "./IThing-prototype";
 
-export interface IThing {
+export interface IThing extends IThingEmitter{
   id: number;
   uid?: number;
   frozen?: boolean;
@@ -129,4 +130,5 @@ export interface IContainer extends IItem {
   cleanup(): void;
   toJSON(): object;
   getTopParent(): any;
+  __updateWeight(weight: number): void;
 }

@@ -2,10 +2,11 @@
 import Teleporter from "./Cteleporter";
 import Creature from "./Ccreature";
 import { CONST } from "./helper/appContext";
+import { IItem } from "interfaces/IThing";
 
 class ItemStack {
   private __items: any[] = [];
-  static MAX_CAPACITY: number = 16;
+  static MAX_CAPACITY: number = 3;
   static TOP_INDEX: number = 0xff;
 
   isFull(): boolean {
@@ -13,7 +14,9 @@ class ItemStack {
   }
 
   isMailbox(): boolean {
-    return this.__items.length > 0 && this.getTopItem()?.isMailbox();
+    if(this.getTopItem()?.isMailbox() && this.__items.length > 0)
+      return true
+    return false
   }
 
   hasMagicDoor(): boolean {
@@ -125,11 +128,11 @@ class ItemStack {
     return this.__items.length === 0;
   }
 
-  getTopItem(): any | null {
+  getTopItem(): IItem | null {
     return this.isEmpty() ? null : this.__items[this.__items.length - 1];
   }
 
-  peekIndex(index: number): any | null {
+  peekIndex(index: number): IItem | null {
     if (!this.isValidIndex(index)) {
       return null;
     }

@@ -1,14 +1,16 @@
+import { IPlayer } from "interfaces/IPlayer";
 import Outfit from "./Coutfit";
 import Packet from "./Cpacket";
 import { Position } from "./Cposition";
 import { getGameServer } from "./helper/appContext";
+import ITile from "interfaces/ITile";
 
 
 
 export interface MoveItemEvent {
-  fromWhere: any; // Replace `any` with the actual type when available
+  fromWhere: ITile; // Replace `any` with the actual type when available
   fromIndex: number;
-  toWhere: any; // Replace `any` with the actual type when available
+  toWhere: ITile; // Replace `any` with the actual type when available
   toIndex: number;
   count: number;
 }
@@ -128,7 +130,7 @@ export class PacketReader extends Packet {
     this.index = offset;
   }
 
-  readPositionAndIndex(player: any): PositionAndIndex {
+  readPositionAndIndex(player: IPlayer): PositionAndIndex {
     /*
      * Reads a position (tile or container) and an index
      */
@@ -138,7 +140,8 @@ export class PacketReader extends Packet {
     };
   }
 
-  readMoveEvent(player: any): any {
+  
+  readMoveEvent(player: IPlayer): any {
     /*
      * Reads an item movement event (from tile, container, equipment)
      */

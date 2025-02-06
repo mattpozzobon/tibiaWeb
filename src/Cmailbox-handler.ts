@@ -1,8 +1,9 @@
-import { IThing } from "interfaces/IThing";
+import { IItem, IThing } from "interfaces/IThing";
 import Player from "./Cplayer";
 import Readable from "./Creadable";
 import Thing from "./Cthing";
 import { CONST, getGameServer } from "./helper/appContext";
+import { IPlayer } from "interfaces/IPlayer";
 
 
 export class MailboxHandler {
@@ -12,14 +13,14 @@ export class MailboxHandler {
   readonly STAMPED_LETTER = 2598;
   readonly LABEL = 2599;
 
-  canMailItem(thing: Thing): boolean {
+  canMailItem(thing: IItem): boolean {
     /*
      * Determines whether something can be mailed or not
      */
     return thing.id === this.UNSTAMPED_PARCEL || thing.id === this.UNSTAMPED_LETTER;
   }
 
-  sendThing(fromWhere: any, toWhere: any, player: Player, thing: Thing): void {
+  sendThing(fromWhere: any, toWhere: any, player: IPlayer, thing: IItem): void {
     /*
      * Sub function for sending a parcel or letter when added to the mailbox
      */
@@ -97,7 +98,7 @@ export class MailboxHandler {
     });
   }
 
-  private __sendParcel(fromWhere: any, toWhere: any, player: Player, thing: Readable): void {
+  private __sendParcel(fromWhere: any, toWhere: any, player: IPlayer, thing: Readable): void {
     /*
      * Sub function for sending a parcel when added to the mailbox
      */
@@ -125,7 +126,7 @@ export class MailboxHandler {
     });
   }
 
-  private __sendLetter(fromWhere: any, toWhere: any, player: Player, thing: Readable): void {
+  private __sendLetter(fromWhere: any, toWhere: any, player: IPlayer, thing: Readable): void {
     /*
      * Sub function for sending a letter when added to the mailbox
      */

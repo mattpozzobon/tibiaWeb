@@ -1,10 +1,13 @@
-import Player from "./Cplayer";
-import { getGameServer } from "./helper/appContext";
+import { CONFIG, getGameServer } from "./helper/appContext";
 import Tile from "./Ctile";
 import { CreatureInformationPacket, ItemInformationPacket } from "./Cprotocol";
 import Monster from "./Cmonster";
 import { ClientMessage, MoveItemEvent, PositionAndIndex } from "./Cpacket-reader";
 import { MailboxHandler } from "./Cmailbox-handler";
+import { IPlayer } from "interfaces/IPlayer";
+import { IContainer, IThing } from "interfaces/IThing";
+import { IItem } from "interfaces/IThing";
+import ITile from "interfaces/ITile";
 
 export class PacketHandler {
   private mailboxHandler: MailboxHandler;
@@ -17,7 +20,7 @@ export class PacketHandler {
     this.mailboxHandler = new MailboxHandler();
   }
 
-  handleTileUse(player: Player, tile: Tile): any {
+  handleTileUse(player: IPlayer, tile: Tile): any {
     /*
      * Function PacketHandler.handleTileUse
      * Handles the tile use event
@@ -56,17 +59,20 @@ export class PacketHandler {
   }
 
   //Todo: Inspect this toWhere2
-  moveItem(player: Player, packet: MoveItemEvent): void {
+  moveItem(player: IPlayer, packet: MoveItemEvent): void {
     /*
      * Function PacketHandler.moveItem
      * Internal private function that moves one object from one place to another
      */
     const { fromWhere, fromIndex, toWhere, toIndex, count } = packet;
 
+    // console.log('toWhere',toWhere);
+    // console.log('fromIndex',fromIndex);
+    // console.log('toIndex',toIndex);
+    // console.log('count',count);
+
     if (!fromWhere || !toWhere) return;
 
-    //console.log('fromWhere', fromWhere);
-    //console.log('toWhere', toWhere);
 
     if (fromWhere.constructor.name === "Tile" && !player.position.besides(fromWhere.position)) {
       return player.sendCancelMessage("You are not close enough.");
@@ -76,32 +82,23 @@ export class PacketHandler {
       return player.sendCancelMessage("You cannot throw this item here.");
     }
 
-    const fromItem = fromWhere.peekIndex(fromIndex);
+    const fromItem: IItem | null = fromWhere.peekIndex(fromIndex);
 
     if (!fromItem) return;
 
     if (!fromItem.isMoveable() || fromItem.hasUniqueId()) {
       return player.sendCancelMessage("You cannot move this item.");
     }
+
     if (toWhere.constructor.name === "Tile") {
-      if (toWhere.hasItems() && toWhere.itemStack.isMailbox() && this.mailboxHandler.canMailItem(fromItem)) {
+      if (toWhere.hasItems() && toWhere.itemStack!.isMailbox() && this.mailboxHandler.canMailItem(fromItem)) {
         return this.mailboxHandler.sendThing(fromWhere, toWhere, player, fromItem);
       }
       const toWhere2 = getGameServer().world.lattice.findDestination(player, toWhere);
-      
       if (!toWhere2) return player.sendCancelMessage("You cannot add this item here.");
-
-      if (toWhere2.isTrashholder()) {
-        return this.__addThingToTrashholder(fromItem, fromWhere, fromIndex, toWhere, count);
-      }
-
-      if (toWhere2.hasItems() && toWhere2.itemStack.isItemSolid()) {
-        return player.sendCancelMessage("You cannot add this item here.");
-      }
-
-      if (toWhere2.isBlockSolid() && toWhere2.isOccupiedAny()) {
-        return player.sendCancelMessage("You cannot add this item here.");
-      }
+      if (toWhere2.isTrashholder()) {return this.__addThingToTrashholder(fromItem, fromWhere, fromIndex, toWhere, count);}
+      if (toWhere2.hasItems() && toWhere2.itemStack.isItemSolid()) {return player.sendCancelMessage("You cannot add this item here.");}
+      if (toWhere2.isBlockSolid() && toWhere2.isOccupiedAny()) {return player.sendCancelMessage("You cannot add this item here.");}
     }
 
     if (toWhere.getTopParent() === player && !player.hasSufficientCapacity(fromItem)) {
@@ -116,7 +113,7 @@ export class PacketHandler {
     this.__moveItem(player, fromWhere, fromIndex, toWhere, toIndex, realCount);
   }
 
-  handleItemLook(player: Player, packet: PositionAndIndex): void {
+  handleItemLook(player: IPlayer, packet: PositionAndIndex): void {
     /*
      * Function PacketHandler.handleItemLook
      * Handles a look event at an item or creature or tile
@@ -137,7 +134,7 @@ export class PacketHandler {
     return player.write(new ItemInformationPacket(thing, true, player));
   }
 
-  handleContainerClose(player: Player, containerId: number): void {
+  handleContainerClose(player: IPlayer, containerId: number): void {
     /*
      * Function PacketHandler.handleContainerClose
      * Handles an incoming request to close a container
@@ -148,7 +145,7 @@ export class PacketHandler {
     }
   }
 
-  handleTargetCreature(player: Player, id: number): void {
+  handleTargetCreature(player: IPlayer, id: number): void {
     /*
      * Function PacketHandler.handleTargetCreature
      * Handles an incoming creature target packet
@@ -169,7 +166,7 @@ export class PacketHandler {
     }
   }
 
-  handlePlayerSay(player: Player, packet: ClientMessage): void {
+  handlePlayerSay(player: IPlayer, packet: ClientMessage): void {
     /*
      * Function PacketHandler.handlePlayerSay
      * When player says a message handle it
@@ -180,7 +177,7 @@ export class PacketHandler {
     }
   }
 
-  private __moveItem(player: Player, fromWhere: any, fromIndex: number, toWhere: any, toIndex: number, count: number): void {
+  private __moveItem(player: IPlayer, fromWhere: ITile, fromIndex: number, toWhere: ITile, toIndex: number, count: number): void {
     /*
      * Function PacketHandler.__moveItem
      * Internal private function that moves one object from one place to another
@@ -204,7 +201,7 @@ export class PacketHandler {
     }
 
     if (movedItem.constructor.name === "Container" && fromWhere.getTopParent() !== toWhere.getTopParent()) {
-      movedItem.checkPlayersAdjacency();
+      (movedItem as IContainer).checkPlayersAdjacency();
     }
 
     movedItem.emit("move", player, toWhere, movedItem);

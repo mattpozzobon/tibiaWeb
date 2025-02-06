@@ -65,6 +65,7 @@ class ContainerManager {
   }
 
   toggleContainer(container: any): void {
+    console.log('toggleContainer',container );
     /*
      * Function ContainerManager.toggleContainer
      * Toggles a container between open and closed
@@ -117,11 +118,12 @@ class ContainerManager {
      * Function ContainerManager.closeContainer
      * Closes a container and writes it to disk
      */
-    if (!this.__openedContainers.has(container.id)) {
+
+    if (!this.__openedContainers.has(container.container.guid)) {
       return;
     }
 
-    this.__openedContainers.delete(container.id);
+    this.__openedContainers.delete(container.container.guid);
 
     if (container === this.depot) {
       this.depot.openAtPosition(null);
@@ -173,7 +175,7 @@ class ContainerManager {
     }
 
     if (!container.isDepot()) {
-      this.__openedContainers.set(container.id, container);
+      this.__openedContainers.set(container.container.guid, container);
       this.__player.openContainer(container.id, container.getName(), container.container);
     } else {
       this.__openedContainers.set(CONST.CONTAINER.DEPOT, this.depot);

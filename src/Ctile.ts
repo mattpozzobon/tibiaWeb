@@ -5,7 +5,7 @@ import ItemStack from "./Citem-stack";
 import PathfinderNode from "./Cpathfinder-node";
 import { TilePacket, ItemAddPacket, ItemRemovePacket } from "./Cprotocol";
 import { getGameServer, CONST, CONFIG } from "./helper/appContext";
-import { IThing } from "interfaces/IThing";
+import { IItem, IThing } from "interfaces/IThing";
 import Thing from "./Cthing";
 import { IDoor } from "interfaces/IDoor";
 
@@ -13,7 +13,7 @@ class Tile extends Thing implements ITile{
   position: any;
   itemStack?: ItemStack;
   creatures?: Set<any>;
-  neighbours?: Tile[];
+  neighbours?: ITile[];
   tilezoneFlags?: InstanceType<typeof TileFlag>;;
   pathfinderNode?: PathfinderNode;
 
@@ -91,7 +91,7 @@ class Tile extends Thing implements ITile{
 
     thing.setParent(this);
     const currentThing = this.peekIndex(index);
-    if (currentThing && thing.isStackable() && currentThing.id === thing.id) {
+    if (currentThing && thing.isStackable() && currentThing.id === thing.id && (currentThing.count + thing.count <= CONFIG.WORLD.MAXIMUM_STACK_COUNT)) {
       return this.__addStackable(index, currentThing, thing);
     }
     
@@ -178,7 +178,7 @@ class Tile extends Thing implements ITile{
     return this.hasFlag(OTBBitFlag.prototype.flags.FLAG_BLOCK_SOLID);
   }
 
-  deleteIndex(index: number): Thing | null {
+  deleteIndex(index: number): IThing | null {
     const thing = this.peekIndex(index);
     if (thing === null) {
       return null;
@@ -219,7 +219,7 @@ class Tile extends Thing implements ITile{
     return this.__deleteThingStackableItem(index, thing, amount);
   }
   
-  __deleteThingStackableItem(index: number, currentItem: Thing, count: number): IThing | null {
+  __deleteThingStackableItem(index: number, currentItem: IThing, count: number): IThing | null {
     if (count > currentItem.count) {
       return null;
     }
@@ -299,7 +299,7 @@ class Tile extends Thing implements ITile{
     return false;
   }
   
-  getTopItem(): Thing | null {
+  getTopItem(): IThing | null {
     return this.hasItems() ? this.itemStack!.getTopItem() : null;
   }
   
@@ -307,18 +307,23 @@ class Tile extends Thing implements ITile{
     if (!this.hasItems()) {
       return CONFIG.WORLD.MAXIMUM_STACK_COUNT;
     }
+
     if (!this.itemStack!.isValidIndex(index)) {
       return 0;
     }
+
     if (this.isHouseTile() && !player.ownsHouseTile(this)) {
       return 0;
     }
+
     if (this.isTrashholder()) {
       return CONFIG.WORLD.MAXIMUM_STACK_COUNT;
     }
+
     if (this.isFull()) {
       return 0;
     }
+
     if (this.itemStack!.hasMagicDoor()) {
       return 0;
     }
@@ -327,12 +332,17 @@ class Tile extends Thing implements ITile{
     if (!thing) {
       return CONFIG.WORLD.MAXIMUM_STACK_COUNT;
     }
+
     if (thing.id === item.id && thing.isStackable()) {
-      return this.isFull()
-        ? CONFIG.WORLD.MAXIMUM_STACK_COUNT - thing.count
-        : CONFIG.WORLD.MAXIMUM_STACK_COUNT;
+      return this.isFull() ? CONFIG.WORLD.MAXIMUM_STACK_COUNT - thing.count : CONFIG.WORLD.MAXIMUM_STACK_COUNT;
     }
-    return 0;
+
+    return CONFIG.WORLD.MAXIMUM_STACK_COUNT
+  }
+
+  getAddCount(): number {
+    const number = this.itemStack?.getItems().length
+    return number ? ItemStack.MAX_CAPACITY - number : 0;
   }
   
   getCreature(): any {
@@ -343,7 +353,7 @@ class Tile extends Thing implements ITile{
     return this.creatures.values().next().value;
   } 
 
-  peekIndex(index: number): Thing | null {
+  peekIndex(index: number): IItem | null {
     /*
      * Function Tile.peekIndex
      * Peeks at the item at the specified index

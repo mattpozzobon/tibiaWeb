@@ -2,7 +2,7 @@ import { IBitFlag } from "./IBitflag";
 import IItemStack from "./IItem-stack";
 import IPathfinderNode from "./IPathfinder-node";
 import { IPosition } from "./IPosition";
-import { IThing } from "./IThing";
+import { IItem, IThing } from "./IThing";
 
 interface ITile extends IThing {
   position: IPosition;
@@ -45,7 +45,7 @@ interface ITile extends IThing {
   getTopItem(): IThing | null;
   getMaximumAddCount(player: any, item: IThing, index: number): number;
   getCreature(): any;
-  peekIndex(index: number): IThing | null;
+  peekIndex(index: number): IItem | null;
   scheduleDecay(): void;
   getTileDecayProperties(): { decayTo: number; duration: number };
   getDestination(): any;

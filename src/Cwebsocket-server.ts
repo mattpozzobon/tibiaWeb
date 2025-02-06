@@ -227,14 +227,14 @@ class WebsocketServer {
     this.accountDatabase.saveCharacter(gameSocket, (error: Error | null) => {
       if (error) {
         return console.log(
-          `Error storing player information for ${gameSocket.player.getProperty(
+          `Error storing player information for ${gameSocket.player?.getProperty(
             CONST.PROPERTIES.NAME
           )}`
         );
       }
 
       console.log(
-        `Stored player information for ${gameSocket.player.getProperty(
+        `Stored player information for ${gameSocket.player?.getProperty(
           CONST.PROPERTIES.NAME
         )}`
       );

@@ -194,16 +194,20 @@ class Container extends Item implements IContainer{
   }
 
   private __updateParentWeightRecursion(weight: number): void {
-    let current: any = this;
-    while (!this.__isTopParent(current)) {
+    let current: IContainer = this;
+    while (!this.isTopParent(current)) {
       current.__updateWeight(weight);
       current = current.getParent();
     }
   }
 
+  __updateWeight(weight: number): void {
+    this.__childWeight += weight;
+  }
+
   private __includesSelf(container: IContainer): boolean {
-    let current: any = this;
-    while (!this.__isTopParent(current)) {
+    let current: IContainer = this;
+    while (!this.isTopParent(current)) {
       if (current === container) {
         return true;
       }
@@ -215,7 +219,7 @@ class Container extends Item implements IContainer{
   private __getParentCount(): number {
     let count = 1;
     let current: any = this.getParent();
-    while (!this.__isTopParent(current)) {
+    while (!this.isTopParent(current)) {
       count++;
       current = current.getParent();
     }
@@ -232,21 +236,13 @@ class Container extends Item implements IContainer{
     };
   }
 
-  private __isTopParent(container: Container | null): boolean {
-    /*
-     * Function Container.__isTopParent
-     * Returns true if the container is the top-level parent
-     */
-    return container === null || container.getParent() === null;
-  }
-
   getTopParent(): any {
     /*
      * Function Container.getTopParent
      * Returns the top-level parent of the container
      */
     let current: any = this;
-    while (!this.__isTopParent(current)) {
+    while (!this.isTopParent(current)) {
       current = current.getParent();
     }
     return current;

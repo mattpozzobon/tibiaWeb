@@ -5,7 +5,7 @@ import { getGameServer } from "./helper/appContext";
 class PlayerMovementHandler {
   private __player: any;
   private __moveLock: GenericLock;
-  private __clientMoveBuffer: string | null = null;
+  private __clientMoveBuffer: number | null = null;
 
   constructor(player: any) {
     /*
@@ -36,7 +36,7 @@ class PlayerMovementHandler {
     this.__moveLock.lock(value);
   }
 
-  handleMovement(direction: string): void {
+  handleMovement(direction: number): void {
     /*
      * Function PlayerMovementHandler.handleMovement
      * Callback fired when a particular function is unlocked
@@ -87,7 +87,7 @@ class PlayerMovementHandler {
     this.__setMoveBuffer(null);
   }
 
-  private __setMoveBuffer(direction: string | null): void {
+  private __setMoveBuffer(direction: number | null): void {
     /*
      * Function PlayerMovementHandler.__setMoveBuffer
      * Updates the server-side movement buffer of the player

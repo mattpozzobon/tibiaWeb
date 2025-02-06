@@ -189,7 +189,8 @@ class ThingPrototype extends EventEmitter implements IThingPrototype{
      * Function ThingPrototype.__has
      * Returns true if the thing prototype has a particular property
      */
-    return this.properties.hasOwnProperty(type);
+    
+    return Object.values(this.properties).includes(type);
   }
 }
 

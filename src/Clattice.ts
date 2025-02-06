@@ -93,7 +93,6 @@ class Lattice implements ILattice{
   }
 
   public findDestination(creature: any, tile: ITile): any | null {
-    console.log('ASASA');
     if (!tile) return null;
     if (!tile.hasDestination()) return tile;
     

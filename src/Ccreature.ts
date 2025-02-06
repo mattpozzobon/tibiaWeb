@@ -170,7 +170,7 @@ export default class Creature extends EventEmitter implements ICreature{
     this.position = position;
   }
 
-  setDirection(direction: string): void {
+  setDirection(direction: number): void {
     this.properties.setProperty(CONST.PROPERTIES.DIRECTION, direction);
   }
 
