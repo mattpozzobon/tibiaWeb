@@ -6,6 +6,7 @@ import Equipment from "./Cequipment";
 import Inbox from "./Cinbox";
 import Keyring from "./Ckeyring";
 import { CONST } from "./helper/appContext";
+import { IContainer } from "interfaces/IThing";
 
 class ContainerManager {
   private __player: IPlayer;
@@ -52,6 +53,7 @@ class ContainerManager {
      * Function Player.getContainerFromId
      * Returns the container that is referenced by a unique identifier
      */
+    console.log('getContainerFromId', cid);
     switch (cid) {
       case CONST.CONTAINER.DEPOT:
         return this.depot.isClosed() ? null : this.depot;
@@ -64,13 +66,13 @@ class ContainerManager {
     }
   }
 
-  toggleContainer(container: any): void {
-    console.log('toggleContainer',container );
+  toggleContainer(container: IContainer): void {
+    //console.log('toggleContainer',container );
     /*
      * Function ContainerManager.toggleContainer
      * Toggles a container between open and closed
      */
-    if (this.__openedContainers.has(container.id)) {
+    if (this.__openedContainers.has(container.container.guid)) {
       this.closeContainer(container);
     } else if (container.isDepot() && this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {
       this.closeContainer(this.depot);

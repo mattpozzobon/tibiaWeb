@@ -66,7 +66,7 @@ export class Print {
   
   static packetIn(opcode: any): void {
     const formattedOpcode = opcode.toString().padStart(2, '0');
-    console.log(`📨  opcode: ${formattedOpcode} - ${this.getProtocolClient(opcode)}`);
+    console.log(`📨  opcode: ${formattedOpcode} ⚫ - ${this.getProtocolClient(opcode)}`);
   }
 
   static getProtocolServer(value: number): string {
