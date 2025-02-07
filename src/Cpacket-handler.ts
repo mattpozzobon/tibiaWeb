@@ -8,6 +8,7 @@ import { IPlayer } from "interfaces/IPlayer";
 import { IContainer, IThing } from "interfaces/IThing";
 import { IItem } from "interfaces/IThing";
 import ITile from "interfaces/ITile";
+import Equipment from "Cequipment";
 
 export class PacketHandler {
   private mailboxHandler: MailboxHandler;
@@ -66,6 +67,8 @@ export class PacketHandler {
      */
     const { fromWhere, fromIndex, toWhere, toIndex, count } = packet;
 
+    // console.log('fromWhere.constructor.name', fromWhere.constructor.name);
+    // console.log('toWhere.constructor.name', toWhere.constructor.name);
     // console.log('toWhere',toWhere);
     // console.log('fromIndex',fromIndex);
     // console.log('toIndex',toIndex);
@@ -74,11 +77,11 @@ export class PacketHandler {
     if (!fromWhere || !toWhere) return;
 
 
-    if (fromWhere.constructor.name === "Tile" && !player.position.besides(fromWhere.position)) {
+    if (fromWhere instanceof Tile && !player.position.besides(fromWhere.position)) {
       return player.sendCancelMessage("You are not close enough.");
     }
 
-    if (toWhere.constructor.name === "Tile" && !player.position.inLineOfSight(toWhere.position)) {
+    if (toWhere instanceof Tile && !player.position.inLineOfSight(toWhere.position)) {
       return player.sendCancelMessage("You cannot throw this item here.");
     }
 
@@ -90,7 +93,7 @@ export class PacketHandler {
       return player.sendCancelMessage("You cannot move this item.");
     }
 
-    if (toWhere.constructor.name === "Tile") {
+    if (toWhere instanceof Tile) {
       if (toWhere.hasItems() && toWhere.itemStack!.isMailbox() && this.mailboxHandler.canMailItem(fromItem)) {
         return this.mailboxHandler.sendThing(fromWhere, toWhere, player, fromItem);
       }
@@ -177,7 +180,7 @@ export class PacketHandler {
     }
   }
 
-  private __moveItem(player: IPlayer, fromWhere: ITile, fromIndex: number, toWhere: ITile, toIndex: number, count: number): void {
+  private __moveItem(player: IPlayer, fromWhere: Equipment | IContainer | ITile, fromIndex: number, toWhere: Equipment | IContainer | ITile, toIndex: number, count: number): void {
     /*
      * Function PacketHandler.__moveItem
      * Internal private function that moves one object from one place to another
@@ -186,13 +189,13 @@ export class PacketHandler {
     if (!movedItem) return;
 
     let existthing = null;
-    if (toWhere.constructor.name === "Tile") {
+    if (toWhere instanceof Tile) {
       existthing = toWhere.getTopItem();
     }
 
     toWhere.addThing(movedItem, toIndex);
 
-    if (toWhere.constructor.name === "Tile") {
+    if (toWhere instanceof Tile) {
       if (existthing === null) {
         toWhere.emit("add", player, movedItem);
       } else {

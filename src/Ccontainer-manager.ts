@@ -51,9 +51,8 @@ class ContainerManager {
   getContainerFromId(cid: number): any | null {
     /*
      * Function Player.getContainerFromId
-     * Returns the container that is referenced by a unique identifier
+     * Returns the container that is referenced by a unique identifiers
      */
-    console.log('getContainerFromId', cid);
     switch (cid) {
       case CONST.CONTAINER.DEPOT:
         return this.depot.isClosed() ? null : this.depot;

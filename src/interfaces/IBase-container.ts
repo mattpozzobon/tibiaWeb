@@ -1,3 +1,5 @@
+import { IItem } from "./IThing";
+
 export interface IBaseContainer {
     guid: number;
     size: number;
@@ -11,7 +13,7 @@ export interface IBaseContainer {
     copyContents(container: IBaseContainer): void;
     isValidIndex(index: number): boolean;
     getSlots(): Array<any>;
-    peekIndex(slotIndex: number): any | null;
+    peekIndex(slotIndex: number): IItem | null;
     addThing(thing: any, index: number): void;
     removeIndex(index: number, count: number): any | null;
     deleteThing(thing: any): number;

@@ -33,13 +33,13 @@ export class CreatureProperties {
     this.add(CONST.PROPERTIES.DIRECTION, properties.direction ?? CONST.DIRECTION.NORTH);
     this.add(CONST.PROPERTIES.HEALTH, properties.health);
     this.add(CONST.PROPERTIES.HEALTH_MAX, properties.health);
-    this.add(CONST.PROPERTIES.MANA, properties.mana);
-    this.add(CONST.PROPERTIES.MANA_MAX, properties.maxMana);
+    // this.add(CONST.PROPERTIES.MANA, properties.mana);
+    // this.add(CONST.PROPERTIES.MANA_MAX, properties.maxMana);
     this.add(CONST.PROPERTIES.OUTFIT, new Outfit(properties.outfit));
-    this.add(CONST.PROPERTIES.ENERGY, properties.energy);
-    this.add(CONST.PROPERTIES.ENERGY_MAX, properties.maxEnergy);
-    this.add(CONST.PROPERTIES.CAPACITY, properties.capacity);
-    this.add(CONST.PROPERTIES.CAPACITY_MAX, properties.maxCapacity);
+    // this.add(CONST.PROPERTIES.ENERGY, properties.energy);
+    // this.add(CONST.PROPERTIES.ENERGY_MAX, properties.maxEnergy);
+    // this.add(CONST.PROPERTIES.CAPACITY, properties.capacity);
+    // this.add(CONST.PROPERTIES.CAPACITY_MAX, properties.maxCapacity);
   }
 
   getId(): number {

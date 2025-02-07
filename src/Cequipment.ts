@@ -1,6 +1,6 @@
 "use strict";
 
-import { IThing } from "interfaces/IThing";
+import { IItem, IThing } from "interfaces/IThing";
 import BaseContainer from "./Cbase-container";
 import Item from "./Citem";
 import { CONST, getGameServer } from "./helper/appContext";
@@ -20,6 +20,7 @@ class Equipment {
     this.container = new BaseContainer(cid, 10);
 
     // Add the equipment from the database
+    //console.log('equipment',equipment);
     this.__addEquipment(equipment);
 
     // Self spectate changes to the equipment always
@@ -112,6 +113,34 @@ class Equipment {
     return IThing;
   }
 
+  public getMaximumAddCount(player: IPlayer, thing: IThing, index: number): number {
+    /*
+     * Returns the count of the item that can be added to a tile/slot.
+     */
+
+    // Check whether the item type matches that of the slot
+    if (!this.__isRightType(thing, index)) {
+      return 0;
+    }
+
+    // Take a look at the item in the slot
+    const currentItem = this.peekIndex(index);
+
+    // The slot is currently empty, accept the maximum count
+    if (currentItem === null) {
+      return Item.MAXIMUM_STACK_COUNT;
+    }
+
+    // Not empty but the identifiers match and the item is stackable:
+    // return the maximum minus what is already there.
+    if (currentItem.id === thing.id && thing.isStackable()) {
+      return Item.MAXIMUM_STACK_COUNT - currentItem.count;
+    }
+
+    // Not able to add: another item is occupying the slot
+    return 0;
+  }
+
   deleteThing(IThing: IThing): number {
     /*
      * Function Equipment.deleteThing
@@ -139,7 +168,7 @@ class Equipment {
     return index;
   }
 
-  peekIndex(index: number): IThing | null {
+  peekIndex(index: number): IItem | null {
     /*
      * Function Equipment.peekIndex
      * Peeks at the item at the specified slot index
@@ -224,20 +253,51 @@ class Equipment {
   }
 
   __addEquipment(equipment: any[]): void {
-    /*
-     * Function Equipment.__addEquipment
-     * Adds equipment in serialized form from the database
-     */
     equipment.forEach((entry) => {
+      console.log("entry", entry);
       const IThing = getGameServer().database.parseThing(entry.item);
-      if(IThing){
+      if (IThing) {
+        // Add the main equipment item into its slot.
         this.addThing(IThing, entry.slot);
 
         if (IThing.getAttribute("invisible")) {
           this.IPlayer.addCondition(CONST.CONDITION.INVISIBLE, -1, -1, null);
         }
+
+        // If the item is a container and has serialized sub-items, recursively add them.
+        if (typeof IThing.isContainer === "function" && IThing.isContainer() && entry.item.items) {
+          this.addSubItems(IThing, entry.item);
+        }
       }
     });
+  }
+
+  private addSubItems(container: IThing, serializedData: any): void {
+    if (
+      typeof container.isContainer === "function" &&
+      container.isContainer() &&
+      Array.isArray(serializedData.items)
+    ) {
+      serializedData.items.forEach((subItemData: any, subIndex: number) => {
+        if (subItemData !== null) {
+          // Parse the sub-item from its serialized data.
+          const subItem = getGameServer().database.parseThing(subItemData);
+          if (subItem) {
+            // Add the sub-item into the container at the appropriate index.
+            container.addThing(subItem, subIndex);
+
+            // Recursively add any items contained in the sub-item if it is a container.
+            if (
+              typeof subItem.isContainer === "function" &&
+              subItem.isContainer()
+            ) {
+              // Pass the serialized representation of the sub-container.
+              this.addSubItems(subItem, subItemData);
+            }
+          }
+        }
+      });
+    }
   }
 
   hasSufficientResources(resource: number, amount: number): boolean {

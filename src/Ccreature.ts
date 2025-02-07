@@ -18,10 +18,10 @@ export default class Creature extends EventEmitter implements ICreature{
   constructor(properties: any) {
     super();
 
-    this.position = null; // All creatures begin with no position
-    this.properties = new CreatureProperties(this, properties); // Creature properties
-    this.conditions = new ConditionManager(this); // Conditions affecting the creature
-    this.speechHandler = new SpeechHandler(this); // Speech handling
+    this.position = null; 
+    this.properties = new CreatureProperties(this, properties); 
+    this.conditions = new ConditionManager(this); 
+    this.speechHandler = new SpeechHandler(this); 
   }
 
   setProperty(type: number, value: any): void {

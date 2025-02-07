@@ -74,6 +74,12 @@ export default class Player extends Creature implements IPlayer{
     this.properties.add(CONST.PROPERTIES.SEX, properties.sex);
     this.properties.add(CONST.PROPERTIES.ROLE, properties.role);
     this.properties.add(CONST.PROPERTIES.VOCATION, properties.vocation);
+    this.properties.add(CONST.PROPERTIES.ENERGY, properties.energy);
+    this.properties.add(CONST.PROPERTIES.ENERGY_MAX, properties.maxEnergy);
+    this.properties.add(CONST.PROPERTIES.CAPACITY, properties.capacity);
+    this.properties.add(CONST.PROPERTIES.CAPACITY_MAX, properties.maxCapacity);
+    this.properties.add(CONST.PROPERTIES.MANA, properties.mana);
+    this.properties.add(CONST.PROPERTIES.MANA_MAX, properties.maxMana);
   }
 
   isGod(): boolean {
@@ -405,7 +411,7 @@ export default class Player extends Creature implements IPlayer{
   }
 
   getCapacity(): number {
-    return this.getProperty(CONST.PROPERTIES.CAPACITY) - this.getProperty(CONST.PROPERTIES.CAPACITY_MAX);
+    return this.getProperty(CONST.PROPERTIES.CAPACITY);
   }
 
   hasSufficientCapacity(thing: any): boolean {

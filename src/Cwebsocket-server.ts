@@ -173,9 +173,7 @@ class WebsocketServer {
      */
     this.socketHandler.referenceSocket(gameSocket);
 
-    const existingPlayer = getGameServer().world.creatureHandler.getPlayerByName(
-      data.properties.name
-    );
+    const existingPlayer = getGameServer().world.creatureHandler.getPlayerByName(data.properties.name);
 
     if (existingPlayer === null) {
       return getGameServer().world.creatureHandler.createNewPlayer(gameSocket, data);

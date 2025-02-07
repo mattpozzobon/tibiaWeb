@@ -22,7 +22,7 @@ export class Skills {
     this.__addSkillProperty(CONST.PROPERTIES.FISHING, points.fishing);
     this.__addSkillProperty(CONST.PROPERTIES.EXPERIENCE, points.experience);
 
-    this.setMaximumProperties();
+    //this.setMaximumProperties();
   }
 
   private __setMaximumPropertiesConstants(vocation: number, level: number): {
@@ -77,14 +77,11 @@ export class Skills {
     const level = this.getSkillLevel(CONST.PROPERTIES.EXPERIENCE) || 0;
     const vocation = this.__player.getProperty(CONST.PROPERTIES.VOCATION);
 
-    const { health, mana, capacity } = this.__setMaximumPropertiesConstants(
-      vocation,
-      level
-    );
+    // const { health, mana, capacity } = this.__setMaximumPropertiesConstants(vocation,level);
 
-    this.__player.properties.add(CONST.PROPERTIES.HEALTH_MAX, health);
-    this.__player.properties.add(CONST.PROPERTIES.MANA_MAX, mana);
-    this.__player.properties.add(CONST.PROPERTIES.CAPACITY_MAX, capacity);
+    // this.__player.properties.add(CONST.PROPERTIES.HEALTH_MAX, health);
+    // this.__player.properties.add(CONST.PROPERTIES.MANA_MAX, mana);
+    //this.__player.properties.add(CONST.PROPERTIES.CAPACITY_MAX, capacity);
   }
 
   getSkillValue(type: number): number | null {

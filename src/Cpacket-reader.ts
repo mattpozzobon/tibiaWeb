@@ -4,13 +4,14 @@ import Packet from "./Cpacket";
 import { Position } from "./Cposition";
 import { getGameServer } from "./helper/appContext";
 import ITile from "interfaces/ITile";
-
+import { IContainer } from "interfaces/IThing";
+import Equipment from "Cequipment";
 
 
 export interface MoveItemEvent {
-  fromWhere: ITile; // Replace `any` with the actual type when available
+  fromWhere: ITile | IContainer | Equipment; // Replace `any` with the actual type when available
   fromIndex: number;
-  toWhere: ITile; // Replace `any` with the actual type when available
+  toWhere: ITile | IContainer | Equipment; // Replace `any` with the actual type when available
   toIndex: number;
   count: number;
 }

@@ -42,7 +42,7 @@ export const getGameServer = (): IGameServer => {
 };
 
 
-const print = false;
+const print = true;
 
 export class Print {
   constructor() {}
