@@ -16,19 +16,16 @@ module.exports = function useScythe(player, item, tile) {
  
   let thing = tile.getTopItem();
 
-  if(thing === null) {
+  if(thing.constructor.name !== "FluidContainer") {
     return;
   }
 
-  // These are the identifiers of wheat in the field
-  if(thing.id === 2739 || thing.id === 2738) {
-    thing.replace(process.gameServer.database.createThing(2737));
+  if(thing.isEmpty() || !thing.isOil()) {
+    return;
   }
 
-  // Full grown? Add cut wheat
-  if(thing.id === 2739) {
-    tile.addTopThing(process.gameServer.database.createThing(2694).setCount(1));
-  }
+  item.replace(process.gameServer.database.createThing(2044));
+  thing.__empty(); 
 
   return true;
 

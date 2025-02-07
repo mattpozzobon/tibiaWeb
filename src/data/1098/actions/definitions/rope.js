@@ -56,7 +56,7 @@ module.exports = function useRope(player, item, tile) {
   }
 
   // Not besides the hole
-  if(!player.besides(tile)) {
+  if(!player.isBesidesThing(tile)) {
     return;
   }
 
@@ -68,7 +68,7 @@ module.exports = function useRope(player, item, tile) {
   // If the tile being used has a rope hole: teleport the player up!
   if(tile.id === 384) {
     process.gameServer.world.teleportCreature(player, tile.position.ladder());
-    player.__moveLock.lock(player.getSlowness());
+    player.__moveLock.lock(10);
   }
 
   return true;

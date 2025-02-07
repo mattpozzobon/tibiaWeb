@@ -8,7 +8,7 @@
     "maxMana": 0,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 20,
+    "speed": 30,
     "outfit": {
       "id": 141,
       "details": {
@@ -23,6 +23,26 @@
   "wanderRange": 2,
   "farewells": [
     "bye"
+  ],
+  "trade": [
+    {
+      "name": "Letter",
+      "price": 0,
+      "id": 2597,
+      "type": "sell"
+    },
+    {
+      "name": "Parcel",
+      "price": 0,
+      "id": 2595,
+      "type": "sell"
+    },
+    {
+      "name": "Label",
+      "price": 0,
+      "id": 2599,
+      "type": "sell"
+    }
   ],
   "greetings": [
     "hello",

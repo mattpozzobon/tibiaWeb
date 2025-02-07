@@ -9,10 +9,11 @@ module.exports = function cureBurning() {
 
   // Not burning
   if(!this.conditions.has(Condition.prototype.BURNING)) {
+    this.sendCancelMessage("You are not burning.");
     return 0;
   }
  
-  this.conditions.removeCondition(Condition.prototype.BURNING);
+  this.removeCondition(Condition.prototype.BURNING);
   process.gameServer.world.sendMagicEffect(this.position, CONST.EFFECT.MAGIC.MAGIC_BLUE);
 
   // Return cooldown

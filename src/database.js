@@ -465,12 +465,16 @@ Database.prototype.__loadItemDefinitions = function(definition) {
    * Loads items from the combined item.xml and items.otbm. These were merged to a JSON file using a tool.
    */
 
+  console.log('definition', definition);
   let reference = new Object();
 
   // Create a thing prototype
-  Object.entries(this.readDataDefinition(definition)).forEach(function([ key, value ]) {
-    reference[key] = new ThingPrototype(value);
-  });
+  Object.entries(this.readDataDefinition(definition)).forEach(
+    function([ key, value ]) {
+      console.log('key',key);
+      reference[key] = new ThingPrototype(value);
+    }
+  );
 
   return reference;
 

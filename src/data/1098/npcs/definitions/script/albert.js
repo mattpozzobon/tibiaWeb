@@ -1,3 +1,5 @@
+const Condition = requireModule("condition");
+
 module.exports = function talkScriptAlbert() {
 
   /*
@@ -37,6 +39,9 @@ function baseTalkState(player, message) {
    */
 
   switch(message) {
+    case "arena":
+      player.addCondition(Condition.prototype.ARENA, 10, 20, null);
+      break;
     case "trade":
       this.internalCreatureSay("Have a browse!", CONST.COLOR.YELLOW);
       this.openTradeWindow(player);

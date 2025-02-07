@@ -8,7 +8,7 @@
     "maxMana": 0,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 20,
+    "speed": 30,
     "outfit": {
       "id": 140,
       "details": {

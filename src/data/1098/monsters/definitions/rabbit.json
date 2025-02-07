@@ -8,16 +8,18 @@
     "attack": 0,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 15,
+    "speed": 100,
     "outfit": {
       "id": 74
     }
   },
+  "fluidType": 0,
   "experience": 0,
   "behaviour": {
     "type": "FRIENDLY",
     "fleeHealth": 50,
-    "openDoors": true
+    "openDoors": true,
+    "senseInvisible": false
   },
   "corpse": 3119,
   "loot": [

@@ -13,7 +13,7 @@
     "loot": {
       "description": "The loot of the monster",
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "items": {
         "type": "object",
         "properties": {
@@ -45,6 +45,12 @@
           "probability"
         ]
       }
+    },
+    "fluidType": {
+      "description": "The fluid type of the monster",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2
     },
     "corpse": {
       "description": "The corpse identifier of the monster",
@@ -94,13 +100,17 @@
         },
         "openDoors": {
           "type": "boolean"
+        },
+        "senseInvisible": {
+          "type": "boolean"
         }
       },
       "additionalProperties": false,
       "required": [
         "type",
         "fleeHealth",
-        "openDoors"
+        "openDoors",
+        "senseInvisible"
       ]
     },
     "creatureStatistics": {
@@ -137,7 +147,7 @@
           "type": "integer",
           "minimum": 0
         },
-        "slowness": {
+        "speed": {
           "type": "integer",
           "minimum": 0
         },
@@ -197,7 +207,7 @@
         "attack",
         "attackSlowness",
         "defense",
-        "slowness",
+        "speed",
         "outfit"
       ]
     }
@@ -206,6 +216,7 @@
   "required": [
     "experience",
     "corpse",
-    "behaviour"
+    "behaviour",
+    "fluidType"
   ]
 }

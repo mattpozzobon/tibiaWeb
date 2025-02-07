@@ -26,6 +26,9 @@ function baseTalkState(player, message) {
    */
 
   switch(message) {
+    case "trade":
+      this.openTradeWindow(player);
+      break;
     case "name":
       this.internalCreatureSay("Name's Teller. Bet you can guess why!", CONST.COLOR.YELLOW);
       break;
@@ -33,6 +36,31 @@ function baseTalkState(player, message) {
       this.internalCreatureSay("Yep! I'm Borne's banker! Head up stairs if you need to access your locker.", CONST.COLOR.YELLOW);
       this.sayEmote("💰", CONST.COLOR.RED);
       break;
+    case "letter":
+      this.internalCreatureSay("To who?", CONST.COLOR.YELLOW);
+      this.setTalkState(letterTalkState);
+      break;
   }
+
+}
+
+function letterTalkState(player, message) {
+
+  /*
+   * Function baseTalkState
+   * The base state of the NPC. It will respond to the following keywords
+   */
+
+  process.gameServer.world.packetHandler.mailboxHandler.writeLetter(message, "%s sent you a letter.".format(player.name), function(error) {
+
+    if(error) {
+      return this.internalCreatureSay("Sorry I do not know this player.", CONST.COLOR.YELLOW);
+    }
+
+    return this.internalCreatureSay("Done!", CONST.COLOR.YELLOW);
+
+  }.bind(this));
+
+  this.setTalkState(baseTalkState);
 
 }

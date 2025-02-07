@@ -12,6 +12,10 @@ const lookup = new Object({
     "2059": "2058",
     "2060": "2061",
     "2061": "2060",
+    "2066": "2067",
+    "2067": "2066",
+    "2068": "2069",
+    "2069": "2068",
 
     // Lanterns
     "1479": "1480",
@@ -37,7 +41,12 @@ const lookup = new Object({
     "1790": "1791",
     "1791": "1790",
     "1792": "1793",
-    "1793": "1792"
+    "1793": "1792",
+
+    // MLW
+    "2162": "2163",
+    "2163": "2162"
+
   });
 
 module.exports = function(player, tile, index, item) {
@@ -50,6 +59,10 @@ module.exports = function(player, tile, index, item) {
   // Does not exist in the table
   if(!lookup.hasOwnProperty(item.id)) {
     return;
+  }
+
+  if(item.isHangable() && !player.canUseHangable(item)) {
+    return player.sendCancelMessage("You have to move to the other side.");
   }
 
   // Replace the items

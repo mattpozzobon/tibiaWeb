@@ -1,3 +1,5 @@
+const Condition = requireModule("condition");
+
 module.exports = function talkScriptHumphrey() {
 
   /*
@@ -8,12 +10,17 @@ module.exports = function talkScriptHumphrey() {
   // Reference the base state (a base state is required)
   this.__baseTalkState = this.__talkState = baseTalkState;
 
-  //this.on("enter", function(creature) {
-  //  this.internalCreatureSay("Hello " + creature.name + ".", CONST.COLOR.YELLOW);
-  //}.bind(this));
+  this.on("enter", function(player) {
+    this.internalCreatureSay("No running in the temple, %s".format(player.name), CONST.COLOR.YELLOW);
+  }.bind(this));
 
   this.on("focus", function(player) {
-    this.internalCreatureSay("Hello " + player.name + ".", CONST.COLOR.YELLOW);
+    if(player.hasCondition(Condition.prototype.MAGIC_FLAME)) {
+      this.internalCreatureSay("Greetings, blessed one.", CONST.COLOR.YELLOW);
+    } else {
+      this.internalCreatureSay("Hello " + player.name + ".", CONST.COLOR.YELLOW);
+    }
+
   }.bind(this));
 
   this.on("defocus", function(player, message) {

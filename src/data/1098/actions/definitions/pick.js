@@ -10,7 +10,7 @@ module.exports = function useRope(player, item, tile) {
     return;
   }
 
-  if(!player.besides(tile)) {
+  if(!player.isBesidesThing(tile)) {
     return;
   }
 

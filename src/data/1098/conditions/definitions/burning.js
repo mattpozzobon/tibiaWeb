@@ -29,7 +29,10 @@ function onTick(creature) {
    * Callback fired every condition tick
    */
 
-  process.gameServer.world.applyEnvironmentalDamage(creature, 10, CONST.COLOR.ORANGE);
+  // Damage depends on the first tick
+  let damage = this.isFirstTick() ? 2 : 1;
+
+  process.gameServer.world.applyEnvironmentalDamage(creature, damage, CONST.COLOR.ORANGE);
   process.gameServer.world.sendMagicEffect(creature.position, CONST.EFFECT.MAGIC.HITBYFIRE);
 
 }

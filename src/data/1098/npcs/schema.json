@@ -8,7 +8,7 @@
     "trade": {
       "description": "The trade items of the NPC",
       "type": "array",
-      "minItems": 1,
+      "minItems": 0,
       "items": {
         "type": "object",
         "properties": {
@@ -23,6 +23,11 @@
           },
           "id": {
             "description": "The identifier of the trade thing",
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "description": "The count of the traded thing",
             "type": "integer",
             "minimum": 0
           },
@@ -126,7 +131,7 @@
           "type": "integer",
           "minimum": 0
         },
-        "slowness": {
+        "speed": {
           "type": "integer",
           "minimum": 0
         },
@@ -186,7 +191,7 @@
         "attack",
         "attackSlowness",
         "defense",
-        "slowness",
+        "speed",
         "outfit"
       ]
     },

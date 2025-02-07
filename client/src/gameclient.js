@@ -16,7 +16,7 @@ const GameClient = function() {
    *
    */
 
-  this.SERVER_VERSION = "740";
+  this.SERVER_VERSION = "1098";
   this.CLIENT_VERSION = "0.0.1"
 
   // These are the required gameclient resources: sprites and data files that need to be selected by the user

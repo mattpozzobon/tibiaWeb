@@ -8,17 +8,19 @@
     "maxMana": 0,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 20,
+    "speed": 30,
     "outfit": {
       "id": 15
     }
   },
+  "fluidType": 0,
   "experience": 20,
   "corpse": 2806,
   "behaviour": {
     "type": "HOSTILE",
     "fleeHealth": 5,
-    "openDoors": true
+    "openDoors": true,
+    "senseInvisible": false
   },
   "loot": [
     {

@@ -92,7 +92,7 @@
     "ON_ALREADY_ONLINE": "replace",
     "EXTERNAL_HOST": "ws://127.0.0.1:2222",
     "VERSION": "0.0.0",
-    "CLIENT_VERSION": "740",
+    "CLIENT_VERSION": "1098",
     "DATE": "2022-03-24",
     "PORT": 2222,
     "HOST": "127.0.0.1",
@@ -104,7 +104,7 @@
   "WORLD": {
     "MAXIMUM_STACK_COUNT": 100,
     "GLOBAL_COOLDOWN_MS": 1000,
-    "WORLD_FILE": "Tibia74.otbm",
+    "WORLD_FILE": "Tibia1098.otbm",
     "IDLE": {
       "WARN_SECONDS": 300,
       "KICK_SECONDS": 60

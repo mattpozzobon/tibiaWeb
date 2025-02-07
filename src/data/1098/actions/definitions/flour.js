@@ -10,7 +10,7 @@ module.exports = function useFlour(player, item, tile) {
     return true;
   }
 
-  if(!player.besides(tile)) {
+  if(!player.isBesidesThing(tile)) {
     return;
   }
  

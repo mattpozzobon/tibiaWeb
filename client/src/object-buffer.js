@@ -256,8 +256,9 @@ ObjectBuffer.prototype.__load = function(name, buffer) {
   // Item identifiers start at 100. Do not ask me why..
   for(let id = 100; id <= this.totalObjectCount; id++) {
 
+    const flags = this.__readFlags(packet)
     // Create a new data object
-    let dataObject = new DataObject(this.__readFlags(packet));
+    let dataObject = new DataObject(flags);
 
     // Update the group count if this is an outfit
     dataObject.setGroupCount(this.__hasFrameGroups(id) ? packet.readUInt8() : 1);
@@ -321,6 +322,9 @@ ObjectBuffer.prototype.__load = function(name, buffer) {
 
     }
 
+    if(id === 1988){
+      console.log(dataObject);
+    }
     // Reference in a hashmap by identifier
     this.dataObjects[id] = dataObject;
 

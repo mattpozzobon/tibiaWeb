@@ -7,7 +7,7 @@ module.exports = function useSewerGrate(player, tile, index, item) {
 
   // Teleport the player and 
   process.gameServer.world.teleportCreature(player, tile.position.down());
-  player.__moveLock.lock(player.getSlowness());
+  player.__moveLock.lock(10);
 
   return true;
 

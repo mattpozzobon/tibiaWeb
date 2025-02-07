@@ -2,23 +2,30 @@
   "creatureStatistics": {
     "name": "Rat",
     "health": 20,
-    "mana": 0,
-    "maxMana": 0,
-    "maxHealth": 20,
+    "maxHealth": 40,
+    "mana": 10,
+    "maxMana": 10,
     "attack": 1,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 20,
+    "speed": 300,
     "outfit": {
       "id": 21
     }
   },
+  "fluidType": 0,
   "experience": 50,
   "corpse": 2813,
   "behaviour": {
-    "type": "HOSTILE",
+    "type": "2",
     "fleeHealth": 5,
-    "openDoors": true
+    "openDoors": true,
+    "senseInvisible": false,
+    "sayings": {
+      "texts": ["Meep!"],
+      "slowness": 300,
+      "chance": 0.75
+    }
   },
   "loot": [
     {
@@ -34,11 +41,7 @@
       "max": 1
     }
   ],
-  "sayings": {
-    "texts": [
-      "Meep!"
-    ],
-    "slowness": 300,
-    "chance": 0.75
-  }
+  "spells": [
+    "bite"
+  ]
 }

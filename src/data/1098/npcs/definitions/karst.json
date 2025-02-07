@@ -8,7 +8,7 @@
     "attack": 1,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 30,
+    "speed": 30,
     "outfit": {
       "id": 128,
       "details": {
@@ -27,14 +27,14 @@
       "price": 1,
       "id": 2012,
       "count": 3,
-      "sell": true
+      "type": "sell"
     },
     {
       "name": "Mug of Wine",
       "price": 2,
       "id": 2012,
       "count": 15,
-      "sell": true
+      "type": "sell"
     }
   ],
   "farewells": [

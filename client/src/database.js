@@ -185,6 +185,7 @@ Database.prototype.storeFile = function(filename, data) {
    */
 
   // Update local storage with the information
+  console.log('filename', filename);
   localStorage.setItem(filename, true);
 
   let fileStore = this.transaction("files", "readwrite");

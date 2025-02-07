@@ -8,7 +8,7 @@
     "maxMana": 0,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 20,
+    "speed": 30,
     "outfit": {
       "id": 128,
       "details": {
@@ -29,7 +29,7 @@
       "name": "Scythe",
       "price": 5,
       "id": 2550,
-      "sell": true
+      "type": "sell"
     }
   ],
   "greetings": [

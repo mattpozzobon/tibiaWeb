@@ -1,36 +1,12 @@
-module.exports = function beamEnergy() {
+module.exports = function explosion() {
 
   /*
    * Function beamEnergy
    * Creature energy beam function
    */
 
-  let source = this;
-
-  for(let i = 0; i < 5; i++) {
-
-    let position = this.__getSpellPosition(0, -i);
-    
-    process.gameServer.world.sendMagicEffect(
-      position,
-      CONST.EFFECT.MAGIC.ENERGYHIT
-    );
-    
-    let tile = process.gameServer.world.getTileFromWorldPosition(position);
-    
-    if(tile === null) {
-      continue;
-    }
-
-    tile.players.forEach(function(player) {
-
-      let damage = Number.prototype.random(0, 3);
-
-      process.gameServer.world.__damageEntity(source, player, damage, CONST.COLOR.LIGHTBLUE);
-
-    });
-
-  }
+  process.gameServer.world.applyEnvironmentalDamage(this, 40, CONST.COLOR.ORANGE);
+  process.gameServer.world.sendMagicEffect(this.position, CONST.EFFECT.MAGIC.HITBYFIRE);
 
   return 50;
 

@@ -8,7 +8,7 @@
     "attack": 1,
     "attackSlowness": 40,
     "defense": 5,
-    "slowness": 30,
+    "speed": 30,
     "outfit": {
       "id": 128,
       "details": {
@@ -26,37 +26,37 @@
       "name": "Shovel",
       "price": 5,
       "id": 2554,
-      "sell": true
+      "type": "sell"
     },
     {
       "name": "Backpack",
       "price": 2,
       "id": 1988,
-      "sell": true
+      "type": "sell"
     },
     {
       "name": "Rope",
       "price": 5,
       "id": 2120,
-      "sell": true
+      "type": "sell"
     },
     {
       "name": "Torch",
       "price": 1,
       "id": 2050,
-      "sell": true
+      "type": "sell"
     },
     {
       "name": "Pickaxe",
       "price": 3,
       "id": 2553,
-      "sell": true
+      "type": "sell"
     },
     {
       "name": "Arrows",
       "price": 1,
       "id": 2544,
-      "sell": true
+      "type": "sell"
     }
   ],
   "farewells": [

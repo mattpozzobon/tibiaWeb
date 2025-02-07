@@ -1,9 +1,9 @@
 [{
-  "respawnTime": 40,
-  "mid": "0000",
+  "respawnTime": 4,
+  "mid": "slime",
   "position": {
-    "x": 80,
-    "y": 43,
+    "x": 32097,
+    "y": 32214,
     "z": 8
   }
 }]

@@ -28,6 +28,9 @@ function baseTalkState(player, message) {
    */
 
   switch(message) {
+    case "spell":
+      this.internalCreatureSay("Learn this!", CONST.COLOR.YELLOW);
+      return player.spellbook.addAvailableSpell(4);
     case "trade":
       this.internalCreatureSay("Here are my wares.", CONST.COLOR.YELLOW);
       this.openTradeWindow(player);

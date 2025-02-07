@@ -99,8 +99,8 @@ class OTBMParser {
      * Parses a RME item definition that is present on the map
      */
     if(item.properties.id === 2666 || item.properties.id === 1429){
-      //console.log('node',item);
-      //console.log('node',item.properties.attributes);
+      // console.log('node',item);
+      // console.log('node',item.properties.attributes);
     }
     const thing = getGameServer().database.createThing(item.properties.id);
     

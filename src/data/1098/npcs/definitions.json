@@ -1,11 +1,11 @@
 {
-  "humphrey": {
+  "cipfried": {
     "position": {
-      "x": 73,
-      "y": 63,
+      "x": 32097,
+      "y": 32219,
       "z": 8
     },
     "enabled": true,
-    "definition": "humphrey.json"
+    "definition": "cipfried.json"
   }
 }

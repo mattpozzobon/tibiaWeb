@@ -1,4 +1,4 @@
-module.exports = function blueberryBush(player, tile, item) {
+module.exports = function blueberryBush(player, tile, index, item) {
 
   /*
    * Function blueberryBush

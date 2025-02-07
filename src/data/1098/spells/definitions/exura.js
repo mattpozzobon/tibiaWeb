@@ -1,10 +1,9 @@
+const Condition = requireModule("condition");
+
 module.exports = function exura(properties) {
 
-  process.gameServer.world.sendMagicEffect(
-    this.position,
-    CONST.EFFECT.MAGIC.SOUND_WHITE
-  );
+  this.addCondition(Condition.prototype.HEALING, 5, 10);
 
-  return 10;
+  return 100;
 
 }

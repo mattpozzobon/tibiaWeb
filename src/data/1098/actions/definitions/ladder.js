@@ -1,5 +1,3 @@
-const path = require("path");
-
 module.exports = function useLadder(player, tile, index, item) {
 
   // Only allowed when not moving
@@ -7,9 +5,19 @@ module.exports = function useLadder(player, tile, index, item) {
     return true;
   }
 
-  // Teleport the player and 
-  process.gameServer.world.teleportCreature(player, tile.position.ladder());
-  player.__moveLock.lock(player.getSlowness());
+  let attempts = new Array(tile.position.ladder(), tile.position.ladderNorth());
+
+  for(let attempt of attempts) {
+
+    let attemptTile = process.gameServer.world.getTileFromWorldPosition(attempt);
+    
+    if(!player.isTileOccupied(attemptTile)) {
+      process.gameServer.world.creatureHandler.teleportCreature(player, attempt);
+      player.__moveLock.lock(10);
+      return true;
+    }
+
+  }
 
   return true;
 
