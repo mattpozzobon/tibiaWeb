@@ -110,6 +110,17 @@ class Door extends Item implements IDoor {
     }
   }
 
+  getDescription(): string {
+    if (this.isHouseDoor()) {
+      return `It belongs to ${this.getHouseName()} and is owned by ${this.getHouseOwner()}.`;
+    } 
+    else if (this.getAttribute("expertise")) {
+      return `Only adventurers of level ${this.actionId! - 100} may pass.`;
+    }
+    return "";
+    
+  }
+
   toggle(player: any): void {
     /*
      * Function Door.toggle

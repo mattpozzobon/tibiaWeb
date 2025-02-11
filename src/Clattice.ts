@@ -4,6 +4,7 @@ import { Position } from "./Cposition";
 import { ILattice } from "interfaces/ILattice";
 import { PathfinderTile } from "interfaces/IPathfinder";
 import ITile from "interfaces/ITile";
+import Tile from "Ctile";
 
 
 class Lattice implements ILattice{
@@ -183,8 +184,11 @@ class Lattice implements ILattice{
       this.__referenceNeighbours(chunk, this.__getChunkFromChunkPosition.bind(this));
 
       chunk.layers.forEach((layer: any) => {
-        layer?.forEach((tile: any) => {
-          if (!tile || tile.isBlockSolid()) return;
+        layer?.forEach((tile: Tile) => {
+
+          if (!tile) return;
+          if (tile.isBlockSolid()) return;
+          
           this.enablePathfinding(tile, false);
         });
       });

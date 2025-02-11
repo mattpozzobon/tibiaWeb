@@ -408,7 +408,6 @@ SpriteBuffer.prototype.__getImageData = function(id) {
   return this.__loadSingleSprite(this.__spriteAddressPointers[id]);
 
 }
-
 SpriteBuffer.prototype.__loadSingleSprite = function(address) {
 
   /*
@@ -422,7 +421,7 @@ SpriteBuffer.prototype.__loadSingleSprite = function(address) {
   // Cut off the right slice counting from the address
   let spritePacket = this.packet.slice(address, address + 5 + spriteLength);
 
-  // Alpha color
+  // Alpha color (transparency key, if used)
   let alpha = spritePacket.readRGB();
   
   // Skip RGB transparency color and the pre-read length
@@ -435,23 +434,27 @@ SpriteBuffer.prototype.__loadSingleSprite = function(address) {
   // Go over the sprite packet itself
   while(spritePacket.readable()) {
 
-    // Read the number of transparent pixels
+    // Read the number of transparent pixels and colored pixels
     let transparentPixels = spritePacket.readUInt16();
     let coloredPixels = spritePacket.readUInt16();
 
-    // Skip all the transparent pixels
+    // Advance the index by the transparent pixels
     index += transparentPixels;
 
-    // Copy over the RGB values and add full transparency
+    // Process colored pixels
     for(let i = index; i < index + coloredPixels; i++) {
-      buffer[i] = spritePacket.readRGB() | 0xFF000000;
+      // Read red, green, blue, and alpha bytes
+      let r = spritePacket.readUInt8();
+      let g = spritePacket.readUInt8();
+      let b = spritePacket.readUInt8();
+      let a = spritePacket.readUInt8();
+      // Compose the pixel value (for a little-endian system, this creates [r, g, b, a])
+      buffer[i] = (a << 24) | (b << 16) | (g << 8) | r;
     }
-
+    // **Update the index after processing the colored pixels**
     index += coloredPixels;
-
   }
 
-  // Create the image data
   return new ImageData(new Uint8ClampedArray(buffer.buffer), 32, 32);
-
 }
+

@@ -220,14 +220,6 @@ class Thing extends ThingEmitter implements IThing{
       return this.duration ? this.getDurationString() : "It is brand-new.";
     } 
 
-    if (this.prototypeCache.isDoor()) {
-      const doorPrototype = this.prototypeCache as unknown as IDoor;
-      if (doorPrototype.isHouseDoor()) {
-        return `It belongs to ${doorPrototype.getHouseName()} and is owned by ${doorPrototype.getHouseOwner()}.`;
-      } else if (this.getAttribute("expertise")) {
-        return `Only adventurers of level ${this.actionId! - 100} may pass.`;
-      }
-    }
     return this.getAttribute("description");
   }
 
@@ -519,13 +511,16 @@ class Thing extends ThingEmitter implements IThing{
     return this.getPrototype().isFluidContainer();
   }
   
-  hasFlag(flag: number): boolean {
+  hasFlag(flag: number): boolean{
     /*
      * Function Thing.hasFlag
      * Returns true if the flag in the prototype is set
      */
-
-    return this.getPrototype().flags.get(flag);
+    try {
+      return this.getPrototype().flags.get(flag);
+    } catch (e) {   
+      return false;
+    }
   }
   
   cleanup(): void {

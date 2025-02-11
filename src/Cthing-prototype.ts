@@ -1,9 +1,8 @@
 "use strict";
 
 import { IThingPrototype } from "interfaces/IThing-prototype";
-import { BitFlag, OTBBitFlag, TileFlag } from "./Cbitflag";
+import {  OTBBitFlag, TileFlag } from "./Cbitflag";
 import { EventEmitter } from "./Ceventemitter";
-import { IDoor } from "interfaces/IDoor";
 
 interface ThingPrototypeData {
   id: number;
@@ -25,6 +24,10 @@ class ThingPrototype extends EventEmitter implements IThingPrototype{
      */
     super();
     this.id = data.id;
+    if (!data.flags === undefined || data.flags === null) {
+      console.log('data.flags bag', data);
+    }
+
     this.flags = new OTBBitFlag(data.flags);
     this.group = data.group;
     this.properties = data.properties;
@@ -62,7 +65,7 @@ class ThingPrototype extends EventEmitter implements IThingPrototype{
     return this.__has("slotType");
   }
 
-  isDoor(): this is IDoor {
+  isDoor(): boolean {
     return this.__isType("door");
   }
 

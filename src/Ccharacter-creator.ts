@@ -60,8 +60,8 @@ export class CharacterCreator {
      */
 
     this.blueprint = {
-      position: new Position(10, 10, 8),
-      templePosition: new Position(10, 10, 8),
+      position: new Position(10, 10, 9),
+      templePosition: new Position(10, 10, 9),
       properties: {
         vocation: CONST.VOCATION.NONE,
         role: CONST.ROLES.GOD,

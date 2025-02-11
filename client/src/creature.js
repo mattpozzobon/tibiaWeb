@@ -140,10 +140,11 @@ Creature.prototype.getCharacterFrames = function() {
   }
 
   // Define the variables to return
-  let characterGroup, mountGroup, characterFrame, mountFrame;
+  let characterGroup, mountGroup, characterFrame, mountFrame, isMoving;
 
   // The character is not moving: get the idle group
   if(!this.isMoving()) {
+    isMoving = false;
 
     characterGroup = characterObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE);
 
@@ -163,6 +164,7 @@ Creature.prototype.getCharacterFrames = function() {
     }
 
   } else {
+    isMoving = true;
 
     characterGroup = characterObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING);
     characterFrame = this.__getWalkingFrame(characterGroup);
@@ -183,7 +185,8 @@ Creature.prototype.getCharacterFrames = function() {
     characterGroup,
     mountGroup,
     characterFrame,
-    mountFrame
+    mountFrame,
+    isMoving
   });
 
 }
