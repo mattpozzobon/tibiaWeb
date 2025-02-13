@@ -711,22 +711,28 @@ PacketReader.prototype.readBoolean = function() {
 }
 
 PacketReader.prototype.readOutfit = function() {
-
-  /*
-   * Function PacketReader.readOutfit
-   * Reads an outfit packet
-   */
-
-  return new Outfit({
-    "id": this.readUInt16(),
-    "details": this.readOutfitDetails(),
-    "mount": this.readUInt16(),
-    "mounted": this.readBoolean(),
-    "addonOne": this.readBoolean(),
-    "addonTwo": this.readBoolean()
+  let outfit = new Outfit({
+      "id": this.readUInt16(),
+      "details": this.readOutfitDetails(),
+      "equipment": this.readOutfitEquipment(), 
+      "mount": this.readUInt16(),
+      "mounted": this.readBoolean(),
+      "addonOne": this.readBoolean(),
+      "addonTwo": this.readBoolean()
   });
 
-}
+  console.log("🟡 Received Outfit in Client:", JSON.stringify(outfit, null, 2));
+  return outfit;
+};
+
+PacketReader.prototype.readOutfitEquipment = function() {
+  return new Object({
+    "head": this.readUInt16(),
+    "body": this.readUInt16(),
+    "legs": this.readUInt16(),
+    "feet": this.readUInt16()
+  });
+};
 
 PacketReader.prototype.readOutfitDetails = function() {
 

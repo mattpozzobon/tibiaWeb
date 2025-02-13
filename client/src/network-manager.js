@@ -179,7 +179,8 @@ NetworkManager.prototype.readPacket = function(packet) {
     }
   
     case CONST.PROTOCOL.SERVER.STATE_PLAYER: {
-      return this.packetHandler.handleAcceptLogin(packet.readPlayerInfo());
+      const p = packet.readPlayerInfo()
+      return this.packetHandler.handleAcceptLogin(p);
     }
   
     case CONST.PROTOCOL.SERVER.ITEM_REMOVE: {

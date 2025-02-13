@@ -257,6 +257,15 @@ export class PacketWriter extends Packet {
       this.writeNull(4);
     }
 
+    if (outfit.equipment) {
+      this.writeUInt16(outfit.equipment.head);
+      this.writeUInt16(outfit.equipment.body);
+      this.writeUInt16(outfit.equipment.legs);
+      this.writeUInt16(outfit.equipment.feet);
+    } else {
+        this.writeNull(8); 
+    }
+  
     if (getGameServer().isFeatureEnabled()) {
       this.writeUInt16(outfit.mount);
       this.writeBoolean(outfit.mounted);

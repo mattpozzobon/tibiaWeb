@@ -28,7 +28,7 @@ export class StringCreaturePropertyPacket extends PacketWriter {
 
 export class OutfitPacket extends PacketWriter {
   constructor(guid: number, outfit: any) {
-    super(CONST.PROTOCOL.SERVER.OUTFIT, 15);
+    super(CONST.PROTOCOL.SERVER.OUTFIT, 23);
     this.writeUInt32(guid);
     this.writeOutfit(outfit);
   }
@@ -461,7 +461,6 @@ export class PlayerStatePacket extends PacketWriter {
 
     this.writeUInt8(0); // Placeholder for spells
     this.writeUInt8(0); // Placeholder for friend list
-
     this.writeOutfit(player.getProperty(CONST.PROPERTIES.OUTFIT));
 
     this.writeUInt8(player.getProperty(CONST.PROPERTIES.HEALTH));

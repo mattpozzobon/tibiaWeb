@@ -7,6 +7,7 @@ const Outfit = function(outfit) {
 
   this.id = outfit.id;
   this.details = outfit.details;
+  this.equipment = outfit.equipment;
   this.mount = outfit.mount;
 
   this.mounted = outfit.mounted;
@@ -109,6 +110,22 @@ Outfit.prototype.getDataObjectMount = function() {
 
   return gameClient.dataObjects.getOutfit(this.mount);
 
+}
+
+Outfit.prototype.getHeadDataObject = function() {
+  return gameClient.dataObjects.getOutfit(this.equipment.head);
+}
+
+Outfit.prototype.getBodyDataObject = function() {
+  return gameClient.dataObjects.getOutfit(this.equipment.body);
+}
+
+Outfit.prototype.getLegsDataObject = function() {
+  return gameClient.dataObjects.getOutfit(this.equipment.legs);
+}
+
+Outfit.prototype.getFeetDataObject = function() {
+  return gameClient.dataObjects.getOutfit(this.equipment.feet);
 }
 
 Outfit.prototype.getDataObject = function() {

@@ -224,6 +224,12 @@ export class PacketReader extends Packet {
         legs: this.readUInt8(),
         feet: this.readUInt8(),
       },
+      equipment: {
+        head: this.readUInt16(),
+        body: this.readUInt16(),
+        legs: this.readUInt16(),
+        feet: this.readUInt16(),
+      },
       mount: this.readUInt16(),
       mounted: this.readBoolean(),
       addonOne: this.readBoolean(),

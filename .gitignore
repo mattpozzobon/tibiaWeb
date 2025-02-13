@@ -4,6 +4,5 @@ node_modules
 *.log
 *.db
 packets.wal
-.spr
-.dat
-client/data/1098/Tibia.spr
+*.spr
+*.dat

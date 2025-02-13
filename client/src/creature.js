@@ -125,71 +125,99 @@ Creature.prototype.getMaxFloor = function() {
 }
 
 Creature.prototype.getCharacterFrames = function() {
-
   /*
    * Function Creature.getCharacterFrames
-   * Returns the character and mount frames and frame groups to be rendered
+   * Returns the character, mount, and equipment frames and frame groups to be rendered
    */
 
-  // Get both the character and the mount data objects
+  // Get base outfit and mount data
   let characterObject = this.outfit.getDataObject();
   let mountObject = this.outfit.getDataObjectMount();
 
-  if(characterObject === null) {
+  // Get equipment data objects (ONLY IF ID IS NOT 0)
+  let headObject = this.outfit.equipment.head !== 0 ? this.outfit.getHeadDataObject() : null;
+  let bodyObject = this.outfit.equipment.body !== 0 ? this.outfit.getBodyDataObject() : null;
+  let legsObject = this.outfit.equipment.legs !== 0 ? this.outfit.getLegsDataObject() : null;
+  let feetObject = this.outfit.equipment.feet !== 0 ? this.outfit.getFeetDataObject() : null;
+
+  if (characterObject === null) {
     return null;
   }
 
-  // Define the variables to return
-  let characterGroup, mountGroup, characterFrame, mountFrame, isMoving;
+  let characterGroup, mountGroup, characterFrame, mountFrame;
+  let headGroup, bodyGroup, legsGroup, feetGroup;
+  let headFrame, bodyFrame, legsFrame, feetFrame;
+  let isMoving;
 
-  // The character is not moving: get the idle group
-  if(!this.isMoving()) {
+  if (!this.isMoving()) {
     isMoving = false;
 
     characterGroup = characterObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE);
+    characterFrame = (characterObject.frameGroups.length === 1 && !characterObject.isAlwaysAnimated()) ? 0 : characterGroup.getAlwaysAnimatedFrame();
 
-    if(characterObject.frameGroups.length === 1 && !characterObject.isAlwaysAnimated()) {
-      characterFrame = 0;
-    } else {
-      characterFrame = characterGroup.getAlwaysAnimatedFrame();
-    }
+    // 🛑 Skip setting frame groups if they are `null`
+    headGroup = headObject ? headObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
+    bodyGroup = bodyObject ? bodyObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
+    legsGroup = legsObject ? legsObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
+    feetGroup = feetObject ? feetObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
 
-    // Mounts
-    if(gameClient.clientVersion === 1098) {
+    // 🛑 Skip setting frames if they are `null`
+    headFrame = headGroup ? headGroup.getAlwaysAnimatedFrame() : 0;
+    bodyFrame = bodyGroup ? bodyGroup.getAlwaysAnimatedFrame() : 0;
+    legsFrame = legsGroup ? legsGroup.getAlwaysAnimatedFrame() : 0;
+    feetFrame = feetGroup ? feetGroup.getAlwaysAnimatedFrame() : 0;
+
+    if (gameClient.clientVersion === 1098) {
       mountGroup = mountObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE);
       mountFrame = mountGroup.getAlwaysAnimatedFrame();
     } else {
       mountGroup = 0;
       mountFrame = 0;
     }
-
   } else {
     isMoving = true;
 
     characterGroup = characterObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING);
     characterFrame = this.__getWalkingFrame(characterGroup);
 
-    // Mounts
-    if(gameClient.clientVersion === 1098) {
+    // 🛑 Skip setting frame groups if they are `null`
+    headGroup = headObject ? headObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
+    bodyGroup = bodyObject ? bodyObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
+    legsGroup = legsObject ? legsObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
+    feetGroup = feetObject ? feetObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
+
+    // 🛑 Skip setting frames if they are `null`
+    headFrame = headGroup ? this.__getWalkingFrame(headGroup) : 0;
+    bodyFrame = bodyGroup ? this.__getWalkingFrame(bodyGroup) : 0;
+    legsFrame = legsGroup ? this.__getWalkingFrame(legsGroup) : 0;
+    feetFrame = feetGroup ? this.__getWalkingFrame(feetGroup) : 0;
+
+    if (gameClient.clientVersion === 1098) {
       mountGroup = mountObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING);
       mountFrame = this.__getWalkingFrame(characterGroup);
     } else {
       mountGroup = 0;
       mountFrame = 0;
     }
-
   }
 
-  // Return the frames and groups to be used by the renderer
-  return new Object({
+  return {
     characterGroup,
     mountGroup,
     characterFrame,
     mountFrame,
+    headGroup,
+    bodyGroup,
+    legsGroup,
+    feetGroup,
+    headFrame,
+    bodyFrame,
+    legsFrame,
+    feetFrame,
     isMoving
-  });
+  };
+};
 
-}
 
 Creature.prototype.getPosition = function() {
 

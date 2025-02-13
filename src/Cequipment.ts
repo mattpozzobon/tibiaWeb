@@ -110,8 +110,43 @@ class Equipment {
       return this.handleChangeThing(IThing, change);
     }
 
+    if (this.__isTrackedEquipmentSlot(false, index)) {
+      console.log(`removeIndex to slot ${index}: Thing ID = ${IThing.id}`);
+    }
+
     return IThing;
   }
+
+  private __isTrackedEquipmentSlot(isAdd: boolean, index: number, IThing?: IThing): boolean {
+    switch (index) {
+      case CONST.EQUIPMENT.HELMET:
+        isAdd ? this.IPlayer.properties.updateOutfitEquipment("head", 907) : this.IPlayer.properties.updateOutfitEquipment("head", 0);
+        //console.log(`Updated helmet: ${this.IPlayer.outfit.equipment.head}`);
+        break;
+      case CONST.EQUIPMENT.ARMOR:
+        isAdd ? this.IPlayer.properties.updateOutfitEquipment("body", 908) : this.IPlayer.properties.updateOutfitEquipment("body", 0);
+       // console.log(`Updated armor: ${this.IPlayer.outfit.equipment.body}`);
+        break;
+      case CONST.EQUIPMENT.LEGS:
+        isAdd ? this.IPlayer.properties.updateOutfitEquipment("legs", 910) : this.IPlayer.properties.updateOutfitEquipment("legs", 0);
+        //console.log(`Updated legs: ${this.IPlayer.outfit.equipment.legs}`);
+        break;
+      case CONST.EQUIPMENT.BOOTS:
+        isAdd ? this.IPlayer.properties.updateOutfitEquipment("feet", 909) : this.IPlayer.properties.updateOutfitEquipment("feet", 0);
+        //console.log(`Updated boots: ${this.IPlayer.outfit.equipment.feet}`);
+        break;
+      case CONST.EQUIPMENT.RIGHT:
+        //console.log(`Updated right-hand weapon: ${IThing ? IThing.id : 0}`);
+        break;
+      case CONST.EQUIPMENT.LEFT:
+       //console.log(`Updated left-hand weapon: ${IThing ? IThing.id : 0}`);
+        break;
+      default:
+        return false;
+    }
+    return true;
+  }
+  
 
   public getMaximumAddCount(player: IPlayer, thing: IThing, index: number): number {
     /*
@@ -165,6 +200,10 @@ class Equipment {
       this.IPlayer.removeCondition(CONST.CONDITION.MAGIC_SHIELD);
     }
 
+    if (this.__isTrackedEquipmentSlot(false, index)) {
+      console.log(`deleteThing to slot ${index}: Thing ID = ${IThing.id}`);
+    }
+
     return index;
   }
 
@@ -207,6 +246,11 @@ class Equipment {
 
     this.container.addThing(IThing, index);
     IThing.setParent(this);
+
+    if (this.__isTrackedEquipmentSlot(true, index)) {
+      console.log(`Added to slot ${index}: Thing ID = ${IThing.id}`);
+    }
+    
     return this.__updateWeight(IThing.getWeight());
   }
 
@@ -254,7 +298,7 @@ class Equipment {
 
   __addEquipment(equipment: any[]): void {
     equipment.forEach((entry) => {
-      console.log("entry", entry);
+
       const IThing = getGameServer().database.parseThing(entry.item);
       if (IThing) {
         // Add the main equipment item into its slot.

@@ -208,26 +208,19 @@ Canvas.prototype.drawRect = function(x, y, size, color) {
 }
 
 Canvas.prototype.drawCharacter = function(creature, position, size, offset) {
-
   /*
    * Function Canvas.drawCharacter
-   * Renders a character to the screen
+   * Renders a character and its equipment to the screen
    */
 
-  // Get the required character frame groups and frames
   let frames = creature.getCharacterFrames();
-  // Somehow no frames could be found?
-  if(frames === null) {
+  if (frames === null) {
     return;
   }
 
-  // xPattern is set as the facing direction of the creature
   let xPattern = creature.__lookDirection % 4;
-
-  // zPattern is the flag for mounted
   let zPattern = (frames.characterGroup.pattern.z > 1 && creature.isMounted()) ? 1 : 0;
 
-  // Delegate to the internal draw handler
   this.__drawCharacter(
     creature.spriteBuffer,
     creature.spriteBufferMount,
@@ -237,14 +230,21 @@ Canvas.prototype.drawCharacter = function(creature, position, size, offset) {
     frames.mountGroup,
     frames.characterFrame,
     frames.mountFrame,
+    frames.headGroup,
+    frames.bodyGroup,
+    frames.legsGroup,
+    frames.feetGroup,
+    frames.headFrame,
+    frames.bodyFrame,
+    frames.legsFrame,
+    frames.feetFrame,
     xPattern,
     zPattern,
     size,
     offset,
     frames.isMoving
-   );
-
-}
+  );
+};
 
 Canvas.prototype.drawDistanceAnimation = function(animation, position) {
 
@@ -388,245 +388,75 @@ Canvas.prototype.__drawSprite = function(sprite, position, x, y, size) {
 }
 
 Canvas.prototype.__drawCharacter = function(
-  spriteBuffer, 
-  spriteBufferMount, 
-  outfit, 
-  position, 
-  characterGroup, 
-  mountGroup, 
-  characterFrame, 
-  mountFrame, 
-  xPattern, 
-  zPattern, 
-  size, 
-  offset,
-  isMoving
-) {
-  /*
-   * Function Canvas.__drawCharacter
-   * Internal function to render a character to the screen
-   */
-  
-  // Offset for large sprites (e.g., 64x64 → offset=16)
-  let drawPosition = new Position(position.x - offset, position.y - offset);
-
-  // =============
-  // 1) Draw Base Outfit + Mount
-  // =============
-  for(let x = 0; x < characterGroup.width; x++) {
-    for(let y = 0; y < characterGroup.height; y++) {
-
-      // Base sprite ID
-      let baseIdentifier = characterGroup.getSpriteId(
-        characterFrame, 
-        xPattern, 
-        0,       // yPattern for addons=0
-        zPattern, 
-        0,       // animation phase
-        x, 
-        y
-      );
-
-      // If the creature's outfit has "look details" (addons, colors), try yPattern=1 or 2
-      if (outfit.hasLookDetails()) {
-        if (baseIdentifier === 0 && outfit.addonOne) {
-          baseIdentifier = characterGroup.getSpriteId(
-            characterFrame, xPattern, 1, zPattern, 0, x, y
-          );
-        }
-        if (baseIdentifier === 0 && outfit.addonTwo) {
-          baseIdentifier = characterGroup.getSpriteId(
-            characterFrame, xPattern, 2, zPattern, 0, x, y
-          );
-        }
-      }
-
-      // If still 0, skip
-      if (baseIdentifier === 0) {
-        continue;
-      }
-
-      // Compose in sprite buffer if missing
-      if (!spriteBuffer.has(baseIdentifier)) {
-        spriteBuffer.addComposedOutfit(
-          baseIdentifier,
-          outfit,
-          characterGroup,
-          characterFrame,
-          xPattern,
-          zPattern,
-          x,
-          y
-        );
-      }
-
-      // If mounted (zPattern===1), draw mount
-      if (zPattern === 1 && mountGroup) {
-        let mountSprite = mountGroup.getSpriteId(
-          mountFrame, xPattern, 0, 0, 0, x, y
-        );
-        if (mountSprite !== 0) {
-          this.__drawSprite(
-            spriteBufferMount.get(mountSprite),
-            drawPosition,
-            x,
-            y,
-            size
-          );
-        }
-      }
-
-      // Finally draw the base sprite
-      this.__drawSprite(
-        spriteBuffer.get(baseIdentifier),
-        drawPosition,
-        x,
-        y,
-        size
-      );
-    }
-  }
-
-  // =============
-  // 2) Draw Overlay Outfit
-  // =============
-  // (In a real game, you'd likely store this overlay outfit/spriteBuffer somewhere else.)
-  const overlayOutfit = new Outfit({
-    id: 129,
-    addonOne: true,
-    addonTwo: false,
-    mount: 0,
-    mounted: false,
-    details: { head: 0, body: 0, legs: 0, feet: 0 }
-  });
-
-  const overlayData = overlayOutfit.getDataObject();
-  if (!overlayData) {
-    return; // If ID=129 not found, abort
-  }
-
-  // Build or re-use a sprite buffer for the overlay
-  const spriteBufferOverlay = new SpriteBuffer(
-    overlayOutfit.getSpriteBufferSize(overlayData)
-  );
-
-  // Decide which frame group + frame to use for the overlay
-  let overlayGroup, overlayFrame;
-
-  if (!isMoving) {
-    // Creature is idle → use the overlay's idle group
-    overlayGroup = overlayData.getFrameGroup(FrameGroup.prototype.GROUP_IDLE);
-
-    // If there's only one frame group and it's not "always animated," pick frame 0
-    if (
-      overlayData.frameGroups.length === 1 &&
-      !overlayData.isAlwaysAnimated()
-    ) {
-      overlayFrame = 0;
-    } else {
-      // Otherwise, use the always animated frame
-      overlayFrame = overlayGroup.getAlwaysAnimatedFrame();
-    }
-
-  } else {
-    // Creature is moving → use the overlay's moving group
-    overlayGroup = overlayData.getFrameGroup(FrameGroup.prototype.GROUP_MOVING);
-
-    // If you have a special "walking frame" method, use it. 
-    // Else, you can just reuse "characterFrame" if they have the same frame count.
-    // For demonstration, let's just do the same approach as "always animated"
-    // but you could do overlayFrame = characterFrame if they sync exactly.
-    overlayFrame = overlayGroup.getAlwaysAnimatedFrame();
-    // or overlayFrame = characterFrame; // if you want perfect 1:1 sync
-  }
-
-  // 3) Draw the overlay
-  this.__drawCharacterOverlay(
-    overlayOutfit,
-    spriteBufferOverlay,
-    overlayGroup,
-    overlayFrame,
-    drawPosition,  
-    xPattern,
-    zPattern,
-    size
-  );
-};
-
-
-Canvas.prototype.__drawCharacterOverlay = function(
-  overlayOutfit,
-  spriteBufferOverlay,
-  overlayGroup,
-  overlayFrame,
-  position,   
+  spriteBuffer,
+  spriteBufferMount,
+  outfit,
+  position,
+  characterGroup,
+  mountGroup,
+  characterFrame,
+  mountFrame,
+  headGroup,
+  bodyGroup,
+  legsGroup,
+  feetGroup,
+  headFrame,
+  bodyFrame,
+  legsFrame,
+  feetFrame,
   xPattern,
   zPattern,
-  size
+  size,
+  offset,
 ) {
-  /*
-   * Function Canvas.__drawCharacterOverlay
-   * Draws the overlay outfit on top of the base outfit
-   */
-  for (let x = 0; x < overlayGroup.width; x++) {
-    for (let y = 0; y < overlayGroup.height; y++) {
+  let drawPosition = new Position(position.x - offset, position.y - offset);
 
-      // Start with yPattern=0
-      let spriteId = overlayGroup.getSpriteId(
-        overlayFrame, 
-        xPattern, 
-        0, 
-        zPattern, 
-        0, 
-        x, 
-        y
-      );
 
-      // Check for overlayAddons
-      if (overlayOutfit.hasLookDetails()) {
-        if (spriteId === 0 && overlayOutfit.addonOne) {
-          spriteId = overlayGroup.getSpriteId(
-            overlayFrame, xPattern, 1, zPattern, 0, x, y
-          );
-        }
-        if (spriteId === 0 && overlayOutfit.addonTwo) {
-          spriteId = overlayGroup.getSpriteId(
-            overlayFrame, xPattern, 2, zPattern, 0, x, y
-          );
-        }
-      }
+  // 1️⃣ Draw Base Outfit (This clears anything underneath)
+  this.__drawCharacterLayer(spriteBuffer, outfit, characterGroup, characterFrame, xPattern, zPattern, drawPosition, size, 0);
 
-      // If no sprite found, skip
-      if (spriteId === 0) {
-        continue;
-      }
+  // 2️⃣ Draw Equipment Layers (Helmet, Armor, Legs, Boots)
+  if (outfit.equipment.head) this.__drawCharacterLayer(spriteBuffer, outfit, headGroup, headFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (outfit.equipment.body) this.__drawCharacterLayer(spriteBuffer, outfit, bodyGroup, bodyFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (outfit.equipment.legs) this.__drawCharacterLayer(spriteBuffer, outfit, legsGroup, legsFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (outfit.equipment.feet) this.__drawCharacterLayer(spriteBuffer, outfit, feetGroup, feetFrame, xPattern, zPattern, drawPosition, size, 0);
 
-      // Compose if needed
-      if (!spriteBufferOverlay.has(spriteId)) {
-        spriteBufferOverlay.addComposedOutfit(
-          spriteId,
-          overlayOutfit,
-          overlayGroup,
-          overlayFrame,
-          xPattern,
-          zPattern,
-          x,
-          y
-        );
-      }
-
-      // Draw the overlay sprite
-      this.__drawSprite(
-        spriteBufferOverlay.get(spriteId),
-        position,
-        x,
-        y,
-        size
-      );
+  // 3️⃣ Draw Mount (Only if mounted)
+  if (zPattern === 1 && mountGroup) {
+    let mountSprite = mountGroup.getSpriteId(mountFrame, xPattern, 0, 0, 0, 0, 0);
+    if (mountSprite !== 0) {
+      this.__drawSprite(spriteBufferMount.get(mountSprite), drawPosition, 0, 0, size);
     }
   }
 };
 
+Canvas.prototype.__drawCharacterLayer = function(
+  spriteBuffer,
+  outfit,
+  group,
+  frame,
+  xPattern,
+  zPattern,
+  position,
+  size,
+  yPattern
+) {
+  if (!group) return; // If no group, nothing to draw.
+
+  for (let x = 0; x < group.width; x++) {
+    for (let y = 0; y < group.height; y++) {
+      let spriteId = group.getSpriteId(frame, xPattern, yPattern, zPattern, 0, x, y);
+      if (spriteId === 0) continue;
+
+      // 🟢 Ensure new sprite replaces previous one
+      // if (!spriteBuffer.has(spriteId)) {
+      //   spriteBuffer.addComposedOutfit(spriteId, outfit, group, frame, xPattern, zPattern, x, y);
+      // }
+
+      this.__drawSprite(spriteBuffer.get(spriteId), position, x, y, size);
+    }
+  }
+};
 
 
 Canvas.prototype.__reference = function(id) {
