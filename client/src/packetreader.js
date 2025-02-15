@@ -731,7 +731,9 @@ PacketReader.prototype.readOutfitEquipment = function() {
     "head": this.readUInt16(),
     "body": this.readUInt16(),
     "legs": this.readUInt16(),
-    "feet": this.readUInt16()
+    "feet": this.readUInt16(),
+    "lefthand": this.readUInt16(),
+    "righthand": this.readUInt16(),
   });
 };
 

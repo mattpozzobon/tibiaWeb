@@ -263,6 +263,8 @@ export class PacketWriter extends Packet {
       this.writeUInt16(outfit.equipment.body);
       this.writeUInt16(outfit.equipment.legs);
       this.writeUInt16(outfit.equipment.feet);
+      this.writeUInt16(outfit.equipment.lefthand);
+      this.writeUInt16(outfit.equipment.righthand);
     } else {
         this.writeNull(8); 
     }

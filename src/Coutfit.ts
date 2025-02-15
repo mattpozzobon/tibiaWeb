@@ -9,6 +9,8 @@ export interface OutfitDetails {
 
 export interface EquipmentDetails extends OutfitDetails {
   hair: number;
+  lefthand: number;
+  righthand: number;
 }
 
 export interface OutfitConfig {
@@ -45,7 +47,7 @@ export class Outfit {
      */
     this.id = outfit.id ?? 1;
     this.details = outfit.details ?? null;
-    this.equipment = outfit.equipment ?? {hair: 904, head: 0, body: 0, legs: 0, feet: 0};
+    this.equipment = outfit.equipment ?? {hair: 904, head: 0, body: 0, legs: 0, feet: 0, lefthand: 0, righthand: 0};
     this.mount = outfit.mount ?? null;
     this.mounted = outfit.mounted ?? false;
     this.addonOne = outfit.addonOne ?? false;

@@ -229,12 +229,16 @@ Canvas.prototype.drawCharacter = function(creature, position, size, offset) {
     frames.bodyGroup,
     frames.legsGroup,
     frames.feetGroup,
-    frames.hairGroup, // 🟢 Add Hair
+    frames.hairGroup,       // 🟢 Hair Group
+    frames.leftHandGroup,   // 🟢 Left Hand Group
+    frames.rightHandGroup,  // 🟢 Right Hand Group
     frames.headFrame,
     frames.bodyFrame,
     frames.legsFrame,
     frames.feetFrame,
-    frames.hairFrame, // 🟢 Add Hair Frame
+    frames.hairFrame,       // 🟢 Hair Frame
+    frames.leftHandFrame,   // 🟢 Left Hand Frame
+    frames.rightHandFrame,  // 🟢 Right Hand Frame
     xPattern,
     zPattern,
     size,
@@ -242,7 +246,6 @@ Canvas.prototype.drawCharacter = function(creature, position, size, offset) {
     frames.isMoving
   );
 };
-
 
 Canvas.prototype.drawDistanceAnimation = function(animation, position) {
 
@@ -398,12 +401,16 @@ Canvas.prototype.__drawCharacter = function(
   bodyGroup,
   legsGroup,
   feetGroup,
-  hairGroup, // 🟢 Add Hair
+  hairGroup,       // 🟢 Add Hair
+  leftHandGroup,   // 🟢 Add Left Hand
+  rightHandGroup,  // 🟢 Add Right Hand
   headFrame,
   bodyFrame,
   legsFrame,
   feetFrame,
-  hairFrame, // 🟢 Add Hair Frame
+  hairFrame,       // 🟢 Add Hair Frame
+  leftHandFrame,   // 🟢 Add Left Hand Frame
+  rightHandFrame,  // 🟢 Add Right Hand Frame
   xPattern,
   zPattern,
   size,
@@ -419,13 +426,14 @@ Canvas.prototype.__drawCharacter = function(
   if (bodyGroup) this.__drawCharacterLayer(spriteBuffer, outfit, bodyGroup, bodyFrame, xPattern, zPattern, drawPosition, size, 0);
   if (legsGroup) this.__drawCharacterLayer(spriteBuffer, outfit, legsGroup, legsFrame, xPattern, zPattern, drawPosition, size, 0);
   if (feetGroup) this.__drawCharacterLayer(spriteBuffer, outfit, feetGroup, feetFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (leftHandGroup) this.__drawCharacterLayer(spriteBuffer, outfit, leftHandGroup, leftHandFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (rightHandGroup) this.__drawCharacterLayer(spriteBuffer, outfit, rightHandGroup, rightHandFrame, xPattern, zPattern, drawPosition, size, 0);
 
   // 🟢 If no helmet, draw hair
   if (!headGroup && hairGroup) {
     const spriteBufferHair = new SpriteBuffer(64);
     this.__drawCharacterLayer(spriteBufferHair, outfit, hairGroup, hairFrame, xPattern, zPattern, drawPosition, size, 0, true);
   }
-  
   
   // 🟢 Draw Mount
   if (zPattern === 1 && mountGroup) {

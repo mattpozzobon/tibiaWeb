@@ -1,6 +1,20 @@
 {
   "items": [
     {
+      "name": "Left-Hand Espada",
+      "id": 2412,
+      "sprite_id": 919
+    },
+    {
+      "name": "Right-hand Fire",
+      "id": 2191,
+      "sprite_id": 920
+    },
+
+
+
+
+    {
       "name": "Leather Helmet",
       "id": 2461,
       "sprite_id": 907

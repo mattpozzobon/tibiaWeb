@@ -1,4 +1,4 @@
-import { Outfit, OutfitDetails } from "./Coutfit";
+import { EquipmentDetails, Outfit } from "./Coutfit";
 import { Property } from "./Cproperty";
 import { CreaturePropertyPacket, OutfitPacket } from "./Cprotocol";
 import { CONFIG, CONST, getGameServer } from "./helper/appContext";
@@ -49,7 +49,7 @@ export class CreatureProperties {
     return this.__guid;
   }
 
-  updateOutfitEquipment(slot: keyof OutfitDetails, value: number): void {
+  updateOutfitEquipment(slot: keyof EquipmentDetails, value: number): void {
     /*
      * Function CreatureProperties.updateOutfitEquipment
      * Updates only a single piece of equipment in the outfit (helmet, armor, legs, boots)
@@ -68,13 +68,11 @@ export class CreatureProperties {
   
     // Ensure equipment exists
     if (!newOutfit.equipment) {
-      newOutfit.equipment = { head: 0, body: 0, legs: 0, feet: 0 };
+      newOutfit.equipment = { head: 0, body: 0, legs: 0, feet: 0, lefthand: 0, righthand: 0 };
     }
   
     // Update the specific equipment slot
     newOutfit.equipment[slot] = value;
-  
-    console.log(`Updated outfit equipment slot [${slot}] to: ${value}`);
   
     // Apply the new outfit
     this.setProperty(CONST.PROPERTIES.OUTFIT, newOutfit);

@@ -68,7 +68,9 @@ Outfit.prototype.serialize = function() {
       "head": this.equipment.head,
       "body": this.equipment.body,
       "legs": this.equipment.legs,
-      "feet": this.equipment.feet
+      "feet": this.equipment.feet,
+      "lefthand": this.equipment.lefthand,
+      "righthand": this.equipment.righthand,
     },
     "mount": this.mount,
     "mounted": this.mounted,
@@ -88,7 +90,7 @@ Outfit.prototype.toString = function() {
   return new Array(
     this.id,
     "(" + this.details.head + ", " + this.details.body + ", " + this.details.legs + ", " + this.details.feet + ")",
-    "(" + this.equipment.head + ", " + this.equipment.body + ", " + this.equipment.legs + ", " + this.equipment.feet + ")",
+    "(" + this.equipment.head + ", " + this.equipment.body + ", " + this.equipment.legs + ", " + this.equipment.feet + ", " + this.equipment.lefthand + ", " + this.equipment.righthand + ")",
     (this.mounted ? this.mount : "None"),
     (this.addonOne ? "Yes" : "No"),
     (this.addonTwo ? "Yes" : "No")
@@ -117,6 +119,14 @@ Outfit.prototype.getDataObjectMount = function() {
 
   return gameClient.dataObjects.getOutfit(this.mount);
 
+}
+
+Outfit.prototype.getLeftHandDataObject = function() {
+  return gameClient.dataObjects.getOutfit(this.equipment.lefthand);
+}
+
+Outfit.prototype.getRightHandDataObject = function() {
+  return gameClient.dataObjects.getOutfit(this.equipment.righthand);
 }
 
 Outfit.prototype.getHairDataObject = function() {

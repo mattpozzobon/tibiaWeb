@@ -230,6 +230,8 @@ export class PacketReader extends Packet {
         body: this.readUInt16(),
         legs: this.readUInt16(),
         feet: this.readUInt16(),
+        lefthand: this.readUInt16(),
+        righthand: this.readUInt16(),
       },
       mount: this.readUInt16(),
       mounted: this.readBoolean(),
