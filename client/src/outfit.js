@@ -64,6 +64,12 @@ Outfit.prototype.serialize = function() {
       "legs": this.details.legs,
       "feet": this.details.feet
     },
+    "equipment": {
+      "head": this.equipment.head,
+      "body": this.equipment.body,
+      "legs": this.equipment.legs,
+      "feet": this.equipment.feet
+    },
     "mount": this.mount,
     "mounted": this.mounted,
     "addonOne": this.addonOne,
@@ -82,6 +88,7 @@ Outfit.prototype.toString = function() {
   return new Array(
     this.id,
     "(" + this.details.head + ", " + this.details.body + ", " + this.details.legs + ", " + this.details.feet + ")",
+    "(" + this.equipment.head + ", " + this.equipment.body + ", " + this.equipment.legs + ", " + this.equipment.feet + ")",
     (this.mounted ? this.mount : "None"),
     (this.addonOne ? "Yes" : "No"),
     (this.addonTwo ? "Yes" : "No")
@@ -110,6 +117,10 @@ Outfit.prototype.getDataObjectMount = function() {
 
   return gameClient.dataObjects.getOutfit(this.mount);
 
+}
+
+Outfit.prototype.getHairDataObject = function() {
+  return gameClient.dataObjects.getOutfit(this.equipment.hair);
 }
 
 Outfit.prototype.getHeadDataObject = function() {

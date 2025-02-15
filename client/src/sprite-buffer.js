@@ -97,14 +97,14 @@ SpriteBuffer.prototype.addComposedOutfit = function(baseIdentifier, outfit, item
   this.addComposedOutfitLayer(position, outfit, item, frame, xPattern, 0, zPattern, x, y);
   
   // First addon if enabled and available
-  if(outfit.addonOne && item.pattern.y > 1) {
-    this.addComposedOutfitLayer(position, outfit, item, frame, xPattern, 1, zPattern, x, y);
-  }
+  // if(outfit.addonOne && item.pattern.y > 1) {
+  //   this.addComposedOutfitLayer(position, outfit, item, frame, xPattern, 1, zPattern, x, y);
+  // }
   
-  // Second addon if enabled and available
-  if(outfit.addonTwo && item.pattern.y > 2) {
-    this.addComposedOutfitLayer(position, outfit, item, frame, xPattern, 2, zPattern, x, y);
-  }
+  // // Second addon if enabled and available
+  // if(outfit.addonTwo && item.pattern.y > 2) {
+  //   this.addComposedOutfitLayer(position, outfit, item, frame, xPattern, 2, zPattern, x, y);
+  // }
 
 }
 

@@ -130,23 +130,27 @@ Creature.prototype.getCharacterFrames = function() {
    * Returns the character, mount, and equipment frames and frame groups to be rendered
    */
 
-  // Get base outfit and mount data
   let characterObject = this.outfit.getDataObject();
   let mountObject = this.outfit.getDataObjectMount();
-
-  // Get equipment data objects (ONLY IF ID IS NOT 0)
+  
   let headObject = this.outfit.equipment.head !== 0 ? this.outfit.getHeadDataObject() : null;
   let bodyObject = this.outfit.equipment.body !== 0 ? this.outfit.getBodyDataObject() : null;
   let legsObject = this.outfit.equipment.legs !== 0 ? this.outfit.getLegsDataObject() : null;
   let feetObject = this.outfit.equipment.feet !== 0 ? this.outfit.getFeetDataObject() : null;
+
+  // 🟢 If head is 0, use default hair outfit
+  let hairObject = null;
+  if (this.outfit.equipment.head === 0) {
+    hairObject = this.outfit.getHairDataObject(); 
+  }
 
   if (characterObject === null) {
     return null;
   }
 
   let characterGroup, mountGroup, characterFrame, mountFrame;
-  let headGroup, bodyGroup, legsGroup, feetGroup;
-  let headFrame, bodyFrame, legsFrame, feetFrame;
+  let headGroup, bodyGroup, legsGroup, feetGroup, hairGroup;
+  let headFrame, bodyFrame, legsFrame, feetFrame, hairFrame;
   let isMoving;
 
   if (!this.isMoving()) {
@@ -155,17 +159,17 @@ Creature.prototype.getCharacterFrames = function() {
     characterGroup = characterObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE);
     characterFrame = (characterObject.frameGroups.length === 1 && !characterObject.isAlwaysAnimated()) ? 0 : characterGroup.getAlwaysAnimatedFrame();
 
-    // 🛑 Skip setting frame groups if they are `null`
     headGroup = headObject ? headObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
     bodyGroup = bodyObject ? bodyObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
     legsGroup = legsObject ? legsObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
     feetGroup = feetObject ? feetObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null;
+    hairGroup = hairObject ? hairObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE) : null; // 🟢 Add Hair
 
-    // 🛑 Skip setting frames if they are `null`
     headFrame = headGroup ? headGroup.getAlwaysAnimatedFrame() : 0;
     bodyFrame = bodyGroup ? bodyGroup.getAlwaysAnimatedFrame() : 0;
     legsFrame = legsGroup ? legsGroup.getAlwaysAnimatedFrame() : 0;
     feetFrame = feetGroup ? feetGroup.getAlwaysAnimatedFrame() : 0;
+    hairFrame = hairGroup ? hairGroup.getAlwaysAnimatedFrame() : 0; // 🟢 Add Hair Frame
 
     if (gameClient.clientVersion === 1098) {
       mountGroup = mountObject.getFrameGroup(FrameGroup.prototype.GROUP_IDLE);
@@ -180,17 +184,17 @@ Creature.prototype.getCharacterFrames = function() {
     characterGroup = characterObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING);
     characterFrame = this.__getWalkingFrame(characterGroup);
 
-    // 🛑 Skip setting frame groups if they are `null`
     headGroup = headObject ? headObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
     bodyGroup = bodyObject ? bodyObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
     legsGroup = legsObject ? legsObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
     feetGroup = feetObject ? feetObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null;
+    hairGroup = hairObject ? hairObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING) : null; // 🟢 Add Hair
 
-    // 🛑 Skip setting frames if they are `null`
     headFrame = headGroup ? this.__getWalkingFrame(headGroup) : 0;
     bodyFrame = bodyGroup ? this.__getWalkingFrame(bodyGroup) : 0;
     legsFrame = legsGroup ? this.__getWalkingFrame(legsGroup) : 0;
     feetFrame = feetGroup ? this.__getWalkingFrame(feetGroup) : 0;
+    hairFrame = hairGroup ? this.__getWalkingFrame(hairGroup) : 0; // 🟢 Add Hair Frame
 
     if (gameClient.clientVersion === 1098) {
       mountGroup = mountObject.getFrameGroup(FrameGroup.prototype.GROUP_MOVING);
@@ -210,10 +214,12 @@ Creature.prototype.getCharacterFrames = function() {
     bodyGroup,
     legsGroup,
     feetGroup,
+    hairGroup,  // 🟢 Add Hair
     headFrame,
     bodyFrame,
     legsFrame,
     feetFrame,
+    hairFrame, // 🟢 Add Hair
     isMoving
   };
 };

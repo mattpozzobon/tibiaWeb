@@ -7,10 +7,14 @@ export interface OutfitDetails {
   feet: number;
 }
 
+export interface EquipmentDetails extends OutfitDetails {
+  hair: number;
+}
+
 export interface OutfitConfig {
   id: number;
   details?: OutfitDetails | null;
-  equipment?: OutfitDetails | null;
+  equipment?: EquipmentDetails | null;
   mount?: number | null;
   mounted?: boolean;
   addonOne?: boolean;
@@ -20,7 +24,7 @@ export interface OutfitConfig {
 export class Outfit {
   id: number;
   details: OutfitDetails | null;
-  equipment: OutfitDetails | null;
+  equipment: EquipmentDetails | null;
   mount: number | null;
   mounted: boolean;
   addonOne: boolean;
@@ -41,7 +45,7 @@ export class Outfit {
      */
     this.id = outfit.id ?? 1;
     this.details = outfit.details ?? null;
-    this.equipment = outfit.equipment ?? {head: 0, body: 0, legs: 0, feet: 0};
+    this.equipment = outfit.equipment ?? {hair: 904, head: 0, body: 0, legs: 0, feet: 0};
     this.mount = outfit.mount ?? null;
     this.mounted = outfit.mounted ?? false;
     this.addonOne = outfit.addonOne ?? false;

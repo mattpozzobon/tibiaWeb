@@ -225,6 +225,7 @@ export class PacketReader extends Packet {
         feet: this.readUInt8(),
       },
       equipment: {
+        hair: this.readUInt16(),
         head: this.readUInt16(),
         body: this.readUInt16(),
         legs: this.readUInt16(),

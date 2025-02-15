@@ -3,7 +3,7 @@
 import { IItem, IThing } from "interfaces/IThing";
 import BaseContainer from "./Cbase-container";
 import Item from "./Citem";
-import { CONST, getGameServer } from "./helper/appContext";
+import { CONST, getGameServer, getSpriteIdForItem } from "./helper/appContext";
 import { IPlayer } from "interfaces/IPlayer";
 
 
@@ -117,29 +117,25 @@ class Equipment {
     return IThing;
   }
 
-  private __isTrackedEquipmentSlot(isAdd: boolean, index: number, IThing?: IThing): boolean {
+  private __isTrackedEquipmentSlot(isAdd: boolean, index: number, itemID?: number): boolean {
+    
+    console.log(itemID);
     switch (index) {
       case CONST.EQUIPMENT.HELMET:
-        isAdd ? this.IPlayer.properties.updateOutfitEquipment("head", 907) : this.IPlayer.properties.updateOutfitEquipment("head", 0);
-        //console.log(`Updated helmet: ${this.IPlayer.outfit.equipment.head}`);
+        isAdd && itemID? this.IPlayer.properties.updateOutfitEquipment("head", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("head", 0);
         break;
       case CONST.EQUIPMENT.ARMOR:
-        isAdd ? this.IPlayer.properties.updateOutfitEquipment("body", 908) : this.IPlayer.properties.updateOutfitEquipment("body", 0);
-       // console.log(`Updated armor: ${this.IPlayer.outfit.equipment.body}`);
+        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("body", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("body", 0);
         break;
       case CONST.EQUIPMENT.LEGS:
-        isAdd ? this.IPlayer.properties.updateOutfitEquipment("legs", 910) : this.IPlayer.properties.updateOutfitEquipment("legs", 0);
-        //console.log(`Updated legs: ${this.IPlayer.outfit.equipment.legs}`);
+        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("legs", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("legs", 0);
         break;
       case CONST.EQUIPMENT.BOOTS:
-        isAdd ? this.IPlayer.properties.updateOutfitEquipment("feet", 909) : this.IPlayer.properties.updateOutfitEquipment("feet", 0);
-        //console.log(`Updated boots: ${this.IPlayer.outfit.equipment.feet}`);
+        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("feet", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("feet", 0);
         break;
       case CONST.EQUIPMENT.RIGHT:
-        //console.log(`Updated right-hand weapon: ${IThing ? IThing.id : 0}`);
         break;
       case CONST.EQUIPMENT.LEFT:
-       //console.log(`Updated left-hand weapon: ${IThing ? IThing.id : 0}`);
         break;
       default:
         return false;
@@ -155,6 +151,10 @@ class Equipment {
 
     // Check whether the item type matches that of the slot
     if (!this.__isRightType(thing, index)) {
+      return 0;
+    }
+
+    if (this.__isHandType(index) && this.getValidHandSlotForWeapon(thing) === null) {
       return 0;
     }
 
@@ -244,14 +244,73 @@ class Equipment {
       this.IPlayer.addCondition(CONST.CONDITION.MAGIC_SHIELD, -1, -1, null);
     }
 
+    this.__isTrackedEquipmentSlot(true, index, IThing.id);
     this.container.addThing(IThing, index);
     IThing.setParent(this);
-
-    if (this.__isTrackedEquipmentSlot(true, index)) {
-      console.log(`Added to slot ${index}: Thing ID = ${IThing.id}`);
-    }
-    
     return this.__updateWeight(IThing.getWeight());
+  }
+
+  hasTwoHandedEquipped(): boolean {
+    const leftWeapon = this.peekIndex(CONST.EQUIPMENT.LEFT);
+    const rightWeapon = this.peekIndex(CONST.EQUIPMENT.RIGHT);
+
+    console.log('TEST');
+    console.log(leftWeapon !== null && leftWeapon.getPrototype().properties.slotType === "two-handed");
+
+    return (
+      (leftWeapon !== null && leftWeapon.getPrototype().properties.slotType === "two-handed") ||
+      (rightWeapon !== null && rightWeapon.getPrototype().properties.slotType === "two-handed")
+    );
+  }
+
+  getValidHandSlotForWeapon(item: IThing): number | null {
+    const proto = item.getPrototype();
+    const isTwoHanded = proto.properties.slotType === "two-handed";
+
+    if (this.hasTwoHandedEquipped()) {
+      return null;
+    }
+  
+    // Get current weapons in both hands.
+    const leftWeapon = this.peekIndex(CONST.EQUIPMENT.LEFT);
+    const rightWeapon = this.peekIndex(CONST.EQUIPMENT.RIGHT);
+  
+    // If any already equipped weapon is two-handed, no additional weapon may be added.
+    if (leftWeapon && leftWeapon.getPrototype().properties.slotType === "two-handed") {
+      return null;
+    }
+    if (rightWeapon && rightWeapon.getPrototype().properties.slotType === "two-handed") {
+      return null;
+    }
+  
+    if (isTwoHanded) {
+      // For a two-handed weapon both hands must be free.
+      if (leftWeapon !== null || rightWeapon !== null) {
+        return null;
+      }
+      // You can choose either hand; here we choose LEFT.
+      return CONST.EQUIPMENT.LEFT;
+    } else {
+      // For one-handed weapons, try to use a free hand.
+      if (leftWeapon === null) {
+        return CONST.EQUIPMENT.LEFT;
+      } else if (rightWeapon === null) {
+        return CONST.EQUIPMENT.RIGHT;
+      }
+      // Both hands are occupied.
+      return null;
+    }
+  }
+
+  __isHandType(slot: number): boolean {
+    /*
+     * Function Equipment.__isHandType
+     * Returns true if the item is a hand type
+     */
+    if (slot === CONST.EQUIPMENT.LEFT || slot === CONST.EQUIPMENT.RIGHT) {
+      return true;
+    }
+    return false;
   }
 
   __isRightType(item: IThing, slot: number): boolean {
@@ -260,6 +319,8 @@ class Equipment {
      * Returns true if the item matches the slot type
      */
     const proto = item.getPrototype();
+
+    //console.log('proto',proto);
 
     switch (slot) {
       case CONST.EQUIPMENT.HELMET:
@@ -271,9 +332,9 @@ class Equipment {
       case CONST.EQUIPMENT.BOOTS:
         return proto.properties.slotType === "feet";
       case CONST.EQUIPMENT.RIGHT:
-        return proto.properties.weaponType === "shield";
+        return ["shield", "wand"].includes(proto.properties.weaponType);
       case CONST.EQUIPMENT.LEFT:
-        return proto.properties.weaponType === "sword" || proto.properties.weaponType === "distance";
+        return ["sword", "club", "axe", "distance", "wand"].includes(proto.properties.weaponType);
       case CONST.EQUIPMENT.BACKPACK:
         return proto.properties.slotType === "backpack";
       case CONST.EQUIPMENT.NECKLACE:

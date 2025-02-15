@@ -1,17 +1,20 @@
 import path from 'path';
 import config from '../config/config.json';
 import constants from '../config/constants.json';
+import items from "../config/itemToSprite.json"; 
 import { Config } from 'types/config';
 import { Constants } from 'types/constants';
 import { IGameServer } from 'interfaces/IGameserver';
-
-//import { extendPrototypes } from './src/helper/proto';
-//extendPrototypes();
 
 
 // Configuration and constants
 export const CONFIG: Config = config;
 export const CONST: Constants = constants;
+
+export const ITEM_TO_SPRITE: Record<number, number> = items.items.reduce((acc, item) => {
+  acc[item.id] = item.sprite_id;
+  return acc;
+}, {} as Record<number, number>);
 
 // Utility function to get data file paths
 export const getDataFile = (...args: string[]): string => {
@@ -23,9 +26,13 @@ export const requireModule = (...args: string[]): any => {
   return require(resolvedPath);
 };
 
+export function getSpriteIdForItem(itemId: number): number | null {
+  return ITEM_TO_SPRITE[itemId] || null;
+}
+
+
 // GameServer instance management
 let gameServerInstance: IGameServer | null = null;
-
 
 export const initializeGameServer = (server: IGameServer): IGameServer => {
   if (!gameServerInstance) {

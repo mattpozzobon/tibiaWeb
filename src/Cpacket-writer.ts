@@ -258,6 +258,7 @@ export class PacketWriter extends Packet {
     }
 
     if (outfit.equipment) {
+      this.writeUInt16(outfit.equipment.hair);
       this.writeUInt16(outfit.equipment.head);
       this.writeUInt16(outfit.equipment.body);
       this.writeUInt16(outfit.equipment.legs);

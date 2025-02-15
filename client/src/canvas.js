@@ -208,11 +208,6 @@ Canvas.prototype.drawRect = function(x, y, size, color) {
 }
 
 Canvas.prototype.drawCharacter = function(creature, position, size, offset) {
-  /*
-   * Function Canvas.drawCharacter
-   * Renders a character and its equipment to the screen
-   */
-
   let frames = creature.getCharacterFrames();
   if (frames === null) {
     return;
@@ -234,10 +229,12 @@ Canvas.prototype.drawCharacter = function(creature, position, size, offset) {
     frames.bodyGroup,
     frames.legsGroup,
     frames.feetGroup,
+    frames.hairGroup, // 🟢 Add Hair
     frames.headFrame,
     frames.bodyFrame,
     frames.legsFrame,
     frames.feetFrame,
+    frames.hairFrame, // 🟢 Add Hair Frame
     xPattern,
     zPattern,
     size,
@@ -245,6 +242,7 @@ Canvas.prototype.drawCharacter = function(creature, position, size, offset) {
     frames.isMoving
   );
 };
+
 
 Canvas.prototype.drawDistanceAnimation = function(animation, position) {
 
@@ -400,28 +398,36 @@ Canvas.prototype.__drawCharacter = function(
   bodyGroup,
   legsGroup,
   feetGroup,
+  hairGroup, // 🟢 Add Hair
   headFrame,
   bodyFrame,
   legsFrame,
   feetFrame,
+  hairFrame, // 🟢 Add Hair Frame
   xPattern,
   zPattern,
   size,
-  offset,
+  offset
 ) {
   let drawPosition = new Position(position.x - offset, position.y - offset);
 
-
-  // 1️⃣ Draw Base Outfit (This clears anything underneath)
+  // 🟢 Draw Base Outfit
   this.__drawCharacterLayer(spriteBuffer, outfit, characterGroup, characterFrame, xPattern, zPattern, drawPosition, size, 0);
 
-  // 2️⃣ Draw Equipment Layers (Helmet, Armor, Legs, Boots)
-  if (outfit.equipment.head) this.__drawCharacterLayer(spriteBuffer, outfit, headGroup, headFrame, xPattern, zPattern, drawPosition, size, 0);
-  if (outfit.equipment.body) this.__drawCharacterLayer(spriteBuffer, outfit, bodyGroup, bodyFrame, xPattern, zPattern, drawPosition, size, 0);
-  if (outfit.equipment.legs) this.__drawCharacterLayer(spriteBuffer, outfit, legsGroup, legsFrame, xPattern, zPattern, drawPosition, size, 0);
-  if (outfit.equipment.feet) this.__drawCharacterLayer(spriteBuffer, outfit, feetGroup, feetFrame, xPattern, zPattern, drawPosition, size, 0);
+  // 🟢 Draw Equipment (If Exists)
+  if (headGroup) this.__drawCharacterLayer(spriteBuffer, outfit, headGroup, headFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (bodyGroup) this.__drawCharacterLayer(spriteBuffer, outfit, bodyGroup, bodyFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (legsGroup) this.__drawCharacterLayer(spriteBuffer, outfit, legsGroup, legsFrame, xPattern, zPattern, drawPosition, size, 0);
+  if (feetGroup) this.__drawCharacterLayer(spriteBuffer, outfit, feetGroup, feetFrame, xPattern, zPattern, drawPosition, size, 0);
 
-  // 3️⃣ Draw Mount (Only if mounted)
+  // 🟢 If no helmet, draw hair
+  if (!headGroup && hairGroup) {
+    const spriteBufferHair = new SpriteBuffer(64);
+    this.__drawCharacterLayer(spriteBufferHair, outfit, hairGroup, hairFrame, xPattern, zPattern, drawPosition, size, 0, true);
+  }
+  
+  
+  // 🟢 Draw Mount
   if (zPattern === 1 && mountGroup) {
     let mountSprite = mountGroup.getSpriteId(mountFrame, xPattern, 0, 0, 0, 0, 0);
     if (mountSprite !== 0) {
@@ -429,6 +435,7 @@ Canvas.prototype.__drawCharacter = function(
     }
   }
 };
+
 
 Canvas.prototype.__drawCharacterLayer = function(
   spriteBuffer,
@@ -439,19 +446,21 @@ Canvas.prototype.__drawCharacterLayer = function(
   zPattern,
   position,
   size,
-  yPattern
+  yPattern,
+  hasMask = false
 ) {
   if (!group) return; // If no group, nothing to draw.
-
+  
   for (let x = 0; x < group.width; x++) {
     for (let y = 0; y < group.height; y++) {
       let spriteId = group.getSpriteId(frame, xPattern, yPattern, zPattern, 0, x, y);
       if (spriteId === 0) continue;
 
-      // 🟢 Ensure new sprite replaces previous one
-      // if (!spriteBuffer.has(spriteId)) {
-      //   spriteBuffer.addComposedOutfit(spriteId, outfit, group, frame, xPattern, zPattern, x, y);
-      // }
+      if (hasMask) {
+        if (!spriteBuffer.has(spriteId)) {
+          spriteBuffer.addComposedOutfit(spriteId, outfit, group, frame, xPattern, zPattern, x, y);
+        }
+      }
 
       this.__drawSprite(spriteBuffer.get(spriteId), position, x, y, size);
     }

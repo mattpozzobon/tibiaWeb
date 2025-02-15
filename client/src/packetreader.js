@@ -727,6 +727,7 @@ PacketReader.prototype.readOutfit = function() {
 
 PacketReader.prototype.readOutfitEquipment = function() {
   return new Object({
+    "hair": this.readUInt16(),
     "head": this.readUInt16(),
     "body": this.readUInt16(),
     "legs": this.readUInt16(),
