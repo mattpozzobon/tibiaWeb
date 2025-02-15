@@ -711,18 +711,15 @@ PacketReader.prototype.readBoolean = function() {
 }
 
 PacketReader.prototype.readOutfit = function() {
-  let outfit = new Outfit({
-      "id": this.readUInt16(),
-      "details": this.readOutfitDetails(),
-      "equipment": this.readOutfitEquipment(), 
-      "mount": this.readUInt16(),
-      "mounted": this.readBoolean(),
-      "addonOne": this.readBoolean(),
-      "addonTwo": this.readBoolean()
+  return new Outfit({
+    "id": this.readUInt16(),
+    "details": this.readOutfitDetails(),
+    "equipment": this.readOutfitEquipment(), 
+    "mount": this.readUInt16(),
+    "mounted": this.readBoolean(),
+    "addonOne": this.readBoolean(),
+    "addonTwo": this.readBoolean()
   });
-
-  console.log("🟡 Received Outfit in Client:", JSON.stringify(outfit, null, 2));
-  return outfit;
 };
 
 PacketReader.prototype.readOutfitEquipment = function() {
@@ -883,7 +880,7 @@ PacketReader.prototype.readItemInformation = function() {
   var t = new Object({
     "sid": this.readUInt16(),
     "cid":  this.readUInt16(),
-    "weight": this.readUInt16(),
+    "weight": this.readUInt32(),
     "attack": this.readUInt8(),
     "armor": this.readUInt8(),
     "distanceReadable": this.readString(),
@@ -891,6 +888,7 @@ PacketReader.prototype.readItemInformation = function() {
     "name": this.readString(),
     "description": this.readString(),
     "count": this.readUInt8(),
+
     "x": this.readUInt16(),
     "y": this.readUInt16(),
     "z": this.readUInt16(),

@@ -76,7 +76,7 @@ export default class Player extends Creature implements IPlayer{
     this.properties.add(CONST.PROPERTIES.VOCATION, properties.vocation);
     this.properties.add(CONST.PROPERTIES.ENERGY, properties.energy);
     this.properties.add(CONST.PROPERTIES.ENERGY_MAX, properties.maxEnergy);
-    this.properties.add(CONST.PROPERTIES.CAPACITY, properties.capacity);
+    this.properties.add(CONST.PROPERTIES.CAPACITY, properties.maxCapacity);
     this.properties.add(CONST.PROPERTIES.CAPACITY_MAX, properties.maxCapacity);
     this.properties.add(CONST.PROPERTIES.MANA, properties.mana);
     this.properties.add(CONST.PROPERTIES.MANA_MAX, properties.maxMana);

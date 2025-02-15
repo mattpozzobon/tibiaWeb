@@ -17,7 +17,7 @@ PacketHandler.prototype.handlePropertyChange = function(packet) {
     return;
   }
 
-  console.log(`property: ${packet.property}, value: ${packet.value}`);
+  console.log(`player property: ${packet.property}, value: ${packet.value}`);
 
 
   switch(packet.property) {
@@ -31,6 +31,8 @@ PacketHandler.prototype.handlePropertyChange = function(packet) {
       return creature.state.energy = packet.value
     case CONST.PROPERTIES.DIRECTION: 
       return creature.__setLookDirection(packet.value);
+    case CONST.PROPERTIES.CAPACITY: 
+      return creature.state.capacity = packet.value;
   }
 
 }
