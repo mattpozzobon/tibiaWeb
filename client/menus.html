@@ -1,0 +1,286 @@
+<!-- Hidden file selector for loading assets -->
+<input type="file" id="asset-selector" style="display: none" multiple>
+<input id="load-save" type="file" style="display: none">
+
+<!-- Battle Window -->
+<div id="battle-window-target" class="battle-window-target-wrapper">
+  <div class="battle-window-target-stats">
+    <div class="battle-window-target-title"></div>
+    <div class="battle-window-bar-wrapper">
+      <span style="color: rgb(0, 255, 0)">???</span>
+      <div class="battle-window-target-stats-bar health"></div>
+    </div>
+    <div class="battle-window-bar-wrapper">
+      <div class="battle-window-target-stats-bar mana"></div>
+      <span style="color: rgb(0, 0, 255)">???</span>
+    </div>
+  </div>
+  <div class="battle-window-target-canvas">
+    <canvas id="battle-window-target-canvas"></canvas>
+  </div>
+</div>
+
+<div id="spellbook-wrapper-prototype" class="spellbook-wrapper">
+ <canvas></canvas>
+ <span></span>
+</div>
+
+<!-- The Context Menu's -->
+<div class="contextmenu modal" id="screen-menu">
+  <div class="menu-header">Menu</div>
+  <button action="look">Look</button>
+  <br><button action="use">Use</button>
+</div>
+
+<!-- Menu for chat header -->
+<div class="contextmenu modal" id="chat-header-menu">
+  <div class="menu-header">Menu</div>
+  <button action="close">Close</button>
+</div>
+
+<!-- Menu for chat entry -->
+<div class="contextmenu modal" id="hotbar-menu">
+  <div class="menu-header">Menu</div>
+  <button action="add">Add</button>
+  <button action="remove">Remove</button>
+</div>
+
+<!-- Menu for chat entry -->
+<div class="contextmenu modal" id="chat-entry-menu">
+  <div class="menu-header">Menu</div>
+  <button action="whisper">Whisper</button>
+</div>
+
+<!-- Menu for chat entry -->
+<div class="contextmenu modal" id="chat-body-menu">
+  <div class="menu-header">Menu</div>
+  <button action="clear">Clear Chat</button>
+</div>
+
+<!-- Menu for friend list -->
+<div class="contextmenu modal" id="friend-list-menu">
+  <div class="menu-header">Menu</div>
+  <button action="remove">Remove Friend</button>
+  <br>
+  <button action="note">Set Note</button>
+</div>
+
+<!-- Menu for friend list -->
+<div class="contextmenu modal" id="friend-window-menu">
+  <div class="menu-header">Menu</div>
+  <button action="add">Add Friend</button>
+  <br><button action="sort-normal">Sort Normal</button>
+  <br><button action="sort-reversed">Sort Reversed</button>
+  <br><button action="hide-offline">Hide Offline</button>
+</div>
+
+<!-- The Slot Prototype -->
+<div style="display: none;">
+  <div id="slot-prototype" class="slot">
+    <canvas width="32" height="32"></canvas>
+    <span class="count">
+  </div>
+</div>
+
+<!-- The Floating Element Prototype -->
+<div id="floating-element-prototype" class="prototype text-window">
+  <span></span>
+</div>
+
+<!-- The Message Element Prototype -->
+<div id="message-element-prototype" class="prototype text-window text-bubble">
+  <span></span>
+  <br>
+  <span></span>
+</div>
+
+<!-- The Character Element Prototype -->
+<div id="character-element-prototype" class="prototype text-window">
+  <span></span>
+  <div class="character-element-bar">
+    <div class="value-health"></div>
+  </div> 
+  
+</div>
+
+<!-- The Container Prototype -->
+<div id="container-prototype" class="prototype window">
+  <div class="header">
+    <button class="symbol-button small" action="close" title="Close">✕</button>
+    <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
+    <span class="title"></span>
+  </div>
+  <div class="body"></div>
+  <div class="footer"></div>
+</div>
+
+<!-- Friend List -->
+<div id="friend-window" class="window">
+  <div class="header">
+    <button class="symbol-button small" action="close" title="Close">✕</button>
+    <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
+    <span class="title">Friend List</span>
+  </div>
+  <div class="body"></div>
+  <div class="footer"></div>
+</div>
+
+<!-- Skill Window -->
+<div id="battle-window" class="window">
+  <div class="header">
+    <button class="symbol-button small" action="close" title="Close">✕</button>
+    <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
+    <span class="title">Battle</span>
+  </div>
+  <div class="body"></div>
+  <div class="footer"></div>
+</div>
+
+<!-- Skill Window -->
+<div id="skill-window" class="window">
+  <div class="header">
+    <button class="symbol-button small" action="close" title="Close">✕</button>
+    <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
+    <span class="title">Character Skills</span>
+  </div>
+  <div class="body">
+
+    <div class="outer-skill-wrapper" skill="level">
+      <div class="skill-wrapper">
+        <span>Level</span>
+        <span class="skill">255</span>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="experience">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Experience</span>
+          <span class="skill">25,520</span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="attack">
+      <div class="skill-wrapper">
+        <span>Attack</span>
+          <span class="skill"></span>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="armor">
+      <div class="skill-wrapper">
+        <span>Armor</span>
+          <span class="skill"></span>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="speed">
+      <div class="skill-wrapper">
+        <span>Speed</span>
+          <span class="skill"></span>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="magic">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Magic</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="fist">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Fist</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="club">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Club</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="sword">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Sword</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="axe">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Axe</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="distance">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Distance</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="shielding">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Shielding</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="outer-skill-wrapper" skill="fishing">
+      <div class="bar-wrapper">
+        <div class="skill-wrapper">
+          <span>Fishing</span>
+          <span class="skill"></span>
+        </div>
+        <div class="bar">
+          <div class="value"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="footer"></div>
+</div>

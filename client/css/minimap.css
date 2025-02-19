@@ -1,32 +1,47 @@
+/* Make the outer container fill its parent (or screen) */
 .minimap-container {
+  padding: 5px;
   display: flex;
-  margin: 8px;
   justify-content: center;
   align-items: center;
+  
+  /* Ensure it occupies full width/height of its parent. 
+     If you want it to take the whole screen, the parent 
+     (body/html or a flex container) must also be 100% high. */
+  width: 350px;
+  height: 350px;
 }
 
+/* Let the minimap wrapper also stretch to fill 
+   .minimap-container */
 .minimap-wrapper {
-  height: 160px;
-  display: block;
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 
+/* Make the canvas scale to the wrapper size */
 .minimap-wrapper canvas {
+  width: 100%;
+  height: 100%;
   background-color: black;
 }
 
+/* Absolutely positioned elements (crosshair, buttons, etc.)
+   remain the same unless you want them to scale or move. */
 .minimap-wrapper .crosshair {
   position: absolute;
-  left: 76px;
-  top: 72px;
+  left: 50%;    /* example if you want it centered */
+  top: 50%;     /* example if you want it centered */
+  transform: translate(-50%, -50%);
   color: white;
 }
 
-.minimap-wrapper .button-stack {
+.button-stack {
   position: absolute;
-  width: 18px;
-  height: 160px;
-  padding: 4px;
-  top: 0px;
+  top: 4px;
   right: 4px;
+  width: auto;
+  height: auto;
+  padding: 4px;
 }

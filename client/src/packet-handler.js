@@ -12,13 +12,11 @@ PacketHandler.prototype.handlePropertyChange = function(packet) {
 
   let creature = gameClient.world.getCreature(packet.guid);
 
-  console.log('creature: ', creature);
   if(creature === null) {
     return;
   }
 
   console.log(`player property: ${packet.property}, value: ${packet.value}`);
-
 
   switch(packet.property) {
     case CONST.PROPERTIES.HEALTH: 

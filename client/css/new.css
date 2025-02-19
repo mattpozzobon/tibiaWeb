@@ -3,6 +3,7 @@ html {
 }
 
 .oogwrap {
+  max-width: 360px;
   display: flex;
   flex-direction: column;
 }
@@ -253,6 +254,8 @@ button.symbol-button {
 }
 
 #game-wrapper {
+  overflow-y: hidden;
+  overflow-x: hidden;
   display: none;
   height: 100%;
   min-width: 992px;

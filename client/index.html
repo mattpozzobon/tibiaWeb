@@ -6,7 +6,7 @@
   <!-- Metadata -->
   <meta name="description" content="Forby HTML5 Open Tibia Client">
   <meta name="keywords" content="HTML5, JavaScript, NodeJS, Open Tibia, Client, Forby">
-  <meta name="author" content="Forby">
+  <meta name="author" content="Forby & Matt">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Forby HTML5 Open Tibia Client</title>
@@ -34,318 +34,11 @@
   <link rel="stylesheet" type="text/css" href="./css/achievement.css">
 
   <!-- Ambient Music -->
-  <audio id="rain" src="sounds/rain.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="field" src="sounds/field.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="cave" src="sounds/cave.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="forest" src="sounds/forest.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="wind" src="sounds/wind.ogg" preload="auto" type="audio/ogg"></audio>
-  
-  <!-- Sound bits -->
-  <audio id="thunder-1" src="sounds/thunder1.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="thunder-2" src="sounds/thunder2.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="thunder-3" src="sounds/thunder3.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="thunder-4" src="sounds/thunder4.ogg" preload="auto" type="audio/ogg"></audio>
-  
-  <!-- Sound bits -->
-  <audio id="grass-1" src="sounds/grass1.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="grass-2" src="sounds/grass2.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="grass-3" src="sounds/grass3.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="grass-4" src="sounds/grass4.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="grass-5" src="sounds/grass5.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="grass-6" src="sounds/grass6.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="grass-7" src="sounds/grass7.ogg" preload="auto" type="audio/ogg"></audio>
-  <audio id="grass-8" src="sounds/grass8.ogg" preload="auto" type="audio/ogg"></audio>
-
-  <audio id="wood-2" src="sounds/wood2.ogg" preload="auto" type="audio/ogg"></audio>
+  <div id="audio-container"></div>
 
   <body>
-
-    <!-- Hidden file selector for loading assets -->
-    <input type="file" id="asset-selector" style="display: none" multiple>
-    <input id="load-save" type="file" style="display: none">
-    
-    <!-- Battle Window -->
-    <div id="battle-window-target" class="battle-window-target-wrapper">
-      <div class="battle-window-target-stats">
-        <div class="battle-window-target-title"></div>
-        <div class="battle-window-bar-wrapper">
-          <span style="color: rgb(0, 255, 0)">???</span>
-          <div class="battle-window-target-stats-bar health"></div>
-        </div>
-        <div class="battle-window-bar-wrapper">
-          <div class="battle-window-target-stats-bar mana"></div>
-          <span style="color: rgb(0, 0, 255)">???</span>
-        </div>
-      </div>
-      <div class="battle-window-target-canvas">
-        <canvas id="battle-window-target-canvas"></canvas>
-      </div>
-    </div>
-
-   <div id="spellbook-wrapper-prototype" class="spellbook-wrapper">
-     <canvas></canvas>
-     <span></span>
-   </div>
-
-    <!-- The Context Menu's -->
-    <div class="contextmenu modal" id="screen-menu">
-      <div class="menu-header">Menu</div>
-      <button action="look">Look</button>
-      <br><button action="use">Use</button>
-    </div>
-    
-    <!-- Menu for chat header -->
-    <div class="contextmenu modal" id="chat-header-menu">
-      <div class="menu-header">Menu</div>
-      <button action="close">Close</button>
-    </div>
-    
-    <!-- Menu for chat entry -->
-    <div class="contextmenu modal" id="hotbar-menu">
-      <div class="menu-header">Menu</div>
-      <button action="add">Add</button>
-      <button action="remove">Remove</button>
-    </div>
-    
-    <!-- Menu for chat entry -->
-    <div class="contextmenu modal" id="chat-entry-menu">
-      <div class="menu-header">Menu</div>
-      <button action="whisper">Whisper</button>
-    </div>
-    
-    <!-- Menu for chat entry -->
-    <div class="contextmenu modal" id="chat-body-menu">
-      <div class="menu-header">Menu</div>
-      <button action="clear">Clear Chat</button>
-    </div>
-    
-    <!-- Menu for friend list -->
-    <div class="contextmenu modal" id="friend-list-menu">
-      <div class="menu-header">Menu</div>
-      <button action="remove">Remove Friend</button>
-      <br>
-      <button action="note">Set Note</button>
-    </div>
-    
-    <!-- Menu for friend list -->
-    <div class="contextmenu modal" id="friend-window-menu">
-      <div class="menu-header">Menu</div>
-      <button action="add">Add Friend</button>
-      <br><button action="sort-normal">Sort Normal</button>
-      <br><button action="sort-reversed">Sort Reversed</button>
-      <br><button action="hide-offline">Hide Offline</button>
-    </div>
-
-    <!-- The Slot Prototype -->
-    <div style="display: none;">
-      <div id="slot-prototype" class="slot">
-        <canvas width="32" height="32"></canvas>
-        <span class="count">
-      </div>
-    </div>
-   
-    <!-- The Floating Element Prototype -->
-    <div id="floating-element-prototype" class="prototype text-window">
-      <span></span>
-    </div>
-
-    <!-- The Message Element Prototype -->
-    <div id="message-element-prototype" class="prototype text-window text-bubble">
-      <span></span>
-      <br>
-      <span></span>
-    </div>
-
-    <!-- The Character Element Prototype -->
-    <div id="character-element-prototype" class="prototype text-window">
-      <span></span>
-      <div class="character-element-bar">
-        <div class="value-health"></div>
-      </div> 
-      
-    </div>
-
-    <!-- The Container Prototype -->
-    <div id="container-prototype" class="prototype window">
-      <div class="header">
-        <button class="symbol-button small" action="close" title="Close">✕</button>
-        <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
-        <span class="title"></span>
-      </div>
-      <div class="body"></div>
-      <div class="footer"></div>
-    </div>
-    
-    <!-- Friend List -->
-    <div id="friend-window" class="window">
-      <div class="header">
-        <button class="symbol-button small" action="close" title="Close">✕</button>
-        <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
-        <span class="title">Friend List</span>
-      </div>
-      <div class="body"></div>
-      <div class="footer"></div>
-    </div>
-    
-    <!-- Skill Window -->
-    <div id="battle-window" class="window">
-      <div class="header">
-        <button class="symbol-button small" action="close" title="Close">✕</button>
-        <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
-        <span class="title">Battle</span>
-      </div>
-      <div class="body"></div>
-      <div class="footer"></div>
-    </div>
-    
-    <!-- Skill Window -->
-    <div id="skill-window" class="window">
-      <div class="header">
-        <button class="symbol-button small" action="close" title="Close">✕</button>
-        <button class="symbol-button small" action="minimize" title="Minimize">&#x2212</button>
-        <span class="title">Character Skills</span>
-      </div>
-      <div class="body">
-
-        <div class="outer-skill-wrapper" skill="level">
-          <div class="skill-wrapper">
-            <span>Level</span>
-            <span class="skill">255</span>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="experience">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Experience</span>
-              <span class="skill">25,520</span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="attack">
-          <div class="skill-wrapper">
-            <span>Attack</span>
-              <span class="skill"></span>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="armor">
-          <div class="skill-wrapper">
-            <span>Armor</span>
-              <span class="skill"></span>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="speed">
-          <div class="skill-wrapper">
-            <span>Speed</span>
-              <span class="skill"></span>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="magic">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Magic</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="fist">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Fist</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="club">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Club</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="sword">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Sword</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="axe">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Axe</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="distance">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Distance</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="shielding">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Shielding</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="outer-skill-wrapper" skill="fishing">
-          <div class="bar-wrapper">
-            <div class="skill-wrapper">
-              <span>Fishing</span>
-              <span class="skill"></span>
-            </div>
-            <div class="bar">
-              <div class="value"></div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-      <div class="footer"></div>
-    </div>
+    <!-- Separated html for in-game menus -->
+    <div id="menus-container"></div>
     
     <!-- Wrapper for the login screen -->
     <div id="login-wrapper">
@@ -454,12 +147,50 @@
     
     <!-- The Game Interface -->
     <div id="game-wrapper">
-    
-      <!-- Left Column -->
+      
       <div class="oogwrap">
-        <div class="column"></div>
-      </div>
+        
+         <!-- The minimap -->
+         <div class="minimap-container">
+          <div class="minimap-wrapper">
+            <canvas id="minimap" width="160" height="160"></canvas>
+            <div class="crosshair">✕</div>
+            <span id="clock-time">00:00</span>
+            <div class="button-stack">
+              <button class="symbol-button" id="minimap-current-layer">0</button>
+              <button class="symbol-button" id="minimap-zoom-up">+</button>
+              <button class="symbol-button" id="minimap-zoom-down">−</button>
+              <button class="symbol-button" id="minimap-zoom-el">A</button>
+              <button class="symbol-button" id="minimap-zoom-dl">D</button>
+            </div>
+          </div>
+        </div>
 
+        <div class="chatbox-wrapper">
+        
+          <!-- Header for all channels -->
+          <div class="wrapper-header">
+            <button id="left-channel" class="symbol-button-long">&#129092;</button>
+            <div id="cheader" class="chat-header"></div>
+            <button id="right-channel" class="symbol-button-long">&#129094;</button>
+            <button id="open-chat-modal" title="Open a new chat window" class="symbol-button-long">&#128172;</button>
+          </div>   
+
+          <!-- Chatbox area itself -->
+          <div id="chat-text">
+            <div id="chat-text-area" class="chat-body"></div>
+          </div>
+
+          <!-- Footer for sending chat messages etc.. -->
+          <div class="chat-footer">
+            <button id="chat-say-loudness" class="symbol-button-long">))</button>
+            <input id="chat-input" type="text" placeholder="Press Enter to unlock.">
+            <button id="send-chat-message" class="symbol-button-text">Send</button>
+          </div>
+        </div>
+
+      </div>
+        
       <!-- Main body for the screen etc.. -->   
       <div class="main">
 
@@ -471,7 +202,6 @@
     
           <!-- Modals for the game screen -->
           <div class="modal-wrapper">
- 
             <!-- Open Chat Modal -->
             <div id="map-modal" class="modal">
               <button class="close-button-transparent symbol-button" action="cancel" value="Cancel">✕</button>
@@ -758,28 +488,28 @@
             </div>
           </div>
    
-          <canvas id="screen" width="480" height="352"></canvas>
+          <canvas id="screen"></canvas>
 
-          <!-- Wrapper for elements on top of the gamescreen -->
-          <div id="text-wrapper" class="no-select">
-            <span id="server-message"></span>
-            <span id="zone-message"></span>
-          </div>
+            <!-- Wrapper for elements on top of the gamescreen -->
+            <div id="text-wrapper" class="no-select">
+              <span id="server-message"></span>
+              <span id="zone-message"></span>
+            </div>
 
-          <!-- Statistics -->
-          <div id="debug-statistics"></div>
+            <!-- Statistics -->
+            <div id="debug-statistics"></div>
 
-          <!-- Notifications etc.. -->
-          <div id="notification" class="canvas-notification"></div>
+            <!-- Notifications etc.. -->
+            <div id="notification" class="canvas-notification"></div>
 
-          <div id="achievement" class="canvas-notification hidden"></div>
+            <div id="achievement" class="canvas-notification hidden"></div>
     
           </div>
         </div>
 
         <div class="middle">
           <div class="hotbar">
-            <div id="status-bar" class="status-bar"></div>
+            
             <div class="hotbar-item"><canvas></canvas><span class="hotbar-text"></span><span class="hotbar-key">F1</span></div>
             <div class="hotbar-item"><canvas></canvas><span class="hotbar-text"></span><span class="hotbar-key">F2</span></div>
             <div class="hotbar-item"><canvas></canvas><span class="hotbar-text"></span><span class="hotbar-key">F3</span></div>
@@ -794,65 +524,19 @@
             <div class="hotbar-item"><canvas></canvas><span class="hotbar-text"></span><span class="hotbar-key">F12</span></div>
           </div>
         </div>
+      </div>
 
-        <!-- Container for the chatbox -->
-        <div class="lower">
-    
-          <div class="chatbox-wrapper">
-          
-            <!-- Header for all channels -->
-            <div class="wrapper-header">
-              <button id="left-channel" class="symbol-button-long">&#129092;</button>
-              <div id="cheader" class="chat-header"></div>
-              <button id="right-channel" class="symbol-button-long">&#129094;</button>
-              <button id="open-chat-modal" title="Open a new chat window" class="symbol-button-long">&#128172;</button>
-            </div>   
-    
-            <!-- Chatbox area itself -->
-            <div id="chat-text">
-              <div id="chat-text-area" class="chat-body"></div>
-            </div>
-    
-            <!-- Footer for sending chat messages etc.. -->
-            <div class="chat-footer">
-              <button id="chat-say-loudness" class="symbol-button-long">))</button>
-              <input id="chat-input" type="text" placeholder="Press Enter to unlock.">
-              <button id="send-chat-message" class="symbol-button-text">Send</button>
-            </div>
-          </div>
-    
-        </div>
-
+      <div class="oogwrap">
+        <div class="column"></div>
       </div>
     
       <!-- Right column -->
       <div class="oogwrap">
-    
         <div class="oogwrap2">
-
-          <!-- The minimap -->
-          <div class="minimap-container">
-            <div class="minimap-wrapper">
           
-              <canvas id="minimap" width="160" height="160"></canvas>
-          
-              <div class="crosshair">✕</div>
-              <span id="clock-time">00:00</span>
-              <div class="button-stack">
-                <button class="symbol-button" id="minimap-current-layer">0</button>
-                <button class="symbol-button" id="minimap-zoom-up">+</button>
-                <button class="symbol-button" id="minimap-zoom-down">−</button>
-                <button class="symbol-button" id="minimap-zoom-el">A</button>
-                <button class="symbol-button" id="minimap-zoom-dl">D</button>
-          
-              </div>
-          
-            </div>
-          </div>
-          
-          <!-- Character Status (health & mana) --> 
+           <!-- Character Status (health & mana) --> 
           <div class="character-status">
-          
+            
             <div id="health-bar" class="bar">
               <div class="character-health"></div>
               <span class="percentage">n/a</span>
@@ -867,9 +551,8 @@
               <div class="character-energy"></div>
               <span class="percentage">n/a</span>
             </div>
-          
           </div>
-          
+
           <!-- Character Equipment --> 
           <div class="equipment-options-wrapper">
             
@@ -955,7 +638,10 @@
             </div>
           
           </div>
+
+          <div id="status-bar" class="status-bar"></div>
         </div>
+
         <div class="column"></div>
 
       </div>
@@ -963,6 +649,31 @@
     </div>
 
   <!-- Protocol to speak to the NodeJS Server -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('audio.html')      
+        .then(response => response.text())
+        .then(audioHTML => {
+          document.getElementById('audio-container').innerHTML = audioHTML;
+          console.log('Audio snippet loaded.');
+        })
+        .catch(err => console.error('Error loading audio snippet:', err));
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('menus.html')      
+        .then(response => response.text())
+        .then(audioHTML => {
+          document.getElementById('menus-container').innerHTML = audioHTML;
+          console.log('Audio snippet loaded.');
+        
+        })
+        .catch(err => console.error('Error loading audio snippet:', err));
+    });
+  </script>
+
   <script src="src/error.js"></script>
 
   <script src="src/position.js"></script>

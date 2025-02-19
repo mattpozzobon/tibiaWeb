@@ -5,6 +5,7 @@ import { Position } from "./Cposition";
 import { CONFIG, CONST, getGameServer } from "./helper/appContext";
 import { IPlayer } from "interfaces/IPlayer";
 import { IThing } from "interfaces/IThing";
+import Creature from "Ccreature";
 
 export class CreaturePropertyPacket extends PacketWriter {
   constructor(id: number, property: number, value: number) {
@@ -170,9 +171,9 @@ export class ChunkPacket extends PacketWriter {
 }
 
 export class CreatureStatePacket extends PacketWriter {
-  constructor(creature: any) {
+  constructor(creature: Creature) {
     const stringEncoded = PacketWriter.encodeString(creature.getProperty(CONST.PROPERTIES.NAME));
-    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, getEncodedLength(stringEncoded) + 35);
+    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, getEncodedLength(stringEncoded) + 49);
 
     this.writeUInt32(creature.getId());
     this.writeCreatureType(creature);
