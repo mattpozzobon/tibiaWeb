@@ -51,9 +51,12 @@ export interface IPlayer extends Creature {
   isOnline(): boolean;
   isMoving(): boolean;
   canUseHangable(thing: any): boolean;
-  decreaseHealth(amount: number): void;
+  increaseHealth(amount: number): void;
   decreaseMana(amount: number): void;
   decreaseEnergy(amount: number): void;
+  decreaseHealth(amount: number): void;
+  increaseMana(amount: number): void;
+  increaseEnergy(amount: number): void;
   getCorpse(): number;
   handleDeath(): void;
   consumeAmmunition(): boolean;

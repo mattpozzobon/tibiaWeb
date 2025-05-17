@@ -110,7 +110,7 @@
       "KICK_SECONDS": 60
     },
     "CHUNK": {
-      "WIDTH": 9,
+      "WIDTH": 18,
       "HEIGHT": 7,
       "DEPTH": 8
     },

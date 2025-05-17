@@ -49,7 +49,6 @@ export default class Player extends Creature implements IPlayer{
     super(data.properties);
 
     this.templePosition = Position.fromLiteral(data.templePosition);
-
     this.addPlayerProperties(data.properties);
     this.socketHandler = new SocketHandler(this);
     this.skills = new Skills(this, data.skills);
@@ -62,10 +61,8 @@ export default class Player extends Creature implements IPlayer{
     this.actionHandler = new ActionHandler(this);
     this.combatLock = new CombatLock(this);
     this.useHandler = new UseHandler(this);
-
     this.attackMode = 0;
     this.lastVisit = data.lastVisit;
-    
   }
 
   private addPlayerProperties(properties: any): void {
@@ -80,6 +77,8 @@ export default class Player extends Creature implements IPlayer{
     this.properties.add(CONST.PROPERTIES.CAPACITY_MAX, properties.maxCapacity);
     this.properties.add(CONST.PROPERTIES.MANA, properties.mana);
     this.properties.add(CONST.PROPERTIES.MANA_MAX, properties.maxMana);
+    this.properties.add(CONST.PROPERTIES.HEALTH, properties.health);
+    this.properties.add(CONST.PROPERTIES.HEALTH_MAX, properties.maxHealth);
   }
 
   isGod(): boolean {
@@ -264,6 +263,45 @@ export default class Player extends Creature implements IPlayer{
 
     this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.BLUE));
   }
+
+  increaseHealth(amount: number): void {
+    const currentHealth = this.getProperty(CONST.PROPERTIES.HEALTH);
+    const maxHealth = this.getProperty(CONST.PROPERTIES.HEALTH_MAX);
+  
+    const newHealth = Math.min(currentHealth + amount, maxHealth);
+    const actualIncrease = newHealth - currentHealth;
+  
+    if (actualIncrease > 0) {
+      this.incrementProperty(CONST.PROPERTIES.HEALTH, actualIncrease);
+      this.broadcast(new EmotePacket(this, String(actualIncrease), CONST.COLOR.LIGHTGREEN));
+    }
+  }
+  
+  increaseMana(amount: number): void {
+    const currentMana = this.getProperty(CONST.PROPERTIES.MANA);
+    const maxMana = this.getProperty(CONST.PROPERTIES.MANA_MAX);
+  
+    const newMana = Math.min(currentMana + amount, maxMana);
+    const actualIncrease = newMana - currentMana;
+  
+    if (actualIncrease > 0) {
+      this.incrementProperty(CONST.PROPERTIES.MANA, actualIncrease);
+      this.broadcast(new EmotePacket(this, String(actualIncrease), CONST.COLOR.BLUE));
+    }
+  }
+  
+  increaseEnergy(amount: number): void {
+    const currentEnergy = this.getProperty(CONST.PROPERTIES.ENERGY);
+    const maxEnergy = this.getProperty(CONST.PROPERTIES.ENERGY_MAX);
+  
+    const newEnergy = Math.min(currentEnergy + amount, maxEnergy);
+    const actualIncrease = newEnergy - currentEnergy;
+  
+    if (actualIncrease > 0) {
+      this.incrementProperty(CONST.PROPERTIES.ENERGY, actualIncrease);
+      this.broadcast(new EmotePacket(this, String(actualIncrease), CONST.COLOR.YELLOW));
+    }
+  }  
 
   getCorpse(): number {
     const CORPSE_MALE = 3058;

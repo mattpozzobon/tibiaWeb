@@ -432,11 +432,12 @@ export class PlayerStatePacket extends PacketWriter {
     const stringEncoded = PacketWriter.encodeString(player.getProperty(CONST.PROPERTIES.NAME));
     super(CONST.PROTOCOL.SERVER.STATE_PLAYER, PacketWriter.MAX_PACKET_SIZE);
 
-    this.writeUInt32(player.getId());
-    this.writeBuffer(stringEncoded);
-    this.writePosition(player.getPosition());
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.DIRECTION));
+    // === MATCH CLIENT ORDER ===
 
+    // 1. id
+    this.writeUInt32(player.getId());
+
+    // 2. skills (custom function, already matches)
     this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.MAGIC));
     this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.FIST));
     this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.CLUB));
@@ -447,32 +448,44 @@ export class PlayerStatePacket extends PacketWriter {
     this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.FISHING));
     this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.EXPERIENCE));
 
-    this.writeUInt16(player.getProperty(CONST.PROPERTIES.SPEED));
+    // 3. attack
     this.writeUInt8(player.getProperty(CONST.PROPERTIES.ATTACK));
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.ATTACK_SPEED));
 
+    // 4. equipment
     this.writeEquipment(player.containerManager.equipment);
-    this.writeUInt32(player.getProperty(CONST.PROPERTIES.CAPACITY));
-    this.writeUInt32(player.getProperty(CONST.PROPERTIES.CAPACITY_MAX));
 
-   // console.log('player: ', player.properties);
-
-
+    // 5. mounts
     this.writeMounts(player.getProperty(CONST.PROPERTIES.MOUNTS));
+
+    // 6. outfits
     this.writeOutfits(player.getProperty(CONST.PROPERTIES.OUTFITS));
 
-    this.writeUInt8(0); // Placeholder for spells
-    this.writeUInt8(0); // Placeholder for friend list
+    // 7. spellbook (placeholder)
+    this.writeUInt8(0); // TODO: send real spells
+
+    // 8. friendlist (placeholder)
+    this.writeUInt8(0); // TODO: send real friend list
+
+    // 9. outfit
     this.writeOutfit(player.getProperty(CONST.PROPERTIES.OUTFIT));
 
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.HEALTH));
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.HEALTH_MAX));
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.MANA));
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.MANA_MAX));
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.ENERGY));
-    this.writeUInt8(player.getProperty(CONST.PROPERTIES.ENERGY_MAX));
+    // 10. vitals
+    this.writeBuffer(stringEncoded); // name
+    this.writePosition(player.getPosition());
+    this.writeUInt8(player.getProperty(CONST.PROPERTIES.DIRECTION));
+    this.writeUInt16(player.getProperty(CONST.PROPERTIES.HEALTH)); 
+    this.writeUInt16(player.getProperty(CONST.PROPERTIES.HEALTH_MAX)); 
+    this.writeUInt16(player.getProperty(CONST.PROPERTIES.MANA));
+    this.writeUInt16(player.getProperty(CONST.PROPERTIES.MANA_MAX));
+    this.writeUInt16(player.getProperty(CONST.PROPERTIES.ENERGY));
+    this.writeUInt16(player.getProperty(CONST.PROPERTIES.ENERGY_MAX));
+    this.writeUInt32(player.getProperty(CONST.PROPERTIES.CAPACITY));
+    this.writeUInt32(player.getProperty(CONST.PROPERTIES.CAPACITY_MAX));
+    this.writeUInt16(player.getProperty(CONST.PROPERTIES.SPEED));
+    this.writeUInt8(player.getProperty(CONST.PROPERTIES.ATTACK_SPEED)); // aka attackSlowness
 
-    this.writeUInt8(0); // Placeholder for conditions
+    // 11. conditions
+    this.writeUInt8(0); // Placeholder
   }
 }
 

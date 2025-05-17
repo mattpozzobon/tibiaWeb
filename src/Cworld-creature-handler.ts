@@ -77,9 +77,7 @@ class CreatureHandler {
     );
 
     this.__referencePlayer(player);
-    player.broadcast(
-      new EffectMagicPacket(player.position, CONST.EFFECT.MAGIC.TELEPORT)
-    );
+    player.broadcast(new EffectMagicPacket(player.position, CONST.EFFECT.MAGIC.TELEPORT));
 
     player.spellbook.applyCooldowns();
 
@@ -124,6 +122,7 @@ class CreatureHandler {
   }
 
   createNewPlayer(gameSocket: any, data: any): void {
+    console.log('DATA', data);
     const player = new Player(data);
     const position = Position.fromLiteral(data.position);
 

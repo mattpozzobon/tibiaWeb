@@ -79,11 +79,18 @@ export class CommandHandler {
         getGameServer().world.creatureHandler.spawnCreature(id, player.getPosition());
         break;
 
-      case "/add":
+      case "/+":
+        player.increaseHealth(10);
+        player.increaseMana(10);
+        player.increaseEnergy(10);
+        getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.MAGIC_BLUE);
+        break;
+
+      case "/-":
         player.decreaseHealth(1);
         player.decreaseMana(1);
         player.decreaseEnergy(1);
-        getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.TELEPORT);
+        getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.DRAWBLOOD);
         break;
 
       case "/path":
