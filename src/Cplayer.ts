@@ -231,7 +231,7 @@ export default class Player extends Creature implements IPlayer{
       this.incrementProperty(CONST.PROPERTIES.HEALTH, -currentHealth);
     }
 
-    this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.RED));
+    this.broadcast(new EmotePacket(this, "-" + String(amount), CONST.COLOR.RED));
 
     if (this.isZeroHealth()) {
       this.handleDeath();
@@ -248,7 +248,7 @@ export default class Player extends Creature implements IPlayer{
       this.incrementProperty(CONST.PROPERTIES.MANA, -currentMana);
     }
 
-    this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.BLUE));
+    this.broadcast(new EmotePacket(this, "-" + String(amount), CONST.COLOR.BLUE));
   }
 
   decreaseEnergy(amount: number): void {
@@ -261,7 +261,7 @@ export default class Player extends Creature implements IPlayer{
       this.incrementProperty(CONST.PROPERTIES.ENERGY, -currentEnergy);
     }
 
-    this.broadcast(new EmotePacket(this, String(amount), CONST.COLOR.BLUE));
+    this.broadcast(new EmotePacket(this, "-" + String(amount), CONST.COLOR.YELLOW));
   }
 
   increaseHealth(amount: number): void {
@@ -273,7 +273,7 @@ export default class Player extends Creature implements IPlayer{
   
     if (actualIncrease > 0) {
       this.incrementProperty(CONST.PROPERTIES.HEALTH, actualIncrease);
-      this.broadcast(new EmotePacket(this, String(actualIncrease), CONST.COLOR.LIGHTGREEN));
+      this.broadcast(new EmotePacket(this, "+" + String(actualIncrease), CONST.COLOR.LIGHTGREEN));
     }
   }
   
@@ -286,7 +286,7 @@ export default class Player extends Creature implements IPlayer{
   
     if (actualIncrease > 0) {
       this.incrementProperty(CONST.PROPERTIES.MANA, actualIncrease);
-      this.broadcast(new EmotePacket(this, String(actualIncrease), CONST.COLOR.BLUE));
+      this.broadcast(new EmotePacket(this, "+" + String(actualIncrease), CONST.COLOR.BLUE));
     }
   }
   
@@ -299,7 +299,7 @@ export default class Player extends Creature implements IPlayer{
   
     if (actualIncrease > 0) {
       this.incrementProperty(CONST.PROPERTIES.ENERGY, actualIncrease);
-      this.broadcast(new EmotePacket(this, String(actualIncrease), CONST.COLOR.YELLOW));
+      this.broadcast(new EmotePacket(this, "+" + String(actualIncrease), CONST.COLOR.YELLOW));
     }
   }  
 
