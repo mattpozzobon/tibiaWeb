@@ -77,8 +77,12 @@ export class EffectDistancePacket extends PacketWriter {
 export class PlayerLoginPacket extends PacketWriter {
   constructor(name: string) {
     const stringEncoded = PacketWriter.encodeString(name);
-    super(CONST.PROTOCOL.SERVER.PLAYER_LOGIN, getEncodedLength(stringEncoded));
-    this.writeBuffer(stringEncoded);
+    const totalLength = getEncodedLength(stringEncoded); // includes 2-byte length
+
+    super(CONST.PROTOCOL.SERVER.PLAYER_LOGIN, totalLength);
+
+    this.writeUInt16(stringEncoded.length);  // ✅ Write 2-byte length prefix
+    this.writeBuffer(stringEncoded);         // ✅ Then write actual bytes
   }
 }
 
@@ -172,8 +176,9 @@ export class ChunkPacket extends PacketWriter {
 
 export class CreatureStatePacket extends PacketWriter {
   constructor(creature: Creature) {
+
     const stringEncoded = PacketWriter.encodeString(creature.getProperty(CONST.PROPERTIES.NAME));
-    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, getEncodedLength(stringEncoded) + 49);
+    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, 48 + 2 + stringEncoded.length);
 
     this.writeUInt32(creature.getId());
     this.writeCreatureType(creature);
@@ -183,9 +188,8 @@ export class CreatureStatePacket extends PacketWriter {
     this.writeUInt32(creature.getProperty(CONST.PROPERTIES.HEALTH));
     this.writeUInt32(creature.getProperty(CONST.PROPERTIES.HEALTH_MAX));
     this.writeUInt16(creature.getProperty(CONST.PROPERTIES.SPEED));
-    this.writeCreatureType(creature);
-    this.writeBuffer(stringEncoded);
-    this.writeUInt8(0); // Condition size
+    this.writeBuffer(stringEncoded); 
+    this.writeUInt8(0);                   
   }
 }
 

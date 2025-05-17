@@ -103,21 +103,21 @@ export class PacketWriter extends Packet {
   
 
   writeBuffer(buffer: Uint8Array<ArrayBufferLike>): void {
-  // Truncate if buffer is too large
-  if (buffer.length >= 0xFFFF) {
-    buffer = buffer.subarray(0, 0xFFFF);
-  }
+    // Truncate if buffer is too large
+    if (buffer.length >= 0xFFFF) {
+      buffer = buffer.subarray(0, 0xFFFF);
+    }
 
-  // Check if there's enough space for the 2-byte length + actual data
-  if (!this.canWrite(2 + buffer.length)) {
-    return;
-  }
+    // Check if there's enough space for the 2-byte length + actual data
+    if (!this.canWrite(2 + buffer.length)) {
+      return;
+    }
 
-  // Write the 2-byte message length
-  this.writeUInt16(buffer.length);
+    // Write the 2-byte message length
+    this.writeUInt16(buffer.length);
 
-  // Now write the actual data bytes
-  this.set(buffer);
+    // Now write the actual data bytes
+    this.set(buffer);
   }
 
   writeClientId(id: number): void {
@@ -305,5 +305,11 @@ export class PacketWriter extends Packet {
 
     // Encode as UTF-8 and return a Uint8Array (similar to JS)
     return new TextEncoder().encode(escaped);
+  }
+  
+  writeString(value: string): void {
+    const encoded = new TextEncoder().encode(value);
+    this.writeUInt16(encoded.length);
+    this.writeBuffer(encoded);
   }
 }
