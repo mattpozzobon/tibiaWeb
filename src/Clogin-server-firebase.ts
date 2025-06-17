@@ -1,12 +1,20 @@
 import * as admin from 'firebase-admin';
-// Either import your JSON credentials if tsconfig allows, or require():
-import serviceAccount from '../firebase-admin.json'; // adjust path so at runtime it resolves correctly
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
+const raw = process.env.FIREBASE_CREDENTIALS_JSON;
+
+if (!raw) throw new Error('Missing FIREBASE_CREDENTIALS_JSON');
+
+const parsed = JSON.parse(raw);
+
+// Replace escaped newlines
+parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+  credential: admin.credential.cert(parsed as admin.ServiceAccount),
 });
 
-// Simple check: list initialized apps or log something
-console.log('Firebase Admin initialized, apps:', admin.apps.length);
-
+console.log('Firebase Admin initialized');
 export { admin };

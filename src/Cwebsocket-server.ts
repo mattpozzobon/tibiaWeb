@@ -140,12 +140,25 @@ class WebsocketServer {
         return gameSocket.closeError("Character data missing.");
       }
 
-      let character;
-      try {
-        character = JSON.parse(result.character);
-      } catch (e) {
-        console.error("Failed to parse character JSON:", e);
-        return gameSocket.closeError("Character data corrupted.");
+      let character = result.character;
+
+      if (typeof character === "string") {
+        try {
+          character = JSON.parse(character);
+        } catch (e) {
+          console.error("❌ Failed to parse character JSON:", e);
+          return gameSocket.closeError("Character data corrupted.");
+        }
+      }
+
+      // Ensure character is an object before accessing properties
+      if (typeof character === "string") {
+        try {
+          character = JSON.parse(character);
+        } catch (e) {
+          console.error("❌ Failed to parse character JSON:", e);
+          return gameSocket.closeError("Character data corrupted.");
+        }
       }
 
       this.__acceptCharacterConnection(gameSocket, character);
@@ -178,6 +191,11 @@ class WebsocketServer {
      * Accepts the connection of a character
      */
     this.socketHandler.referenceSocket(gameSocket);
+
+    if (!data?.properties?.name) {
+      console.error("❌ Character data missing or malformed:", data);
+      return gameSocket.closeError("Invalid character data.");
+    }
 
     const existingPlayer = getGameServer().world.creatureHandler.getPlayerByName(
       data.properties.name

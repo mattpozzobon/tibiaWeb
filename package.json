@@ -5,7 +5,9 @@
         "start": "node dist/bundle.js"
     },
     "dependencies": {
+        "@types/dotenv": "^6.1.1",
         "bcryptjs": "^2.4.3",
+        "dotenv": "^16.5.0",
         "firebase-admin": "^13.4.0",
         "jsonschema": "^1.4.1",
         "sqlite3": "^5.1.7",
