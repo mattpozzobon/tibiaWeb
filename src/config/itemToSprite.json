@@ -1,0 +1,80 @@
+{
+  "items": [
+    {
+      "name": "Left-Hand Espada",
+      "id": 2412,
+      "sprite_id": 919
+    },
+    {
+      "name": "Right-hand Fire",
+      "id": 2191,
+      "sprite_id": 920
+    },
+
+
+
+
+    {
+      "name": "Leather Helmet",
+      "id": 2461,
+      "sprite_id": 907
+    },
+    {
+      "name": "Leather Armor",
+      "id": 2467,
+      "sprite_id": 908
+    },
+    {
+      "name": "Leather Legs",
+      "id": 2649,
+      "sprite_id": 910
+    },
+    {
+      "name": "Leather Boots",
+      "id": 2643,
+      "sprite_id": 909
+    },
+
+    {
+      "name": "studded helmet",
+      "id": 2482,
+      "sprite_id": 911
+    },
+    {
+      "name": "studded Armor",
+      "id": 2484,
+      "sprite_id": 912
+    },
+    {
+      "name": "studded legs",
+      "id": 2468,
+      "sprite_id": 913
+    },
+    {
+      "name": "studded boots",
+      "id": 2641,
+      "sprite_id": 914
+    },
+    
+    {
+      "name": "chain helmet", 
+      "id": 2458,
+      "sprite_id": 915
+    },
+    {
+      "name": "chain Armor",
+      "id": 2464,
+      "sprite_id": 916
+    },
+    {
+      "name": "chain legs",
+      "id": 2648,
+      "sprite_id": 917
+    },
+    {
+      "name": "chain boots",
+      "id": 2645,
+      "sprite_id": 918
+    }
+  ]
+}

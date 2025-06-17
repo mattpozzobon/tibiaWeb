@@ -1,0 +1,51 @@
+import { ConditionManager } from "./../Ccondition-manager";
+import { CreatureProperties } from "./../Ccreature-properties";
+import SpeechHandler from "./../Cspeech-handler";
+import Outfit from "./../Coutfit";
+import { Position } from "./../Cposition";
+import { IPosition } from "./IPosition";
+
+export interface ICreature {
+  position: Position | null;
+  properties: CreatureProperties;
+  conditions: ConditionManager;
+  speechHandler: SpeechHandler;
+
+  setProperty(type: number, value: any): void;
+  isFull(type: number): boolean;
+  setFull(type: number): void;
+  getProperty(type: number): any;
+  getId(): number;
+  isDrunk(): boolean;
+  faceCreature(creature: ICreature): void;
+  getStepDuration(friction: number): number;
+  hasCondition(id: number): boolean;
+  removeCondition(id: number): void;
+  addCondition(id: number, ticks: number, duration: number, properties: number | null): void;
+  getTile(): any;
+  getChunk(): any;
+  changeOutfit(outfit: Outfit): void;
+  getOutfit(): any;
+  calculateDefense(): number;
+  getDefense(): number;
+  getAttackSpeed(): number;
+  getAttack(): number;
+  calculateDamage(): number;
+  getPosition(): IPosition | null;
+  leaveOldChunks(oldChunks: any[]): void;
+  enterNewChunks(newChunks: any[]): void;
+  canSee(position: IPosition): boolean;
+  setPosition(position: IPosition): void;
+  setDirection(direction: number): void;
+  isWithinRangeOf(creature: ICreature, range: number): boolean;
+  is(name: string): boolean;
+  isWithinChunk(chunk: any): boolean;
+  isBesidesThing(thing: any): boolean;
+  isMounted(): boolean;
+  isZeroHealth(): boolean;
+  isPlayer(): boolean;
+  incrementProperty(type: number, amount: number): void;
+  broadcast(packet: any): void;
+  broadcastFloor(packet: any): void;
+  isInLineOfSight(other: ICreature): boolean;
+}

@@ -1,0 +1,26 @@
+Classes:
+
+Single-Hand Sword:
+    Swordsman
+
+Two-Handed Sword:
+    Warlord
+
+Bow:
+    Archer
+
+Sword and Shield:
+    Guardian 
+
+Sword and Elemental Orbs:
+    Flame Knight        (fire)
+    Tempest Blade       (wind)
+    Terra Swordsman     (earth)
+    Aqua Sabre          (water)
+
+
+Dual Elemental Orbs: 
+    Elementalist 
+
+Orb and Shield: 
+    Arcane Guardian
