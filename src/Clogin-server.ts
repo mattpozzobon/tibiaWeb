@@ -8,7 +8,6 @@ import { admin } from './Clogin-server-firebase';
 
 interface QueryObject {
   token?: string;  // Firebase ID token
-  // older fields (account/password) are no longer used
   [key: string]: any;
 }
 
@@ -19,14 +18,11 @@ class LoginServer {
   public server: http.Server;
 
   constructor() {
-    // Save information (using CONFIG values)
     this.__host = CONFIG.LOGIN.HOST;
     this.__port = CONFIG.LOGIN.PORT;
 
-    // Initialize the account database
     this.accountDatabase = new AccountDatabase(CONFIG.DATABASE.ACCOUNT_DATABASE);
 
-    // Create the HTTP server with an async-capable handler
     this.server = http.createServer((req, res) => {
       this.__handleRequest(req, res).catch(err => {
         console.error("Error in request handler:", err);
