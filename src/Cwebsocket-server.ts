@@ -11,147 +11,81 @@ class WebsocketServer {
   socketHandler: WebsocketSocketHandler;
 
   constructor() {
-    /*
-     * Class WebsocketServer
-     * Handles the websocket server and upgrades HTTP connections to websocket connections.
-     */
-
-    this.websocket = new Server({
-      noServer: true,
-      perMessageDeflate: this.__getCompressionConfiguration(),
-    });
-
-    // Use the same database file as login server (CONFIG.DATABASE.ACCOUNT_DATABASE)
+    this.websocket = new Server({ noServer: true, perMessageDeflate: this.__getCompressionConfiguration()});
     this.accountDatabase = new AccountDatabase(CONFIG.DATABASE.ACCOUNT_DATABASE);
-
     this.socketHandler = new WebsocketSocketHandler();
-
-    this.websocket.on("connection", this.__handleConnection.bind(this));
+    this.websocket.on("connection", (socket: WebSocket, request: IncomingMessage, characterId: number) => {
+      this.__handleConnection(socket, request, characterId);
+    });
     this.websocket.on("close", this.__handleClose.bind(this));
   }
 
   public getDataDetails(): { sockets: number } {
-    /*
-     * Returns data details of the websocket server
-     */
     return {
       sockets: this.socketHandler.getTotalConnectedSockets(),
     };
   }
 
-  /**
-   * Called from HTTPServer.__handleUpgrade after verifying HMAC token:
-   *   this.websocketServer.upgrade(request, socket, head, firebaseUid);
-   */
-  public upgrade(
-    request: IncomingMessage,
-    socket: any,
-    head: Buffer,
-    accountName: string  // here accountName is actually the Firebase UID
-  ): void {
+  public upgrade(request: IncomingMessage, socket: any, head: Buffer, characterId: number): void {
     console.log(`Attempting to upgrade request from ${socket.id} to WS.`);
-
-    this.websocket.handleUpgrade(
-      request,
-      socket,
-      head,
-      (websocket: WebSocket) => {
-        console.log(`Upgrade successful for socket with id ${socket.id}.`);
-        // Pass accountName (UID) to connection handler:
-        this.websocket.emit("connection", websocket, request, accountName);
-      }
-    );
+    this.websocket.handleUpgrade(request, socket, head, (websocket: WebSocket) => {
+      console.log(`Upgrade successful for socket with id ${socket.id}.`);
+      this.websocket.emit("connection", websocket, request, characterId);
+    });
   }
 
   public close(): void {
-    /*
-     * Closes the websocket server
-     */
     console.log("The websocket server has started to close.");
-
     this.socketHandler.disconnectClients();
     this.websocket.close();
   }
 
   private __handleClose(): void {
-    /*
-     * Callback fired when the websocket server is closed
-     */
     console.log("The websocket server has closed.");
     this.accountDatabase.close();
   }
 
-  /**
-   * On a successful WebSocket upgrade, this is called:
-   *   websocket.on("connection", (socket, request, accountName) => ...)
-   */
   private __handleConnection(
     socket: WebSocket,
     request: IncomingMessage,
-    accountName: string  // Firebase UID from login handshake
+    characterId: number
   ): void {
-    /*
-     * Handles an incoming websocket connection
-     */
-    const gameSocket = new GameSocket(socket, accountName);
+    const gameSocket = new GameSocket(socket, ""); // account UID is not needed here
+    gameSocket.characterId = characterId;
 
     if (this.socketHandler.isOverpopulated()) {
-      return gameSocket.closeError(
-        "The server is currently overpopulated. Please try again later."
-      );
+      return gameSocket.closeError("The server is currently overpopulated. Please try again later.");
     }
 
     if (getGameServer().isShutdown()) {
-      return gameSocket.closeError(
-        "The server is going offline. Please try again later."
-      );
+      return gameSocket.closeError("The server is going offline. Please try again later.");
     }
 
-    this.__acceptConnection(gameSocket, accountName);
+    this.__acceptConnection(gameSocket, characterId);
   }
 
-  private __acceptConnection(gameSocket: GameSocket, accountName: string): void {
-    /*
-     * Accepts the connection of the websocket
-     */
+  private __acceptConnection(gameSocket: GameSocket, characterId: number): void {
     const { address } = gameSocket.getAddress();
     console.log(`A client joined the server: ${address}.`);
 
-    gameSocket.socket.on(
-      "close",
-      this.__handleSocketClose.bind(this, gameSocket)
-    );
-
-    this.__handleLoginRequest(gameSocket, accountName);
+    gameSocket.socket.on("close", this.__handleSocketClose.bind(this, gameSocket));
+    this.__handleLoginRequest(gameSocket, characterId);
   }
 
-  private __handleLoginRequest(gameSocket: GameSocket, accountName: string): void {
-    /*
-     * Handles a login request from a socket:
-     * Now: lookup character JSON by Firebase UID
-     */
-    this.accountDatabase.getCharacterForUid(accountName, (error, result) => {
+  private __handleLoginRequest(gameSocket: GameSocket, characterId: number): void {
+    this.accountDatabase.getCharacterById(characterId, (error, result) => {
       if (error) {
-        console.error("DB error fetching character for UID:", error);
+        console.error("DB error fetching character:", error);
         return gameSocket.terminate();
       }
-      if (!result || !result.character) {
-        console.warn("No character found for UID, this should not happen if login created it.");
+
+      if (!result || !result.data) {
+        console.warn("No character found for ID, or missing data.");
         return gameSocket.closeError("Character data missing.");
       }
 
-      let character = result.character;
+      let character = result.data;
 
-      if (typeof character === "string") {
-        try {
-          character = JSON.parse(character);
-        } catch (e) {
-          console.error("❌ Failed to parse character JSON:", e);
-          return gameSocket.closeError("Character data corrupted.");
-        }
-      }
-
-      // Ensure character is an object before accessing properties
       if (typeof character === "string") {
         try {
           character = JSON.parse(character);
@@ -166,12 +100,7 @@ class WebsocketServer {
   }
 
   private __getCompressionConfiguration(): boolean | object {
-    /*
-     * Returns the compression options for zlib used in ws
-     */
-    if (!CONFIG.SERVER.COMPRESSION.ENABLED) {
-      return false;
-    }
+    if (!CONFIG.SERVER.COMPRESSION.ENABLED) return false;
 
     return {
       clientNoContextTakeover: true,
@@ -183,13 +112,7 @@ class WebsocketServer {
     };
   }
 
-  private __acceptCharacterConnection(
-    gameSocket: GameSocket,
-    data: any
-  ): void {
-    /*
-     * Accepts the connection of a character
-     */
+  private __acceptCharacterConnection(gameSocket: GameSocket, data: any): void {
     this.socketHandler.referenceSocket(gameSocket);
 
     if (!data?.properties?.name) {
@@ -216,16 +139,11 @@ class WebsocketServer {
   }
 
   private __handleSocketClose(gameSocket: GameSocket): void {
-    /*
-     * Handles closing of a game socket
-     */
     console.log(`A client has left the server: ${gameSocket.__address}.`);
 
     this.socketHandler.dereferenceSocket(gameSocket);
 
-    if (!gameSocket.player) {
-      return;
-    }
+    if (!gameSocket.player) return;
 
     if (!gameSocket.player.isInCombat() || getGameServer().isClosed()) {
       return this.__removePlayer(gameSocket);
@@ -240,22 +158,22 @@ class WebsocketServer {
   }
 
   private __removePlayer(gameSocket: GameSocket): void {
-    /*
-     * Removes a player from the game world and stores their information in the database
-     */
     const playerName = gameSocket.player?.getProperty(CONST.PROPERTIES.NAME);
     getGameServer().world.creatureHandler.removePlayerFromWorld(gameSocket);
 
-    // Save updated character data under the Firebase UID (accountName)
-    const uid = gameSocket.account;  // assuming GameSocket stored this
-    // Extract the character object from gameSocket.player; adjust as needed
+    const characterId = gameSocket.characterId;
+    if (!characterId) {
+      console.warn("Missing characterId on disconnect for", playerName);
+      return;
+    }
+
     const characterObj = JSON.stringify(gameSocket.player);
-    // or however you obtain the current character state as a JS object
     if (!characterObj) {
       console.warn("No character object to save for", playerName);
       return;
     }
-    this.accountDatabase.saveCharacterForUid(uid, characterObj, (error: Error | null) => {
+
+    this.accountDatabase.updateCharacterData(characterId, characterObj, (error: Error | null) => {
       if (error) {
         return console.log(`Error storing player information for ${playerName}:`, error);
       }

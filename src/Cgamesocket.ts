@@ -14,6 +14,7 @@ import { IPlayer } from "./interfaces/IPlayer";
 class GameSocket {
   public socket: WebSocket;
   public account: string;
+  public characterId!: number;
   public player: IPlayer | undefined;
   public __controller: boolean = false;
   public __address: string;

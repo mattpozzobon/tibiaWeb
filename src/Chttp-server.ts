@@ -5,6 +5,7 @@ import WebsocketServer from "./Cwebsocket-server";
 import { AuthService } from "./Cauth-service";
 import { BandwidthHandler } from "./Cbandwidth-handler";
 import { AccountManager } from "./Caccount-manager";
+import { admin } from './Clogin-server-firebase';
 
 export interface NetworkDetails {
   websocket: {
@@ -109,24 +110,34 @@ class HTTPServer {
 
   private __handleUpgrade(request: IncomingMessage, socket: any, head: Buffer): void {
     const code = this.__validateHTTPRequest(request);
-
     if (code !== null) {
       return this.__generateRawHTTPResponse(socket, code);
     }
 
-    const query = url.parse(request.url || "", true).query;
+    let token: string | null = null;
+    let characterId: number | null = null;
 
-    if (!Object.prototype.hasOwnProperty.call(query, "token")) {
+    try {
+      const reqUrl = new URL(request.url || "", `http://${request.headers.host}`);
+      token = reqUrl.searchParams.get("token");
+      characterId = parseInt(reqUrl.searchParams.get("characterId") || "", 10);
+    } catch {
       return this.__generateRawHTTPResponse(socket, 400);
     }
 
-    const accountName = this.authService.authenticate(query.token as string);
-
-    if (accountName === null) {
-      return this.__generateRawHTTPResponse(socket, 401);
+    if (!token || isNaN(characterId!)) {
+      return this.__generateRawHTTPResponse(socket, 400);
     }
 
-    this.websocketServer.upgrade(request, socket, head, accountName);
+    admin.auth().verifyIdToken(token)
+      .then(decoded => {
+        // ✅ Token is valid, proceed with upgrade
+        this.websocketServer.upgrade(request, socket, head, characterId!);
+      })
+      .catch(err => {
+        console.error("❌ Firebase token verification failed:", err);
+        this.__generateRawHTTPResponse(socket, 401); // Unauthorized
+      });
   }
 
   private __handleConnection(socket: any): void {

@@ -3,7 +3,6 @@ import fs from "fs";
 import { CharacterCreator } from "./Ccharacter-creator";
 import { CONFIG } from "./helper/appContext";
 
-
 export class AccountDatabase {
   private filepath: string;
   private characterCreator: CharacterCreator;
@@ -11,61 +10,55 @@ export class AccountDatabase {
   private __status: typeof CONFIG.SERVER.STATUS[keyof typeof CONFIG.SERVER.STATUS];
 
   constructor(filepath: string) {
-    /*
-     * Class AccountDatabase
-     * Wrapper for the account database, keyed by Firebase UID.
-     */
     this.filepath = filepath;
     this.characterCreator = new CharacterCreator();
     this.__status = CONFIG.SERVER.STATUS.OPENING;
-
-    // Open the database
     this.__open(this.__handleOpen.bind(this));
   }
 
   private __handleOpen(error: Error | null): void {
     if (error) {
-      console.error(`Error opening the database ${this.filepath}`, error);
+      console.error(`Error opening database ${this.filepath}`, error);
       return;
     }
     this.__status = CONFIG.SERVER.STATUS.OPEN;
-    console.log(`The sqlite database connection to ${this.filepath} has been opened.`);
+    console.log(`Database connection to ${this.filepath} is open.`);
   }
 
   private __open(callback: (error: Error | null) => void): void {
-    if (fs.existsSync(this.filepath)) {
-      this.db = new sqlite3.Database(this.filepath, sqlite3.OPEN_READWRITE, callback);
-    } else {
-      this.__createNewDatabase(callback);
+    const fileExists = fs.existsSync(this.filepath);
+    this.db = new sqlite3.Database(this.filepath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, callback);
+    if (!fileExists) {
+      this.db.serialize(() => this.__createTables());
     }
   }
 
-  private __createNewDatabase(callback: (error: Error | null) => void): void {
-    this.db = new sqlite3.Database(
-      this.filepath,
-      sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
-      callback
-    );
-    this.db.serialize(() => {
-      this.__createAccountDatabase();
-      // We do not pre-create default characters here; those depend on Firebase users
-    });
-  }
-
-  private __createAccountDatabase(): void {
-    // Create the accounts table keyed by Firebase UID
+  private __createTables(): void {
     const createAccounts = `
       CREATE TABLE IF NOT EXISTS accounts (
-        uid       TEXT    PRIMARY KEY,
-        email     TEXT,
-        character JSON    NOT NULL
+        uid    TEXT PRIMARY KEY,
+        email  TEXT
       );`;
+
+    const createCharacters = `
+      CREATE TABLE IF NOT EXISTS characters (
+        id     INTEGER PRIMARY KEY AUTOINCREMENT,
+        uid    TEXT NOT NULL,
+        name   TEXT NOT NULL,
+        sex    TEXT NOT NULL,
+        role   INTEGER NOT NULL,
+        data   JSON NOT NULL,
+        FOREIGN KEY(uid) REFERENCES accounts(uid)
+      );`;
+
     this.db.run(createAccounts, err => {
-      if (err) {
-        console.error("Error creating accounts table:", err.message);
-      } else {
-        console.log("Accounts table ready");
-      }
+      if (err) console.error("Error creating accounts table:", err.message);
+      else console.log("Accounts table ready.");
+    });
+
+    this.db.run(createCharacters, err => {
+      if (err) console.error("Error creating characters table:", err.message);
+      else console.log("Characters table ready.");
     });
   }
 
@@ -80,98 +73,110 @@ export class AccountDatabase {
       return;
     }
     this.__status = CONFIG.SERVER.STATUS.CLOSED;
-    console.log("The database connection has been closed.");
+    console.log("Database connection closed.");
   }
 
-  /**
-   * Fetch account record by Firebase UID.
-   * callback(err, row) where row = { uid, email, character }
-   */
+  // -------------------------------
+  // Accounts
+  // -------------------------------
+
   public getAccountByUid(
     uid: string,
-    callback: (error: Error | null, row: { uid: string; email: string | null; character: string } | null) => void
+    callback: (error: Error | null, row: { uid: string; email: string | null } | null) => void
   ): void {
-    this.db.get("SELECT uid, email, character FROM accounts WHERE uid = ?", [uid], (err, row) => {
-      if (err) return callback(err, null);
-      if (!row) return callback(null, null);
-      return callback(null, row as any);
-    });
+    this.db.get("SELECT uid, email FROM accounts WHERE uid = ?", [uid], callback as any);
   }
 
-  /**
-   * Create a new account record for given UID and email, with a default character blueprint.
-   * callback(code, null). On success code = 0.
-   */
   public createAccountForUid(
     uid: string,
     email: string | null,
     callback: (errorCode: number | null) => void
   ): void {
-    // Derive a default name from email local-part
-    let defaultName = "player";
-    if (email) {
-      const local = email.split('@')[0].toLowerCase();
-      const sanitized = local.replace(/[^a-z]/g, '');
-      if (sanitized.length >= 3) {
-        defaultName = sanitized.substring(0, 12);
+    const values = [uid, email];
+    this.db.run("INSERT INTO accounts(uid, email) VALUES(?, ?)", values, err => {
+      if (err) {
+        console.error("Error inserting account:", err.message);
+        return callback(500);
       }
-    }
-    // Default sex and role; adjust as desired
-    const defaultSex: "male" | "female" = "male";
-    const defaultRole = 0; // adjust or define a CONST.ROLES.NONE
+      callback(null);
+    });
+  }
 
-    // Create character JSON via CharacterCreator
-    let characterJson: string;
+  // -------------------------------
+  // Characters
+  // -------------------------------
+
+  public createCharacterForUid(
+    uid: string,
+    name: string,
+    sex: "male" | "female",
+    role: number,
+    callback: (errorCode: number | null, characterId?: number) => void
+  ): void {
+    let characterData: string;
+
     try {
-      characterJson = this.characterCreator.create(defaultName, defaultSex, defaultRole);
+      characterData = this.characterCreator.create(name, sex, role);
     } catch (e) {
-      console.error("Error creating default character:", e);
+      console.error("Character creation failed:", e);
       return callback(500);
     }
 
-    // Insert into DB
-    const values = [uid, email, characterJson];
+    const values = [uid, name, sex, role, characterData];
+
     this.db.run(
-      "INSERT INTO accounts(uid, email, character) VALUES(?, ?, ?)",
+      "INSERT INTO characters(uid, name, sex, role, data) VALUES(?, ?, ?, ?, ?)",
       values,
-      function(err) {
+      function (err) {
         if (err) {
-          console.error("Error inserting account record:", err.message);
+          console.error("Failed to insert character:", err.message);
           return callback(500);
         }
-        return callback(null);
+        callback(null, this.lastID); // 👈 Send the characterId
       }
     );
   }
 
-  /**
-   * Save/update character JSON for a given UID.
-   */
-  public saveCharacterForUid(
+  public getCharactersForUid(
     uid: string,
-    characterObj: any,
-    callback: (error: Error | null) => void
+    callback: (error: Error | null, characters: { id: number; name: string; sex: string; role: number }[]) => void
   ): void {
-    try {
-      const characterJson = JSON.stringify(characterObj);
-      this.db.run(
-        "UPDATE accounts SET character = ? WHERE uid = ?",
-        [characterJson, uid],
-        callback
-      );
-    } catch (err) {
-      console.error("Error saving character JSON:", err);
-      callback(err as Error);
-    }
+    this.db.all(
+      "SELECT id, name, sex, role FROM characters WHERE uid = ?",
+      [uid],
+      (err, rows) => {
+        if (err) return callback(err, []);
+        callback(null, rows as { id: number; name: string; sex: string; role: number }[]);
+      }
+    );
   }
 
-  /**
-   * Retrieve character JSON for a given UID.
-   */
-  public getCharacterForUid(
-    uid: string,
-    callback: (error: Error | null, result: { character: string } | undefined) => void
+  public getCharacterById(
+    id: number,
+    callback: (error: Error | null, character: { id: number; uid: string; name: string; sex: string; role: number; data: string } | null) => void
   ): void {
-    this.db.get("SELECT character FROM accounts WHERE uid = ?", [uid], callback as any);
+    this.db.get(
+      "SELECT id, uid, name, sex, role, data FROM characters WHERE id = ?",
+      [id],
+      (err, row) => {
+        if (err) return callback(err, null);
+        if (!row) return callback(null, null);
+        callback(null, row as { id: number; uid: string; name: string; sex: string; role: number; data: string });
+      }
+    );
   }
+
+  public updateCharacterData(
+    characterId: number,
+    characterData: string,
+    callback: (error: Error | null) => void
+  ): void {
+    this.db.run(
+      "UPDATE characters SET data = ? WHERE id = ?",
+      [characterData, characterId],
+      callback
+    );
+  }
+
+
 }
