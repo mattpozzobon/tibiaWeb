@@ -325,10 +325,10 @@ class CreatureHandler {
       creature.position
     );
 
-    this.updateCreaturePosition(creature, position);
-
     let stepDuration = creature.getStepDuration(tile.getFriction());
 
+    this.updateCreaturePosition(creature, position);
+    
     creature.broadcast(
       new CreatureMovePacket(creature.getId(), position, stepDuration)
     );

@@ -218,9 +218,6 @@ export class CreatureProperties {
   }
 
   getStepDuration(friction: number): number {
-    /*
-     * Calculates step duration based on speed
-     */
     const A = 857.36;
     const B = 261.29;
     const C = -4795.009;

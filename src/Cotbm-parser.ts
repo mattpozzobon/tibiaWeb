@@ -233,10 +233,7 @@ class OTBMParser {
       chunk = getGameServer().world.lattice.createChunk(worldPosition);
     }
 
-    const tile = chunk.createTile(
-      worldPosition,
-      node.properties.attributes.get(OTBM_HEADERS.OTBM_ATTR_ITEM) || 0
-    );
+    const tile = chunk.createTile(worldPosition,node.properties.attributes.get(OTBM_HEADERS.OTBM_ATTR_ITEM) || 0);
 
     if (node.properties.attributes.has(OTBM_HEADERS.OTBM_ATTR_TILE_FLAGS)) {
       tile.setZoneFlags(node.properties.attributes.get(OTBM_HEADERS.OTBM_ATTR_TILE_FLAGS));

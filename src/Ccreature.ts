@@ -4,7 +4,7 @@ import { CreatureProperties } from "./Ccreature-properties";
 import { EventEmitter } from "./Ceventemitter";
 import Outfit from "./Coutfit";
 import { CreatureForgetPacket, CreatureStatePacket } from "./Cprotocol";
-import { CONST, getGameServer } from "./helper/appContext";
+import { CONFIG, CONST, getGameServer } from "./helper/appContext";
 import { getRandomInt } from "./utils/functions";
 import { ICreature } from "./interfaces/ICreature";
 
@@ -14,6 +14,7 @@ export default class Creature extends EventEmitter implements ICreature{
   properties: CreatureProperties;
   conditions: ConditionManager;
   speechHandler: SpeechHandler;
+  public nextMoveTime: number = 0;
 
   constructor(properties: any) {
     super();

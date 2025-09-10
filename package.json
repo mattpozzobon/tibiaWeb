@@ -2,7 +2,10 @@
     "scripts": {
         "deps": "madge --circular --extensions ts src",
         "build": "webpack",
-        "start": "node dist/bundle.js"
+        "start": "node dist/bundle.js",
+        "start:login": "ts-node login.ts",
+        "start:engine": "ts-node engine.ts",
+        "start:all": "concurrently \"npm run start:login\" \"npm run start:engine\""
     },
     "dependencies": {
         "@types/dotenv": "^6.1.1",
@@ -22,6 +25,7 @@
         "@types/bcryptjs": "^2.4.6",
         "@types/node": "^22.10.7",
         "@types/ws": "^8.5.14",
+        "concurrently": "^9.2.0",
         "eslint": "^9.19.0",
         "eslint-plugin-import": "^2.31.0",
         "path-browserify": "^1.0.1",

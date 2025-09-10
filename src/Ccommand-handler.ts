@@ -102,9 +102,43 @@ export class CommandHandler {
         });
         break;
 
+      case "/time":
+        this.handleCommandSetTime(player, args[1]);
+        break;
+
       default:
         player.sendCancelMessage("Unknown command.");
     }
+  }
+
+  private handleCommandSetTime(player: IPlayer, timeStr?: string): void {
+    if (!timeStr) {
+      player.sendCancelMessage("Usage: /time HH:MM (24h)");
+      return;
+    }
+
+    const m = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) {
+      player.sendCancelMessage("Invalid time format. Use HH:MM (24h).");
+      return;
+    }
+
+    const h = Number(m[1]);
+    const min = Number(m[2]);
+    if (h < 0 || h > 23 || min < 0 || min > 59) {
+      player.sendCancelMessage("Invalid time. Hours 0–23, minutes 0–59.");
+      return;
+    }
+
+    const hh = String(h).padStart(2, "0");
+    const mm = String(min).padStart(2, "0");
+    const canon = `${hh}:${mm}`;
+
+    // set and broadcast (WorldClock.changeTime already broadcasts the time packet)
+    getGameServer().world.clock.changeTime(canon);
+
+    // optional chat broadcast for humans
+    //getGameServer().world.broadcastPacket(new ServerMessagePacket(`World time set to ${canon}.`));
   }
 }
 

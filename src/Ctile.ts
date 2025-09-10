@@ -18,16 +18,12 @@ class Tile extends Thing implements ITile{
   pathfinderNode?: PathfinderNode;
 
   constructor(id: number, position: any) {
-    /*
-     * Class Tile
-     * Container for a world tile
-     */
     super(id);
     this.position = position;
   }
 
   getFriction(): number {
-    return this.getAttribute("friction");
+    return this.getAttribute("friction") || 100;
   }
 
   broadcastNeighbours(packet: any): void {

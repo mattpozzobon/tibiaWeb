@@ -1,8 +1,7 @@
 "use strict";
 
+import { WorldTimePacket } from "./Cprotocol";
 import { EventEmitter } from "./Ceventemitter";
-import { opcodes } from "./Copcodes";
-import { PacketWriter } from "./Cpacket-writer";
 import { CONFIG, getGameServer } from "./helper/appContext";
 
 
@@ -80,8 +79,8 @@ class WorldClock extends EventEmitter {
     this.__initialized = performance.now();
     this.__startOffset = this.__convertStringToTime(time);
 
-    let packet = new PacketWriter(opcodes.SERVER.WORLD_TIME.code, opcodes.SERVER.WORLD_TIME.length).writeWorldTime(this.getTime());
-    getGameServer().world.broadcastPacket(packet);
+    let timep = new WorldTimePacket(getGameServer().world.clock.getTime())
+    getGameServer().world.broadcastPacket(timep);
   }
 
   between(start: string, end: string): boolean {

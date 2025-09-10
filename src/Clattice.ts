@@ -129,12 +129,6 @@ class Lattice implements ILattice{
 
     const chunk = this.getChunkFromWorldPosition(position);
 
-    // if (chunk && position.x > 0 && position.x < 20 && position.y === 7){
-    //   console.log('chunk: ', chunk);
-    //   console.log('position: ', position.x, " ", position.y, " ", position.z);
-    // }
-      
-
     return chunk?.getTileFromWorldPosition(position) || null;
   }
 

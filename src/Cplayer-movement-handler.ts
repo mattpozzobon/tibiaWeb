@@ -53,11 +53,12 @@ class PlayerMovementHandler {
     // Move the player
     const tile = getGameServer().world.getTileFromWorldPosition(position);
 
-    const stepDuration =
-      tile === null || tile.id === 0
-        ? 10
-        : this.__player.getStepDuration(tile.getFriction());
-
+    const isDiagonal = this.__player.getPosition().isDiagonal(position);
+    let stepDuration = tile === null || tile.id === 0 ? 10: this.__player.getStepDuration(tile.getFriction());
+    if (isDiagonal) {
+      stepDuration *= 1.414; // Apply diagonal movement penalty
+    }
+    console.log('stepDuration:', stepDuration);
     // Lock movement action
     this.__moveLock.lock(stepDuration);
 

@@ -6,7 +6,7 @@ import { IItem } from "interfaces/IThing";
 
 class ItemStack {
   private __items: any[] = [];
-  static MAX_CAPACITY: number = 3;
+  static MAX_CAPACITY: number = 10;
   static TOP_INDEX: number = 0xff;
 
   isFull(): boolean {
