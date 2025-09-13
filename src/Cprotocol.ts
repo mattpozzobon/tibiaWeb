@@ -282,7 +282,7 @@ export class ChannelWritePacket extends PacketWriter {
 
     super(
       CONST.PROTOCOL.SERVER.CREATURE_MESSAGE,
-      5 + encodedName.length + encodedMessage.length
+      4 + getEncodedLength(encodedName) + getEncodedLength(encodedMessage) + 1
     );
 
     this.writeUInt32(cid);

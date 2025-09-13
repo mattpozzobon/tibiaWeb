@@ -20,6 +20,11 @@ class CreatureHandler {
     this.__UIDCounter = 0xffff; // Initial unique identifier
   }
 
+  private __key(name: string): string {
+    // Normalize all player-name keys to UPPERCASE for consistent Map usage
+    return (name ?? "").toString().toUpperCase();
+  }
+
   assignUID(): number {
     return this.__UIDCounter++;
   }
@@ -72,11 +77,13 @@ class CreatureHandler {
   addPlayer(player: any, position: Position): boolean {
     if (!this.addCreaturePosition(player, position)) return false;
 
+    // IMPORTANT: reference the player first using normalized key
+    this.__referencePlayer(player);
+
     getGameServer().world.broadcastPacket(
       new PlayerLoginPacket(player.getProperty(CONST.PROPERTIES.NAME))
     );
 
-    this.__referencePlayer(player);
     player.broadcast(new EffectMagicPacket(player.position, CONST.EFFECT.MAGIC.TELEPORT));
 
     player.spellbook.applyCooldowns();
@@ -97,7 +104,7 @@ class CreatureHandler {
 
     this.sceneNPCs.forEach((npc) => npc.cutsceneHandler.think());
 
-    const connected =  this.getConnectedPlayers()
+    const connected = this.getConnectedPlayers();
     const activeChunks = getGameServer().world.lattice.getActiveChunks(connected);
 
     activeChunks.forEach((chunk) => {
@@ -114,11 +121,12 @@ class CreatureHandler {
   }
 
   private __deferencePlayer(name: string): boolean {
-    return this.__playerMap.delete(name);
+    return this.__playerMap.delete(this.__key(name));
   }
 
   private __referencePlayer(player: any): void {
-    this.__playerMap.set(player.getProperty(CONST.PROPERTIES.NAME), player);
+    const key = this.__key(player.getProperty(CONST.PROPERTIES.NAME));
+    this.__playerMap.set(key, player);
   }
 
   createNewPlayer(gameSocket: any, data: any): void {
@@ -139,7 +147,6 @@ class CreatureHandler {
     if (!this.addPlayer(player, tile.position)) {
       return gameSocket.closeError("An unexpected error occurred.");
     }
-    
 
     player.socketHandler.attachController(gameSocket);
   }
@@ -170,14 +177,11 @@ class CreatureHandler {
   }
 
   getPlayerByName(name: string): any | null {
-    const upperName = name.toUpperCase();
-    return this.__playerMap.get(upperName) || null;
+    return this.__playerMap.get(this.__key(name)) || null;
   }
 
   isPlayerOnline(player: any): boolean {
-    return (
-      this.getPlayerByName(player.getProperty(CONST.PROPERTIES.NAME)) === player
-    );
+    return this.getPlayerByName(player.getProperty(CONST.PROPERTIES.NAME)) === player;
   }
 
   dieCreature(creature: any): void {
@@ -294,28 +298,25 @@ class CreatureHandler {
     const tile = getGameServer().world.getTileFromWorldPosition(position);
 
     // Handle elevation moving up & down
-    if(creature.isPlayer()) {
-
-      if(tile === null) {
-
+    if (creature.isPlayer()) {
+      if (tile === null) {
         let dtile = getGameServer().world.getTileFromWorldPosition(position.down());
-        if(dtile.hasElevation() && !creature.position.isDiagonal(position)) {
+        if (dtile.hasElevation() && !creature.position.isDiagonal(position)) {
           return this.teleportCreature(creature, position.down());
         }
         return false;
       }
 
       // Elevation up
-      if(getGameServer().world.getTileFromWorldPosition(creature.position).hasElevation() && tile.isOccupied() && !creature.position.isDiagonal(position)) {
-        if(getGameServer().world.getTileFromWorldPosition(creature.position.up().south().east()) === null) {
+      if (getGameServer().world.getTileFromWorldPosition(creature.position).hasElevation() && tile.isOccupied() && !creature.position.isDiagonal(position)) {
+        if (getGameServer().world.getTileFromWorldPosition(creature.position.up().south().east()) === null) {
           return this.teleportCreature(creature, position.up());
         }
       }
-
     }
 
     // Get the destination tile: this may be different from the requested position
-    if(tile.hasDestination()) {
+    if (tile.hasDestination()) {
       return this.teleportCreature(creature, position);
     }
 
@@ -328,7 +329,7 @@ class CreatureHandler {
     let stepDuration = creature.getStepDuration(tile.getFriction());
 
     this.updateCreaturePosition(creature, position);
-    
+
     creature.broadcast(
       new CreatureMovePacket(creature.getId(), position, stepDuration)
     );

@@ -87,9 +87,9 @@ export class CommandHandler {
         break;
 
       case "/-":
-        player.decreaseHealth(1);
-        player.decreaseMana(1);
-        player.decreaseEnergy(1);
+        player.decreaseHealth(10);
+        player.decreaseMana(10);
+        player.decreaseEnergy(10);
         getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.DRAWBLOOD);
         break;
 

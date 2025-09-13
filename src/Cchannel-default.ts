@@ -26,10 +26,7 @@ export class DefaultChannel extends Channel {
     const { message, loudness } = packet;
 
     // Administrators have a red color; players yellow
-    const color =
-      player.getProperty(CONST.PROPERTIES.ROLE) === CONST.ROLES.GOD
-        ? CONST.COLOR.RED
-        : CONST.COLOR.YELLOW;
+    const color = player.getProperty(CONST.PROPERTIES.ROLE) === CONST.ROLES.GOD ? CONST.COLOR.RED : CONST.COLOR.YELLOW;
 
     // Forward to the command handler
     if (message.startsWith("/")) {

@@ -115,7 +115,7 @@
       "DEPTH": 8
     },
     "CLOCK": {
-      "SPEED": 200,
+      "SPEED": 10,
       "START": "08:00"
     },
     "SPAWNS": {
