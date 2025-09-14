@@ -77,12 +77,8 @@ export class EffectDistancePacket extends PacketWriter {
 export class PlayerLoginPacket extends PacketWriter {
   constructor(name: string) {
     const stringEncoded = PacketWriter.encodeString(name);
-    const totalLength = getEncodedLength(stringEncoded); // includes 2-byte length
-
-    super(CONST.PROTOCOL.SERVER.PLAYER_LOGIN, totalLength);
-
-    this.writeUInt16(stringEncoded.length);  // ✅ Write 2-byte length prefix
-    this.writeBuffer(stringEncoded);         // ✅ Then write actual bytes
+    super(CONST.PROTOCOL.SERVER.PLAYER_LOGIN, getEncodedLength(stringEncoded));
+    this.writeBuffer(stringEncoded); // writeBuffer writes 2-byte length + bytes
   }
 }
 

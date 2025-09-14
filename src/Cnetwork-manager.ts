@@ -92,7 +92,8 @@ export class NetworkManager {
         gs.player!.handleBuyOffer(p.readBuyOffer()),
   
       // TODO
-      // [CONST.PROTOCOL.CLIENT.TARGET_CANCEL]: (gs, p) => gs.player!.setTarget(null),
+      //[CONST.PROTOCOL.CLIENT.TARGET_CANCEL]:            (gs, p) => gs.player!.setTarget(null),
+
       [CONST.PROTOCOL.CLIENT.MOVE]:                     (gs, p) => gs.player!.movementHandler.handleMovement(p.readUInt8()),
   
       [CONST.PROTOCOL.CLIENT.FRIEND_ADD]:               (gs, p) => gs.player!.friendlist.add(p.readString()),
