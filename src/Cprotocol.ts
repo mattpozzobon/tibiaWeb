@@ -403,10 +403,14 @@ export class CombatLockPacket extends PacketWriter {
 
 export class ChannelPrivatePacket extends PacketWriter {
   constructor(name: string, message: string) {
-    const encodedName = PacketWriter.encodeString(name);
+    const encodedName = PacketWriter.encodeString(name);     // includes 2-byte length when written
     const encodedMessage = PacketWriter.encodeString(message);
 
-    super(CONST.PROTOCOL.SERVER.MESSAGE_PRIVATE, encodedName.length + encodedMessage.length);
+    //  name(2+N) + message(2+M)
+    super(
+      CONST.PROTOCOL.SERVER.MESSAGE_PRIVATE,
+      getEncodedLength(encodedName) + getEncodedLength(encodedMessage)
+    );
 
     this.writeBuffer(encodedName);
     this.writeBuffer(encodedMessage);

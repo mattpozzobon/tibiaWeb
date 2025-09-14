@@ -213,25 +213,22 @@ export class PacketReader extends Packet {
   }
 
   readOutfit(): Outfit {
-    /*
-     * Reads an outfit from a websocket packet
-     */
     return new Outfit({
       id: this.readUInt16(),
+      equipment: {
+        hair: this.readUInt16(),
+        head: 0,
+        body: 0,
+        legs: 0,
+        feet: 0,
+        lefthand: 0,
+        righthand: 0,
+      },
       details: {
         head: this.readUInt8(),
         body: this.readUInt8(),
         legs: this.readUInt8(),
         feet: this.readUInt8(),
-      },
-      equipment: {
-        hair: this.readUInt16(),
-        head: this.readUInt16(),
-        body: this.readUInt16(),
-        legs: this.readUInt16(),
-        feet: this.readUInt16(),
-        lefthand: this.readUInt16(),
-        righthand: this.readUInt16(),
       },
       mount: this.readUInt16(),
       mounted: this.readBoolean(),

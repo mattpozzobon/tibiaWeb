@@ -120,23 +120,17 @@ export default class Creature extends EventEmitter implements ICreature{
 
   changeOutfit(outfit: Outfit): void {
     if (!outfit.isValid()) return;
-  
-    // Get current outfit
-    const currentOutfit = this.properties.getProperty(CONST.PROPERTIES.OUTFIT);
-  
-    // Merge only the `details` section while keeping the rest
-    const updatedOutfit = new Outfit({
-      id: currentOutfit.id,
-      details: outfit.details, // ✅ Update only details (head, body, legs, feet)
-      equipment: currentOutfit.equipment, // Keep previous equipment
-      mount: currentOutfit.mount,
-      mounted: currentOutfit.mounted,
-      addonOne: currentOutfit.addonOne,
-      addonTwo: currentOutfit.addonTwo,
-    });
-  
-    // Set only the updated outfit
-    this.properties.setProperty(CONST.PROPERTIES.OUTFIT, updatedOutfit);
+
+    const current = this.properties.getProperty(CONST.PROPERTIES.OUTFIT) as Outfit;
+    if (!current) return;
+
+    const updated = current.copy();
+    if (updated.equipment && typeof outfit.equipment?.hair === "number") {
+        updated.equipment.hair = outfit.equipment.hair;
+    }
+    updated.details = outfit.details; 
+
+    this.properties.setProperty(CONST.PROPERTIES.OUTFIT, updated);
   }
 
   getOutfit(): any {
