@@ -96,9 +96,9 @@ export class NetworkManager {
 
       [CONST.PROTOCOL.CLIENT.MOVE]:                     (gs, p) => gs.player!.movementHandler.handleMovement(p.readUInt8()),
   
-      [CONST.PROTOCOL.CLIENT.FRIEND_ADD]:               (gs, p) => gs.player!.friendlist.add(p.readString()),
-  
-      [CONST.PROTOCOL.CLIENT.FRIEND_REMOVE]:            (gs, p) => gs.player!.friendlist.remove(p.readString()),
+      [CONST.PROTOCOL.CLIENT.FRIEND_ADD]:               (gs, p) => gs.player!.friendlist.add(p.readString(), gs.player!),
+
+      [CONST.PROTOCOL.CLIENT.FRIEND_REMOVE]:            (gs, p) => gs.player!.friendlist.remove(p.readString(), gs.player!),
   
       [CONST.PROTOCOL.CLIENT.THING_USE]:                (gs, p) => gs.player!.useHandler.handleItemUse(p.readPositionAndIndex(gs.player!)),
   

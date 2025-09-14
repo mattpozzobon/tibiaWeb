@@ -1,4 +1,5 @@
 import { CreatureForgetPacket, CreatureMovePacket, CreatureTeleportPacket, EffectMagicPacket, PlayerLoginPacket } from "./Cprotocol";
+import { FriendStatusPacket } from "./Cfriendlist";
 import { CONST, getGameServer } from "./helper/appContext";
 import { Position } from "./Cposition";
 import Player from "./Cplayer";
@@ -96,6 +97,9 @@ class CreatureHandler {
       );
     }
 
+    // Send friend status updates to online friends
+    // player.friendlist.notifyFriendsOfLogin(player);
+
     return true;
   }
 
@@ -156,6 +160,9 @@ class CreatureHandler {
   }
 
   removePlayer(player: any): void {
+    // Notify friends of logout before cleanup
+    // player.friendlist.notifyFriendsOfLogout(player);
+    
     this.__deferencePlayer(player.getProperty(CONST.PROPERTIES.NAME));
     player.cleanup();
     this.removeCreature(player);

@@ -432,7 +432,7 @@ export class NPCTradePacket extends PacketWriter {
 }
 
 export class PlayerStatePacket extends PacketWriter {
-  constructor(player: any) {
+  constructor(player: IPlayer) {
     const stringEncoded = PacketWriter.encodeString(player.getProperty(CONST.PROPERTIES.NAME));
     super(CONST.PROTOCOL.SERVER.STATE_PLAYER, PacketWriter.MAX_PACKET_SIZE);
 
@@ -440,17 +440,16 @@ export class PlayerStatePacket extends PacketWriter {
 
     // 1. id
     this.writeUInt32(player.getId());
-
     // 2. skills (custom function, already matches)
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.MAGIC));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.FIST));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.CLUB));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.SWORD));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.AXE));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.DISTANCE));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.SHIELDING));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.FISHING));
-    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.EXPERIENCE));
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.MAGIC) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.FIST) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.CLUB) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.SWORD) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.AXE) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.DISTANCE) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.SHIELDING) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.FISHING) || 0);
+    this.writeUInt32(player.skills.getSkillValue(CONST.PROPERTIES.EXPERIENCE) || 0);
 
     // 3. attack
     this.writeUInt8(player.getProperty(CONST.PROPERTIES.ATTACK));
@@ -467,8 +466,23 @@ export class PlayerStatePacket extends PacketWriter {
     // 7. spellbook (placeholder)
     this.writeUInt8(0); // TODO: send real spells
 
-    // 8. friendlist (placeholder)
-    this.writeUInt8(0); // TODO: send real friend list
+    // 8. friendlist
+    const friends = player.friendlist.getFriendStatuses(player) || [];
+    const count = Math.min(255, friends.length);
+    console.log('friends', friends);
+    this.writeUInt8(count);
+
+    for (let i = 0; i < count; i++) {
+      const f = friends[i];
+      const nameBytes = Buffer.from(f.name || '', 'utf8');
+      const n = Math.min(255, nameBytes.length);
+
+      this.writeUInt8(n);                 // 1-byte length
+      for (let j = 0; j < n; j++) {       // raw bytes, NO writeBuffer here
+        this.writeUInt8(nameBytes[j]);
+      }
+      this.writeUInt8(f.online ? 1 : 0);  // status byte
+    }
 
     // 9. outfit
     this.writeOutfit(player.getProperty(CONST.PROPERTIES.OUTFIT));
