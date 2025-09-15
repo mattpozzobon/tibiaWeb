@@ -1,18 +1,18 @@
 import { Server, WebSocket } from "ws";
 import { IncomingMessage } from "http";
 import { CONFIG, CONST, getGameServer } from "./helper/appContext";
-import { AccountDatabase } from "./Caccount-database";
+import { AccountDatabaseGrouped } from "./Caccount-database-grouped";
 import { WebsocketSocketHandler } from "./Cwebsocket-server-socket-handler";
 import GameSocket from "./Cgamesocket";
 
 class WebsocketServer {
   websocket: Server;
-  accountDatabase: AccountDatabase;
+  accountDatabase: AccountDatabaseGrouped;
   socketHandler: WebsocketSocketHandler;
 
   constructor() {
     this.websocket = new Server({ noServer: true, perMessageDeflate: this.__getCompressionConfiguration()});
-    this.accountDatabase = new AccountDatabase(CONFIG.DATABASE.ACCOUNT_DATABASE);
+    this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
     this.socketHandler = new WebsocketSocketHandler();
     this.websocket.on("connection", (socket: WebSocket, request: IncomingMessage, characterId: number) => {
       this.__handleConnection(socket, request, characterId);
@@ -79,21 +79,13 @@ class WebsocketServer {
         return gameSocket.terminate();
       }
 
-      if (!result || !result.data) {
-        console.warn("No character found for ID, or missing data.");
+      if (!result) {
+        console.warn("No character found for ID.");
         return gameSocket.closeError("Character data missing.");
       }
 
-      let character = result.data;
-
-      if (typeof character === "string") {
-        try {
-          character = JSON.parse(character);
-        } catch (e) {
-          console.error("❌ Failed to parse character JSON:", e);
-          return gameSocket.closeError("Character data corrupted.");
-        }
-      }
+      // Convert the grouped database format to legacy format for compatibility
+      const character = this.accountDatabase.characterDataToLegacyFormat(result);
 
       this.__acceptCharacterConnection(gameSocket, character);
     });

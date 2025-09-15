@@ -2,7 +2,7 @@
 import * as http from "http";
 import * as url from "url";
 import { CONFIG } from "./helper/appContext";
-import { AccountDatabase } from "./Caccount-database";
+import { AccountDatabaseGrouped } from "./Caccount-database-grouped";
 import { admin } from './Clogin-server-firebase';
 
 interface QueryObject {
@@ -13,14 +13,14 @@ interface QueryObject {
 class LoginServer {
   private __host: string;
   private __port: number;
-  public accountDatabase: AccountDatabase;
+  public accountDatabase: AccountDatabaseGrouped;
   public server: http.Server;
 
   constructor() {
     this.__host = CONFIG.LOGIN.HOST;
     this.__port = CONFIG.LOGIN.PORT;
 
-    this.accountDatabase = new AccountDatabase(CONFIG.DATABASE.ACCOUNT_DATABASE);
+    this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
 
     this.server = http.createServer((req, res) => {
       this.__handleRequest(req, res).catch(err => {
