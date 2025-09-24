@@ -8,8 +8,15 @@
     {
       "name": "Right-hand Fire",
       "id": 2191,
-      "sprite_id": 920
+      "sprite_id": 921
     },
+
+    {
+      "name": "Left-hand Fire",
+      "id": 2191,
+      "sprite_id": 921
+    },
+
 
 
 

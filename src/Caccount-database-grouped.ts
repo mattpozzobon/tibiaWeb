@@ -16,7 +16,7 @@ export interface CharacterData {
   outfit: string;          // JSON: outfit data
   skills: string;          // JSON: all skills
   containers: string;      // JSON: containers data
-  friends: string;         // JSON: friends array
+  friends: string;         // JSON: {friends: [], requests: []}
   spellbook: string;       // JSON: spellbook data
 }
 
@@ -184,7 +184,7 @@ export class AccountDatabaseGrouped {
       JSON.stringify(outfit),
       JSON.stringify(skills),
       JSON.stringify(data.containers || { depot: [], equipment: [], inbox: [], keyring: [] }),
-      JSON.stringify(data.friends || []),
+      JSON.stringify(data.friends || { friends: [], requests: [] }),
       JSON.stringify(data.spellbook || { availableSpells: [], cooldowns: [] }),
       characterId
     ];
@@ -198,7 +198,7 @@ export class AccountDatabaseGrouped {
     const skills = this.parseJSON(data.skills, {});
     const outfit = this.parseJSON(data.outfit, {});
     const containers = this.parseJSON(data.containers, { depot: [], equipment: [], inbox: [], keyring: [] });
-    const friends = this.parseJSON(data.friends, []);
+    const friendsData = this.parseJSON(data.friends, { friends: [], requests: [] });
     const spellbook = this.parseJSON(data.spellbook, { availableSpells: [], cooldowns: [] });
     
     const cleanProperties = { ...properties };
@@ -210,19 +210,20 @@ export class AccountDatabaseGrouped {
       properties: {
         ...cleanProperties,
         name: data.name, 
-        availableOutfits: outfit.availableOutfits, 
-        availableMounts: outfit.availableMounts , 
+        availableOutfits: (outfit as any).availableOutfits || [128, 129, 130, 131], 
+        availableMounts: (outfit as any).availableMounts || [], 
         outfit: outfit 
       },
       skills,
       outfit,
       containers,
-      friends,
+      friends: friendsData.friends || [],
+      friendRequests: friendsData.requests || [],
       spellbook
     };
   }
 
-  private parseJSON(jsonString: string | null | undefined, defaultValue: any): any {
+  private parseJSON<T>(jsonString: string | null | undefined, defaultValue: T): T {
     if (!jsonString || jsonString === 'undefined' || jsonString === 'null') {
       return defaultValue;
     }
@@ -232,6 +233,137 @@ export class AccountDatabaseGrouped {
       console.warn('Failed to parse JSON:', jsonString, 'using default value');
       return defaultValue;
     }
+  }
+
+  // Friend request management methods
+  public getCharacterByName(name: string, callback: (error: Error | null, character: CharacterData | null) => void): void {
+    this.db.get(
+      `SELECT 
+        id, uid, name, sex, role, last_visit,
+        position, temple_position, properties, outfit, skills,
+        containers, friends, spellbook
+      FROM characters WHERE name = ?`,
+      [name],
+      (err, row) => {
+        if (err) return callback(err, null);
+        if (!row) return callback(null, null);
+        callback(null, row as CharacterData);
+      }
+    );
+  }
+
+  public addFriendRequest(targetName: string, requesterName: string, callback: (error: Error | null) => void): void {
+    this.db.get(
+      `SELECT friends FROM characters WHERE name = ?`,
+      [targetName],
+      (err, row) => {
+        if (err) return callback(err);
+        if (!row) return callback(new Error('Character not found'));
+
+        // @ts-ignore
+        const friendsData = this.parseJSON(row.friends, { friends: [], requests: [] });
+        
+        // Check if request already exists
+        // @ts-ignore
+        if (friendsData.requests.includes(requesterName)) {
+          return callback(new Error('Friend request already exists'));
+        }
+
+        // Add the request
+        // @ts-ignore
+        friendsData.requests.push(requesterName);
+
+        this.db.run(
+          `UPDATE characters SET friends = ? WHERE name = ?`,
+          [JSON.stringify(friendsData), targetName],
+          callback
+        );
+      }
+    );
+  }
+
+  public removeFriendRequest(targetName: string, requesterName: string, callback: (error: Error | null) => void): void {
+    this.db.get(
+      `SELECT friends FROM characters WHERE name = ?`,
+      [targetName],
+      (err, row) => {
+        if (err) return callback(err);
+        if (!row) return callback(new Error('Character not found'));
+
+        // @ts-ignore
+        const friendsData = this.parseJSON(row.friends, { friends: [], requests: [] });
+        
+        // @ts-ignore
+        const index = friendsData.requests.indexOf(requesterName);
+        
+        if (index === -1) {
+          return callback(new Error('Friend request not found'));
+        }
+
+        // Remove the request
+        friendsData.requests.splice(index, 1);
+
+        this.db.run(
+          `UPDATE characters SET friends = ? WHERE name = ?`,
+          [JSON.stringify(friendsData), targetName],
+          callback
+        );
+      }
+    );
+  }
+
+  public addFriendToBothPlayers(player1Name: string, player2Name: string, callback: (error: Error | null) => void): void {
+    // Add player2 to player1's friends list
+    this.db.get(
+      `SELECT friends FROM characters WHERE name = ?`,
+      [player1Name],
+      (err, row) => {
+        if (err) return callback(err);
+        if (!row) return callback(new Error('Player 1 not found'));
+
+        // @ts-ignore
+        const friendsData = this.parseJSON(row.friends, { friends: [], requests: [] });
+        
+        // @ts-ignore
+        if (!friendsData.friends.includes(player2Name)) {
+          // @ts-ignore
+          friendsData.friends.push(player2Name);
+        }
+
+        this.db.run(
+          `UPDATE characters SET friends = ? WHERE name = ?`,
+          [JSON.stringify(friendsData), player1Name],
+          (err) => {
+            if (err) return callback(err);
+
+            // Add player1 to player2's friends list
+            this.db.get(
+              `SELECT friends FROM characters WHERE name = ?`,
+              [player2Name],
+              (err, row) => {
+                if (err) return callback(err);
+                if (!row) return callback(new Error('Player 2 not found'));
+
+                // @ts-ignore
+                const friendsData2 = this.parseJSON(row.friends, { friends: [], requests: [] });
+                
+                // @ts-ignore
+                if (!friendsData2.friends.includes(player1Name)) {
+                  // @ts-ignore
+                  friendsData2.friends.push(player1Name);
+                }
+
+                this.db.run(
+                  `UPDATE characters SET friends = ? WHERE name = ?`,
+                  [JSON.stringify(friendsData2), player2Name],
+                  callback
+                );
+              }
+            );
+          }
+        );
+      }
+    );
   }
 
   close(): void {

@@ -7,10 +7,12 @@ import { IPCSocket } from "./Cipcsocket";
 import { IDatabase } from "interfaces/IDatabase";
 import { IWorld } from "interfaces/IWorld";
 import { IGameServer } from "interfaces/IGameserver";
+import { AccountDatabaseGrouped } from "./Caccount-database-grouped";
 
 
 class GameServer implements IGameServer{
   database: IDatabase;
+  accountDatabase: AccountDatabaseGrouped;
   world!: IWorld;
   gameLoop: GameLoop;
   server: HTTPServer;
@@ -31,6 +33,9 @@ class GameServer implements IGameServer{
 
     // Connect to the information database that keeps all the server data
     this.database = new Database();
+    
+    // Initialize the account database for character management
+    this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
 
     // Create the game loop with an interval and callback function
     this.gameLoop = new GameLoop(CONFIG.SERVER.MS_TICK_INTERVAL, this.__loop.bind(this));

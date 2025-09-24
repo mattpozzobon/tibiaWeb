@@ -468,21 +468,11 @@ export class PlayerStatePacket extends PacketWriter {
 
     // 8. friendlist
     const friends = player.friendlist.getFriendStatuses(player) || [];
-    const count = Math.min(255, friends.length);
-    console.log('friends', friends);
-    this.writeUInt8(count);
-
-    for (let i = 0; i < count; i++) {
-      const f = friends[i];
-      const nameBytes = Buffer.from(f.name || '', 'utf8');
-      const n = Math.min(255, nameBytes.length);
-
-      this.writeUInt8(n);                 // 1-byte length
-      for (let j = 0; j < n; j++) {       // raw bytes, NO writeBuffer here
-        this.writeUInt8(nameBytes[j]);
-      }
-      this.writeUInt8(f.online ? 1 : 0);  // status byte
-    }
+    this.writeFriends(friends);
+    
+    // 8.5. friend requests
+    const friendRequests = player.friendlist.getFriendRequests();
+    this.writeFriendRequests(friendRequests);
 
     // 9. outfit
     this.writeOutfit(player.getProperty(CONST.PROPERTIES.OUTFIT));
@@ -504,6 +494,18 @@ export class PlayerStatePacket extends PacketWriter {
 
     // 11. conditions
     this.writeUInt8(0); // Placeholder
+  }
+}
+
+export class FriendUpdatePacket extends PacketWriter {
+  constructor(friends: any[], friendRequests: string[]) {
+    super(CONST.PROTOCOL.SERVER.FRIEND_UPDATE, PacketWriter.MAX_PACKET_SIZE);
+    
+    // Write friends list
+    this.writeFriends(friends);
+    
+    // Write friend requests list
+    this.writeFriendRequests(friendRequests);
   }
 }
 
@@ -548,4 +550,5 @@ export const Packets = {
   ChannelPrivatePacket,
   NPCTradePacket,
   PlayerStatePacket,
+  FriendUpdatePacket,
 };

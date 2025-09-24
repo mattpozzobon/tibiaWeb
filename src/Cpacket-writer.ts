@@ -184,6 +184,45 @@ export class PacketWriter extends Packet {
     });
   }
 
+  writeFriends(friends: any[]): void {
+    /*
+     * Writes the friend list to the client
+     */
+    const count = Math.min(255, friends.length);
+    this.writeUInt8(count);
+
+    for (let i = 0; i < count; i++) {
+      const f = friends[i];
+      const nameBytes = Buffer.from(f.name || '', 'utf8');
+      const n = Math.min(255, nameBytes.length);
+
+      this.writeUInt8(n);                 // 1-byte length
+      for (let j = 0; j < n; j++) {       // raw bytes, NO writeBuffer here
+        this.writeUInt8(nameBytes[j]);
+      }
+      this.writeUInt8(f.online ? 1 : 0);  // status byte
+    }
+  }
+
+  writeFriendRequests(requests: string[]): void {
+    /*
+     * Writes the friend requests list to the client
+     */
+    const count = Math.min(255, requests.length);
+    this.writeUInt8(count);
+
+    for (let i = 0; i < count; i++) {
+      const requesterName = requests[i];
+      const nameBytes = Buffer.from(requesterName || '', 'utf8');
+      const n = Math.min(255, nameBytes.length);
+
+      this.writeUInt8(n);                 // 1-byte length
+      for (let j = 0; j < n; j++) {       // raw bytes, NO writeBuffer here
+        this.writeUInt8(nameBytes[j]);
+      }
+    }
+  }
+
   writeEquipment(equipment: any): void {
     /*
      * Writes all equipment to a packet

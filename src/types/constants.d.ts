@@ -79,6 +79,7 @@ export interface Constants {
       SPELL_REMOVE: number;
       CREATURE_PROPERTY: number;
       CHANNEL_JOIN: number;
+      FRIEND_UPDATE: number;
     };
   };
   DIRECTION: {

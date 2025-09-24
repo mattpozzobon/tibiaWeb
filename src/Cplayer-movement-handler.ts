@@ -58,7 +58,6 @@ class PlayerMovementHandler {
     if (isDiagonal) {
       stepDuration *= 1.414; // Apply diagonal movement penalty
     }
-    console.log('stepDuration:', stepDuration);
     // Lock movement action
     this.__moveLock.lock(stepDuration);
 

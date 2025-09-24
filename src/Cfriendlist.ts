@@ -2,9 +2,11 @@ import { CONST, getGameServer } from "./helper/appContext";
 
 export class Friendlist {
   private friends: Set<string>;
+  private friendRequests: string[];
 
-  constructor(friends: string[] = []) {
-    this.friends = new Set(friends);
+  constructor(friends: string[] = [], friendRequests: string[] = []) {
+    this.friends = new Set(friends); 
+    this.friendRequests = friendRequests;
   }
 
   // Legacy add method - now sends friend request
@@ -13,7 +15,7 @@ export class Friendlist {
       this.sendFriendRequest(player, name);
     } else {
       // Direct add for backward compatibility
-      if (!this.friends.has(name)) {
+    if (!this.friends.has(name)) {
         this.friends.add(name);
       }
     }
@@ -31,10 +33,12 @@ export class Friendlist {
     }
   }
 
-  // Send friend request to another player
+  // Send friend request to another player OR accept pending request
   sendFriendRequest(player: any, targetName: string): void {
+    const requesterName = player.getProperty(CONST.PROPERTIES.NAME);
+    
     // Can't add yourself
-    if (targetName.toLowerCase() === player.getProperty(CONST.PROPERTIES.NAME).toLowerCase()) {
+    if (targetName.toLowerCase() === requesterName.toLowerCase()) {
       player.sendCancelMessage("You cannot add yourself as a friend.");
       return;
     }
@@ -45,30 +49,61 @@ export class Friendlist {
       return;
     }
 
-    // Try to find the target player
-    const targetPlayer = getGameServer().world.creatureHandler.getPlayerByName(targetName);
-    if (targetPlayer) {
-      // Player is online, add them directly (auto-accept)
-      this.friends.add(targetName);
-      targetPlayer.friendlist.friends.add(player.getProperty(CONST.PROPERTIES.NAME));
-      
-      // Send friend status updates to both players
-      player.sendCancelMessage(`${targetName} has been added to your friends list.`);
-      targetPlayer.sendCancelMessage(`${player.getProperty(CONST.PROPERTIES.NAME)} has added you as a friend.`);
-      
-      // Send friend list updates to both players
-      player.write(new FriendListPacket(player.friendlist.getFriendStatuses(player)));
-      targetPlayer.write(new FriendListPacket(targetPlayer.friendlist.getFriendStatuses(targetPlayer)));
-    } else {
-      // Player is offline, just add them
-      this.friends.add(targetName);
-      player.sendCancelMessage(`${targetName} has been added to your friends list.`);
-      player.write(new FriendListPacket(player.friendlist.getFriendStatuses(player)));
+    // Check if there's a pending request from this player
+    if (this.friendRequests.includes(targetName)) {
+      // Accept the pending request
+      this.acceptFriendRequest(player, targetName);
+      return;
     }
+
+    const gameServer = getGameServer();
+    
+    // Check if target player exists in database
+    gameServer.accountDatabase.getCharacterByName(targetName, (error: Error | null, character: any) => {
+      if (error || !character) {
+        player.sendCancelMessage(`${targetName} does not exist.`);
+        return;
+      }
+
+      // Always send a friend request first (both online and offline players)
+      gameServer.accountDatabase.addFriendRequest(targetName, requesterName, (err: Error | null) => {
+        if (err) {
+          if (err.message === 'Friend request already exists') {
+            player.sendCancelMessage(`You have already sent a friend request to ${targetName}.`);
+          } else {
+            player.sendCancelMessage(`Error sending friend request to ${targetName}.`);
+            console.error('Error adding friend request:', err);
+          }
+          return;
+        }
+        
+        // Check if target player is online to notify them immediately
+        const targetPlayer = gameServer.world.creatureHandler.getPlayerByName(targetName);
+        if (targetPlayer) {
+          // Add the request to their local friend requests list
+          targetPlayer.friendlist.addFriendRequest(requesterName);
+          
+          // Send notification to target player
+          targetPlayer.sendCancelMessage(`${requesterName} sent you a friend request.`);
+          
+          // Send friend list update to target player
+          targetPlayer.friendlist.sendFriendUpdate(targetPlayer);
+        }
+        
+        player.sendCancelMessage(`Friend request sent to ${targetName}.`);
+      });
+    });
   }
 
   // Remove a friend
   removeFriend(player: any, friendName: string): void {
+    // Check if it's a pending friend request to decline
+    if (this.friendRequests.includes(friendName)) {
+      this.declineFriendRequest(player, friendName);
+      return;
+    }
+
+    // Check if it's an actual friend to remove
     if (!this.friends.has(friendName)) {
       player.sendCancelMessage(`${friendName} is not your friend.`);
       return;
@@ -84,10 +119,13 @@ export class Friendlist {
       friendPlayer.friendlist.friends.delete(player.getProperty(CONST.PROPERTIES.NAME));
       
       // Send friend status updates to both players
-      player.write(new FriendListPacket(player.friendlist.getFriendStatuses(player)));
-      friendPlayer.write(new FriendListPacket(friendPlayer.friendlist.getFriendStatuses(friendPlayer)));
+      player.friendlist.sendFriendUpdate(player);
+      friendPlayer.friendlist.sendFriendUpdate(friendPlayer);
       
       friendPlayer.sendCancelMessage(`${player.getProperty(CONST.PROPERTIES.NAME)} removed you from their friends list.`);
+    } else {
+      // Send update to player even if friend is offline
+      player.friendlist.sendFriendUpdate(player);
     }
 
     player.sendCancelMessage(`${friendName} has been removed from your friends list.`);
@@ -132,8 +170,125 @@ export class Friendlist {
     }
   }
 
-  toJSON(): string[] {
-    return Array.from(this.friends);
+  // Accept a friend request
+  acceptFriendRequest(player: any, requesterName: string): void {
+    const gameServer = getGameServer();
+    
+    // Remove the request from database
+    gameServer.accountDatabase.removeFriendRequest(player.getProperty(CONST.PROPERTIES.NAME), requesterName, (err: Error | null) => {
+      if (err) {
+        player.sendCancelMessage(`Error accepting friend request from ${requesterName}.`);
+        console.error('Error removing friend request:', err);
+        return;
+      }
+      
+      // Add both players as friends
+      gameServer.accountDatabase.addFriendToBothPlayers(player.getProperty(CONST.PROPERTIES.NAME), requesterName, (err: Error | null) => {
+        if (err) {
+          player.sendCancelMessage(`Error adding ${requesterName} as friend.`);
+          console.error('Error adding friend:', err);
+          return;
+        }
+        
+        // Update local friend lists
+        this.friends.add(requesterName);
+        this.removeFriendRequest(requesterName);
+        
+        // Check if requester is online and update their friend list
+        const requesterPlayer = gameServer.world.creatureHandler.getPlayerByName(requesterName);
+        if (requesterPlayer) {
+          requesterPlayer.friendlist.friends.add(player.getProperty(CONST.PROPERTIES.NAME));
+          
+          // Send notifications to both players
+          player.sendCancelMessage(`${requesterName} has been added to your friends list.`);
+          requesterPlayer.sendCancelMessage(`${player.getProperty(CONST.PROPERTIES.NAME)} accepted your friend request.`);
+          
+          // Send friend list updates to both players
+          player.friendlist.sendFriendUpdate(player);
+          requesterPlayer.friendlist.sendFriendUpdate(requesterPlayer);
+        } else {
+          player.sendCancelMessage(`${requesterName} has been added to your friends list.`);
+          player.friendlist.sendFriendUpdate(player);
+        }
+      });
+    });
+  }
+
+  // Decline a friend request
+  declineFriendRequest(player: any, requesterName: string): void {
+    const gameServer = getGameServer();
+    
+    // Remove the request from database
+    gameServer.accountDatabase.removeFriendRequest(player.getProperty(CONST.PROPERTIES.NAME), requesterName, (err: Error | null) => {
+      if (err) {
+        player.sendCancelMessage(`Error declining friend request from ${requesterName}.`);
+        console.error('Error removing friend request:', err);
+        return;
+      }
+      
+      this.removeFriendRequest(requesterName);
+      player.sendCancelMessage(`Friend request from ${requesterName} has been declined.`);
+      
+      // Send friend update to player
+      this.sendFriendUpdate(player);
+    });
+  }
+
+  // Get pending friend requests (synchronous version for PlayerStatePacket)
+  getFriendRequests(): string[] {
+    return this.friendRequests;
+  }
+
+  // Get pending friend requests (asynchronous version for database operations)
+  getFriendRequestsAsync(player: any, callback: (requests: string[]) => void): void {
+    const gameServer = getGameServer();
+    
+    gameServer.accountDatabase.getCharacterByName(player.getProperty(CONST.PROPERTIES.NAME), (error: Error | null, character: any) => {
+      if (error || !character) {
+        callback([]);
+        return;
+      }
+      
+      const friendsData = JSON.parse(character.friends || '{"friends": [], "requests": []}');
+      callback(friendsData.requests || []);
+    });
+  }
+
+  // Add a friend request to the local list
+  addFriendRequest(requesterName: string): void {
+    if (!this.friendRequests.includes(requesterName)) {
+      this.friendRequests.push(requesterName);
+    }
+  }
+
+  // Remove a friend request from the local list
+  removeFriendRequest(requesterName: string): void {
+    const index = this.friendRequests.indexOf(requesterName);
+    if (index !== -1) {
+      this.friendRequests.splice(index, 1);
+    }
+  }
+
+  // Update friend requests from database data
+  updateFriendRequests(friendRequests: string[]): void {
+    this.friendRequests = friendRequests;
+  }
+
+  // Send friend update packet to player
+  sendFriendUpdate(player: any): void {
+    const friends = this.getFriendStatuses(player);
+    const friendRequests = this.getFriendRequests();
+    
+    // Import FriendUpdatePacket dynamically to avoid circular imports
+    const { FriendUpdatePacket } = require('./Cprotocol');
+    player.write(new FriendUpdatePacket(friends, friendRequests));
+  }
+
+  toJSON(): { friends: string[], requests: string[] } {
+    return {
+      friends: Array.from(this.friends),
+      requests: this.friendRequests
+    };
   }
 }
 

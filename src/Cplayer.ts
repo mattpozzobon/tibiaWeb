@@ -52,7 +52,7 @@ export default class Player extends Creature implements IPlayer{
     this.addPlayerProperties(data.properties);
     this.socketHandler = new SocketHandler(this);
     this.skills = new Skills(this, data.skills);
-    this.friendlist = new Friendlist(data.friends);
+    this.friendlist = new Friendlist(data.friends, data.friendRequests || []);
     this.containerManager = new ContainerManager(this, data.containers);
     this.spellbook = new Spellbook(this, data.spellbook);
     this.idleHandler = new PlayerIdleHandler(this);

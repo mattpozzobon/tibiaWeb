@@ -67,12 +67,12 @@ export class PacketHandler {
      */
     const { fromWhere, fromIndex, toWhere, toIndex, count } = packet;
 
-    // console.log('fromWhere.constructor.name', fromWhere.constructor.name);
-    // console.log('toWhere.constructor.name', toWhere.constructor.name);
-    // console.log('toWhere',toWhere);
-    // console.log('fromIndex',fromIndex);
-    // console.log('toIndex',toIndex);
-    // console.log('count',count);
+    //console.log('fromWhere.constructor.name', fromWhere.constructor.name);
+    //console.log('toWhere.constructor.name', toWhere.constructor.name);
+    //console.log('toWhere',toWhere);
+    console.log('fromIndex',fromIndex);
+    console.log('toIndex',toIndex);
+    console.log('count',count);
 
     if (!fromWhere || !toWhere) return;
 
