@@ -135,7 +135,12 @@
     "BACKPACK": 6,
     "NECKLACE": 7,
     "RING": 8,
-    "QUIVER": 9
+    "QUIVER": 9,
+    "RING2": 10,
+    "RING3": 11,
+    "RING4": 12,
+    "RING5": 13,
+    "BELT": 14
   },
   "VOCATION": {
     "NONE": 0,

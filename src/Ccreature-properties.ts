@@ -68,7 +68,7 @@ export class CreatureProperties {
   
     // Ensure equipment exists
     if (!newOutfit.equipment) {
-      newOutfit.equipment = { head: 0, body: 0, legs: 0, feet: 0, lefthand: 0, righthand: 0 };
+      newOutfit.equipment = { hair: 904, head: 0, body: 0, legs: 0, feet: 0, lefthand: 0, righthand: 0, backpack: 0, belt: 0 };
     }
   
     // Update the specific equipment slot

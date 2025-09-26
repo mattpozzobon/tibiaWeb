@@ -118,6 +118,23 @@
       "name": "chain boots",
       "id": 2645,
       "sprite_id": 918
+    },
+    {
+      "name": "backpack",
+      "id": 1988,
+      "sprite_id": 928
+    },
+
+    {
+      "name": "Cape",
+      "id": 2003,
+      "sprite_id": 929
+    },
+
+    {
+      "name": "Belt",
+      "id": 2002,
+      "sprite_id": 931
     }
   ]
 }

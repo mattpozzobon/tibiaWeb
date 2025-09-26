@@ -242,6 +242,9 @@ export class AccountDatabaseGrouped {
     
     const cleanProperties = { ...properties };
 
+    // Migrate equipment array to have 15 slots if needed
+    const migratedContainers = this.migrateEquipmentSlots(containers);
+
     return {
       position: this.parseJSON(data.position, { x: 10, y: 10, z: 9 }),
       templePosition: this.parseJSON(data.templePosition, { x: 10, y: 10, z: 9 }),
@@ -255,11 +258,36 @@ export class AccountDatabaseGrouped {
       },
       skills,
       outfit,
-      containers,
+      containers: migratedContainers,
       friends: friendsData.friends || [],
       friendRequests: friendsData.requests || [],
       spellbook
     };
+  }
+
+  // Migrate equipment array to ensure it has 15 slots (0-14)
+  private migrateEquipmentSlots(containers: any): any {
+    if (!containers || !Array.isArray(containers.equipment)) {
+      return containers;
+    }
+
+    const equipment = containers.equipment;
+    const expectedSlots = 15; // 0-14
+
+    if (equipment.length < expectedSlots) {
+      // Extend the array with null values to reach 15 slots
+      const extendedEquipment = [...equipment];
+      while (extendedEquipment.length < expectedSlots) {
+        extendedEquipment.push(null);
+      }
+      
+      return {
+        ...containers,
+        equipment: extendedEquipment
+      };
+    }
+
+    return containers;
   }
 
   private parseJSON<T>(jsonString: string | null | undefined, defaultValue: T): T {

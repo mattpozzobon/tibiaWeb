@@ -136,6 +136,11 @@ export interface Constants {
     NECKLACE: number;
     RING: number;
     QUIVER: number;
+    RING2: number;
+    RING3: number;
+    RING4: number;
+    RING5: number;
+    BELT: number;
   };
   VOCATION: {
     NONE: number;

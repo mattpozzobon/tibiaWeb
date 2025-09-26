@@ -29,7 +29,7 @@ export class StringCreaturePropertyPacket extends PacketWriter {
 
 export class OutfitPacket extends PacketWriter {
   constructor(guid: number, outfit: any) {
-    super(CONST.PROTOCOL.SERVER.OUTFIT, 29);
+    super(CONST.PROTOCOL.SERVER.OUTFIT, 33);
     this.writeUInt32(guid);
     this.writeOutfit(outfit);
   }
@@ -174,7 +174,7 @@ export class CreatureStatePacket extends PacketWriter {
   constructor(creature: Creature) {
 
     const stringEncoded = PacketWriter.encodeString(creature.getProperty(CONST.PROPERTIES.NAME));
-    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, 48 + 2 + stringEncoded.length);
+    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, 52 + 2 + stringEncoded.length);
 
     this.writeUInt32(creature.getId());
     this.writeCreatureType(creature);

@@ -304,8 +304,10 @@ export class PacketWriter extends Packet {
       this.writeUInt16(outfit.equipment.feet);
       this.writeUInt16(outfit.equipment.lefthand);
       this.writeUInt16(outfit.equipment.righthand);
+      this.writeUInt16(outfit.equipment.backpack);
+      this.writeUInt16(outfit.equipment.belt);
     } else {
-        this.writeNull(8); 
+      this.writeNull(9); 
     }
   
     if (getGameServer().isFeatureEnabled()) {

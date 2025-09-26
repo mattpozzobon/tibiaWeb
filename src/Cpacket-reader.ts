@@ -223,6 +223,8 @@ export class PacketReader extends Packet {
         feet: 0,
         lefthand: 0,
         righthand: 0,
+        backpack: 0,
+        belt: 0,
       },
       details: {
         head: this.readUInt8(),

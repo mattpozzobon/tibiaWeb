@@ -17,7 +17,7 @@ class Equipment {
      * Container for IPlayer equipment that can contain items and keep state of all equipped attributes
      */
     this.IPlayer = IPlayer;
-    this.container = new BaseContainer(cid, 10);
+    this.container = new BaseContainer(cid, 15);
 
     // Add the equipment from the database
     //console.log('equipment',equipment);
@@ -136,6 +136,12 @@ class Equipment {
         break;
       case CONST.EQUIPMENT.LEFT:
         isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("lefthand", getSpriteIdForItem(itemID, "left") || 0) : this.IPlayer.properties.updateOutfitEquipment("lefthand", 0);
+        break;
+      case CONST.EQUIPMENT.BACKPACK:
+        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("backpack", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("backpack", 0);
+        break;
+      case CONST.EQUIPMENT.BELT:
+        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("belt", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("belt", 0);
         break;
       default:
         return false;
@@ -340,9 +346,15 @@ class Equipment {
       case CONST.EQUIPMENT.NECKLACE:
         return proto.properties.slotType === "necklace";
       case CONST.EQUIPMENT.RING:
+      case CONST.EQUIPMENT.RING2:
+      case CONST.EQUIPMENT.RING3:
+      case CONST.EQUIPMENT.RING4:
+      case CONST.EQUIPMENT.RING5:
         return proto.properties.slotType === "ring";
       case CONST.EQUIPMENT.QUIVER:
         return proto.properties.weaponType === "ammunition";
+      case CONST.EQUIPMENT.BELT:
+        return proto.properties.slotType === "belt";
       default:
         return false;
     }
@@ -359,6 +371,10 @@ class Equipment {
 
   __addEquipment(equipment: any[]): void {
     equipment.forEach((entry) => {
+      // Skip null entries
+      if (!entry) {
+        return;
+      }
 
       const IThing = getGameServer().database.parseThing(entry.item);
       if (IThing) {
