@@ -118,8 +118,6 @@ class Equipment {
   }
 
   private __isTrackedEquipmentSlot(isAdd: boolean, index: number, itemID?: number): boolean {
-    
-    console.log(itemID);
     switch (index) {
       case CONST.EQUIPMENT.HELMET:
         isAdd && itemID? this.IPlayer.properties.updateOutfitEquipment("head", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("head", 0);
@@ -134,10 +132,10 @@ class Equipment {
         isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("feet", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("feet", 0);
         break;
       case CONST.EQUIPMENT.RIGHT:
-        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("righthand", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("righthand", 0);
+        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("righthand", getSpriteIdForItem(itemID, "right") || 0) : this.IPlayer.properties.updateOutfitEquipment("righthand", 0);
         break;
       case CONST.EQUIPMENT.LEFT:
-        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("lefthand", getSpriteIdForItem(itemID) || 0) : this.IPlayer.properties.updateOutfitEquipment("lefthand", 0);
+        isAdd && itemID ? this.IPlayer.properties.updateOutfitEquipment("lefthand", getSpriteIdForItem(itemID, "left") || 0) : this.IPlayer.properties.updateOutfitEquipment("lefthand", 0);
         break;
       default:
         return false;

@@ -77,7 +77,7 @@ export class AccountDatabaseGrouped {
         uid, name, sex, role, last_visit,
         position, temple_position, properties, outfit, skills,
         containers, friends, spellbook
-      ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const params = [
@@ -103,14 +103,33 @@ export class AccountDatabaseGrouped {
 
   public getCharactersForUid(
     uid: string,
-    callback: (error: Error | null, characters: { id: number; name: string; sex: string; role: number }[]) => void
+    callback: (error: Error | null, characters: { id: number; name: string; sex: string; role: number; level: number; outfit: any }[]) => void
   ): void {
     this.db.all(
-      "SELECT id, name, sex, role FROM characters WHERE uid = ?",
+      "SELECT id, name, sex, role, properties, outfit FROM characters WHERE uid = ?",
       [uid],
       (err, rows) => {
         if (err) return callback(err, []);
-        callback(null, rows as { id: number; name: string; sex: string; role: number }[]);
+        
+        const characters = (rows as any[]).map(row => {
+          // Parse properties JSON to get level
+          const properties = this.parseJSON(row.properties, { level: 1, experience: 0 });
+          const level = properties.level || 1;
+          
+          // Parse outfit JSON
+          const outfit = this.parseJSON(row.outfit, {});
+          
+          return {
+            id: row.id,
+            name: row.name,
+            sex: row.sex,
+            role: row.role,
+            level: level,
+            outfit: outfit
+          };
+        });
+        
+        callback(null, characters);
       }
     );
   }
@@ -126,6 +145,26 @@ export class AccountDatabaseGrouped {
         containers, friends, spellbook
       FROM characters WHERE id = ?`,
       [id],
+      (err, row) => {
+        if (err) return callback(err, null);
+        if (!row) return callback(null, null);
+        callback(null, row as CharacterData);
+      }
+    );
+  }
+
+  public getCharacterByIdForUser(
+    id: number,
+    uid: string,
+    callback: (error: Error | null, character: CharacterData | null) => void
+  ): void {
+    this.db.get(
+      `SELECT 
+        id, uid, name, sex, role, last_visit,
+        position, temple_position, properties, outfit, skills,
+        containers, friends, spellbook
+      FROM characters WHERE id = ? AND uid = ?`,
+      [id, uid],
       (err, row) => {
         if (err) return callback(err, null);
         if (!row) return callback(null, null);

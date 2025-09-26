@@ -8,7 +8,7 @@
     {
       "name": "Right-hand Fire",
       "id": 2191,
-      "sprite_id": 921
+      "sprite_id": 920
     },
 
     {
@@ -16,6 +16,42 @@
       "id": 2191,
       "sprite_id": 921
     },
+
+    {
+      "name": "Right-hand Water",
+      "id": 2186,
+      "sprite_id": 923
+    },
+    {
+      "name": "Left-hand Water",
+      "id": 2186,
+      "sprite_id": 922
+    },
+
+    {
+      "name": "Right-hand Earth",
+      "id": 2182,
+      "sprite_id": 925
+    },
+
+    {
+      "name": "Left-hand Earth",
+      "id": 2182,
+      "sprite_id": 924
+    },
+
+    {
+      "name": "Right-hand Wind",
+      "id": 2190,
+      "sprite_id": 926
+    },
+
+    {
+      "name": "Left-hand Wind",
+      "id": 2190,
+      "sprite_id": 927
+    },
+
 
 
 

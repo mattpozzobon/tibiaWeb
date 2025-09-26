@@ -132,7 +132,7 @@ class HTTPServer {
     admin.auth().verifyIdToken(token)
       .then(decoded => {
         // ✅ Token is valid, proceed with upgrade
-        this.websocketServer.upgrade(request, socket, head, characterId!);
+        this.websocketServer.upgrade(request, socket, head, characterId!, decoded.uid);
       })
       .catch(err => {
         console.error("❌ Firebase token verification failed:", err);

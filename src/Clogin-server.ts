@@ -150,31 +150,71 @@ class LoginServer {
 
   private __handleCreateCharacter(request: http.IncomingMessage, uid: string, response: http.ServerResponse): void {
     let body = "";
-    request.on("data", chunk => {
-      body += chunk;
-    });
+    request.on("data", chunk => {body += chunk;});
     request.on("end", () => {
       try {
         const parsed = JSON.parse(body);
-        const name = parsed.name?.trim();
+        // Normalize and validate name input
+        let name: string | undefined = typeof parsed.name === "string" ? parsed.name : undefined;
+        if (name) {
+          name = name.trim().replace(/\s+/g, " ");
+        }
         const sex = parsed.sex;
 
+        // Basic request validation
         if (!name || !sex || !["male", "female"].includes(sex)) {
           response.statusCode = 400;
           response.end("Invalid character data");
           return;
         }
 
-        this.accountDatabase.createCharacterForUid(uid, name, sex, 1, (errCode, newCharacterId) => {
-          if (errCode) {
+        // Business rules: name validation
+        if (name.length > 15) {
+          response.statusCode = 400;
+          response.end("Name too long (max 20)");
+          return;
+        }
+
+        // Allow only letters and spaces
+        if (!/^[A-Za-z ]+$/.test(name)) {
+          response.statusCode = 400;
+          response.end("Invalid characters in name");
+          return;
+        }
+
+        // Must contain at least one letter
+        if (!/[A-Za-z]/.test(name)) {
+          response.statusCode = 400;
+          response.end("Name must contain letters");
+          return;
+        }
+
+        // Ensure name uniqueness
+        this.accountDatabase.getCharacterByName(name, (lookupErr, existing) => {
+          if (lookupErr) {
             response.statusCode = 500;
-            response.end("Failed to create character");
+            response.end("Database error");
             return;
           }
 
-          response.statusCode = 200;
-          response.setHeader("Content-Type", "application/json");
-          response.end(JSON.stringify({ characterId: newCharacterId }));
+          if (existing) {
+            response.statusCode = 409;
+            response.end("Name already exists");
+            return;
+          }
+
+          // Proceed with creation
+          this.accountDatabase.createCharacterForUid(uid, name!, sex, 1, (errCode, newCharacterId) => {
+            if (errCode) {
+              response.statusCode = 500;
+              response.end("Failed to create character");
+              return;
+            }
+
+            response.statusCode = 200;
+            response.setHeader("Content-Type", "application/json");
+            response.end(JSON.stringify({ characterId: newCharacterId }));
+          });
         });
       } catch {
         response.statusCode = 400;

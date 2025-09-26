@@ -14,8 +14,8 @@ class WebsocketServer {
     this.websocket = new Server({ noServer: true, perMessageDeflate: this.__getCompressionConfiguration()});
     this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
     this.socketHandler = new WebsocketSocketHandler();
-    this.websocket.on("connection", (socket: WebSocket, request: IncomingMessage, characterId: number) => {
-      this.__handleConnection(socket, request, characterId);
+    this.websocket.on("connection", (socket: WebSocket, request: IncomingMessage, characterId: number, uid: string) => {
+      this.__handleConnection(socket, request, characterId, uid);
     });
     this.websocket.on("close", this.__handleClose.bind(this));
   }
@@ -26,11 +26,11 @@ class WebsocketServer {
     };
   }
 
-  public upgrade(request: IncomingMessage, socket: any, head: Buffer, characterId: number): void {
+  public upgrade(request: IncomingMessage, socket: any, head: Buffer, characterId: number, uid: string): void {
     console.log(`Attempting to upgrade request from ${socket.id} to WS.`);
     this.websocket.handleUpgrade(request, socket, head, (websocket: WebSocket) => {
       console.log(`Upgrade successful for socket with id ${socket.id}.`);
-      this.websocket.emit("connection", websocket, request, characterId);
+      this.websocket.emit("connection", websocket, request, characterId, uid);
     });
   }
 
@@ -48,9 +48,10 @@ class WebsocketServer {
   private __handleConnection(
     socket: WebSocket,
     request: IncomingMessage,
-    characterId: number
+    characterId: number,
+    uid: string
   ): void {
-    const gameSocket = new GameSocket(socket, ""); // account UID is not needed here
+    const gameSocket = new GameSocket(socket, uid); // Pass the authenticated UID
     gameSocket.characterId = characterId;
 
     if (this.socketHandler.isOverpopulated()) {
@@ -61,27 +62,28 @@ class WebsocketServer {
       return gameSocket.closeError("The server is going offline. Please try again later.");
     }
 
-    this.__acceptConnection(gameSocket, characterId);
+    this.__acceptConnection(gameSocket, characterId, uid);
   }
 
-  private __acceptConnection(gameSocket: GameSocket, characterId: number): void {
+  private __acceptConnection(gameSocket: GameSocket, characterId: number, uid: string): void {
     const { address } = gameSocket.getAddress();
     console.log(`A client joined the server: ${address}.`);
 
     gameSocket.socket.on("close", this.__handleSocketClose.bind(this, gameSocket));
-    this.__handleLoginRequest(gameSocket, characterId);
+    this.__handleLoginRequest(gameSocket, characterId, uid);
   }
 
-  private __handleLoginRequest(gameSocket: GameSocket, characterId: number): void {
-    this.accountDatabase.getCharacterById(characterId, (error, result) => {
+  private __handleLoginRequest(gameSocket: GameSocket, characterId: number, uid: string): void {
+    // ✅ SECURITY FIX: Validate that the character belongs to the authenticated user
+    this.accountDatabase.getCharacterByIdForUser(characterId, uid, (error, result) => {
       if (error) {
         console.error("DB error fetching character:", error);
         return gameSocket.terminate();
       }
 
       if (!result) {
-        console.warn("No character found for ID.");
-        return gameSocket.closeError("Character data missing.");
+        console.warn(`Character ${characterId} not found or does not belong to user ${uid}.`);
+        return gameSocket.closeError("Character not found or access denied.");
       }
 
       // Convert the grouped database format to legacy format for compatibility

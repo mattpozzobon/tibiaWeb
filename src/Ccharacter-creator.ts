@@ -26,6 +26,8 @@ export class CharacterCreator {
       maxMana: number;
       energy: number;
       maxEnergy: number;
+      level: number;
+      experience: number;
       outfit: Outfit;
       speed: number;
     };
@@ -81,6 +83,8 @@ export class CharacterCreator {
         maxMana: 35,
         energy: 35,
         maxEnergy: 35,
+        level: 1,
+        experience: 0,
         outfit: new Outfit({
           id: 0,
           details: {

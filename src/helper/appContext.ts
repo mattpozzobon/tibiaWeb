@@ -16,6 +16,32 @@ export const ITEM_TO_SPRITE: Record<number, number> = items.items.reduce((acc, i
   return acc;
 }, {} as Record<number, number>);
 
+// Build a hand-aware lookup so left/right hands can map to different sprite IDs where needed
+type Hand = "left" | "right";
+type HandSpriteMapping = { left?: number; right?: number; default?: number };
+
+export const ITEM_TO_SPRITE_BY_HAND: Record<number, HandSpriteMapping> = items.items.reduce(
+  (acc: Record<number, HandSpriteMapping>, item: { name: string; id: number; sprite_id: number }) => {
+    const name = (item.name || "").toLowerCase();
+    const mapping = acc[item.id] || {};
+
+    const isLeft = name.includes("left-hand") || name.includes("lefthand") || name.includes("left hand");
+    const isRight = name.includes("right-hand") || name.includes("righthand") || name.includes("right hand");
+
+    if (isLeft) {
+      mapping.left = item.sprite_id;
+    } else if (isRight) {
+      mapping.right = item.sprite_id;
+    } else {
+      mapping.default = item.sprite_id;
+    }
+
+    acc[item.id] = mapping;
+    return acc;
+  },
+  {} as Record<number, HandSpriteMapping>
+);
+
 // Utility function to get data file paths
 export const getDataFile = (...args: string[]): string => {
   return path.join(__dirname, '..', 'data', CONFIG.SERVER.CLIENT_VERSION, ...args);
@@ -26,7 +52,16 @@ export const requireModule = (...args: string[]): any => {
   return require(resolvedPath);
 };
 
-export function getSpriteIdForItem(itemId: number): number | null {
+export function getSpriteIdForItem(itemId: number, hand?: Hand): number | null {
+  // Prefer hand-aware mapping if available
+  const handMap = ITEM_TO_SPRITE_BY_HAND[itemId];
+  if (handMap) {
+    if (hand === "left" && typeof handMap.left === "number") return handMap.left;
+    if (hand === "right" && typeof handMap.right === "number") return handMap.right;
+    if (typeof handMap.default === "number") return handMap.default;
+  }
+
+  // Fallback to generic mapping
   return ITEM_TO_SPRITE[itemId] || null;
 }
 
