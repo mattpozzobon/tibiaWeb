@@ -2,27 +2,27 @@
   "itemTypes": {
     "rope": {
       "name": "Rope",
-      "itemIds": [2120, 2554, 6982, 6983, 6984, 82348]
+      "itemIds": [3003]
     },
     "shovel": {
       "name": "Shovel", 
-      "itemIds": [2554, 82334, 82340, 18211]
+      "itemIds": [3457]
     },
     "pick": {
       "name": "Pick",
-      "itemIds": [2553]
+      "itemIds": [3456]
     },
     "knife": {
       "name": "Knife",
-      "itemIds": [2566]
+      "itemIds": [3469]
     },
     "fishingRod": {
       "name": "Fishing Rod",
-      "itemIds": [2580]
+      "itemIds": [3483]
     },
-    "tool": {
-      "name": "Tool",
-      "itemIds": [2120, 2553, 2554, 6982, 6983, 6984, 82334, 82340, 82348, 18211]
+    "potion": {
+      "name": "Potion",
+      "itemIds": [266, 268]
     }
   },
   "containerSlots": {
@@ -51,6 +51,11 @@
         "slotIndex": 4,
         "allowedItemTypes": ["fishingRod"],
         "name": "Fishing Rod Slot"
+      },
+      {
+        "slotIndex": 5,
+        "allowedItemTypes": ["potion"],
+        "name": "Potion Slot"
       }
     ]
   }

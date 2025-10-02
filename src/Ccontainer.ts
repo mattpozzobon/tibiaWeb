@@ -49,7 +49,8 @@ class Container extends Item implements IContainer{
         if (i >= originalSize) {
           // This is an exclusive slot, check if the item is allowed
           const exclusiveSlotIndex = i - originalSize;
-          canPlace = exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, thing.id);
+          const clientId = getGameServer().database.getClientId(thing.id);
+          canPlace = exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, clientId);
         }
         
         if (canPlace) {
@@ -175,7 +176,8 @@ class Container extends Item implements IContainer{
     if (index >= originalSize) {
       // This is an exclusive slot, check if the item is allowed
       const exclusiveSlotIndex = index - originalSize;
-      if (!exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, thing.id)) {
+      const clientId = getGameServer().database.getClientId(thing.id);
+      if (!exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, clientId)) {
         return 0;
       }
     }
@@ -368,7 +370,8 @@ class Container extends Item implements IContainer{
       'Pick Slot': 3,
       'Knife Slot': 4,
       'Fishing Rod Slot': 5,
-      'Tool Slot': 6
+      'Potion Slot': 6,
+      'Tool Slot': 7
     };
     return slotTypeMap[slotName] || 0; // 0 = normal slot
   }
