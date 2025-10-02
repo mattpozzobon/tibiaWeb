@@ -159,9 +159,9 @@ export default class Database implements IDatabase {
   
     switch (proto.properties?.type) {
       case "corpse":
-        return new Corpse(id, proto.properties.containerSize || 4);
+        return new Corpse(id, proto.properties.containerSize || 5);
       case "container":
-        return new Container(id, proto.properties.containerSize || 4);
+        return new Container(id, proto.properties.containerSize || 0);
       case "fluidContainer":
         return new FluidContainer(id);
       case "rune":

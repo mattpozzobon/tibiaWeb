@@ -51,9 +51,31 @@
         "slotIndex": 4,
         "allowedItemTypes": ["fishingRod"],
         "name": "Fishing Rod Slot"
+      }
+    ],
+    "2002": [
+      {
+        "slotIndex": 0,
+        "allowedItemTypes": ["potion"],
+        "name": "Potion Slot"
       },
       {
-        "slotIndex": 5,
+        "slotIndex": 1,
+        "allowedItemTypes": ["potion"],
+        "name": "Potion Slot"
+      },
+      {
+        "slotIndex": 2,
+        "allowedItemTypes": ["potion"],
+        "name": "Potion Slot"
+      },
+      {
+        "slotIndex": 3,
+        "allowedItemTypes": ["potion"],
+        "name": "Potion Slot"
+      },
+      {
+        "slotIndex": 4,
         "allowedItemTypes": ["potion"],
         "name": "Potion Slot"
       }
