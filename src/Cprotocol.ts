@@ -6,6 +6,7 @@ import { CONFIG, CONST, getGameServer } from "./helper/appContext";
 import { IPlayer } from "interfaces/IPlayer";
 import { IThing } from "interfaces/IThing";
 import Creature from "Ccreature";
+import BaseContainer from "./Cbase-container";
 
 export class CreaturePropertyPacket extends PacketWriter {
   constructor(id: number, property: number, value: number) {
@@ -243,7 +244,7 @@ export class CreatureForgetPacket extends PacketWriter {
 }
 
 export class ContainerOpenPacket extends PacketWriter {
-  constructor(cid: number, name: string, container: any) {
+  constructor(cid: number, name: string, container: BaseContainer) {
     const stringEncoded = PacketWriter.encodeString(name);
     super(CONST.PROTOCOL.SERVER.CONTAINER_OPEN, getEncodedLength(stringEncoded) + 7 + container.getPacketSize());
 

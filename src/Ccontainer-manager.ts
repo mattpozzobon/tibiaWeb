@@ -66,11 +66,6 @@ class ContainerManager {
   }
 
   toggleContainer(container: IContainer): void {
-    //console.log('toggleContainer',container );
-    /*
-     * Function ContainerManager.toggleContainer
-     * Toggles a container between open and closed
-     */
     if (this.__openedContainers.has(container.container.guid)) {
       this.closeContainer(container);
     } else if (container.isDepot() && this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {

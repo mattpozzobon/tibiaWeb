@@ -84,11 +84,7 @@ class UseHandler {
     // Delegate to the appropriate handler
     if (packet.which.constructor.name === "Tile") {
       item = this.handleTileUse(packet.which);
-    } else if (
-      packet.which.constructor.name === "Equipment" ||
-      packet.which.constructor.name === "DepotContainer" ||
-      packet.which.isContainer()
-    ) {
+    } else if (packet.which.constructor.name === "Equipment" || packet.which.constructor.name === "DepotContainer" || packet.which.isContainer()) {
       item = packet.which.peekIndex(packet.index);
     }
 

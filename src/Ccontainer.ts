@@ -8,7 +8,7 @@ import Item from "./Citem";
 
 class Container extends Item implements IContainer{
   private __childWeight: number = 0;
-  public container: IBaseContainer;
+  public container: BaseContainer;
   public static MAXIMUM_DEPTH: number = 2;
 
   constructor(id: number, size: number) {
