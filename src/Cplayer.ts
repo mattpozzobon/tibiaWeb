@@ -192,9 +192,9 @@ export default class Player extends Creature implements IPlayer{
     return false;
   }
 
-  openContainer(id: number, name: string, baseContainer: any): void {
+  openContainer(id: number, name: string, baseContainer: any, containerItem?: any): void {
     baseContainer.addSpectator(this);
-    this.write(new ContainerOpenPacket(id, name, baseContainer));
+    this.write(new ContainerOpenPacket(id, name, baseContainer, containerItem));
   }
 
   closeContainer(baseContainer: any): void {

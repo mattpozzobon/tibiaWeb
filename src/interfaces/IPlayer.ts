@@ -45,7 +45,7 @@ export interface IPlayer extends Creature {
   isInProtectionZone(): boolean;
   ownsHouseTile(tile: any): boolean;
   isTileOccupied(tile: any): boolean;
-  openContainer(id: number, name: string, baseContainer: any): void;
+  openContainer(id: number, name: string, baseContainer: any, containerItem?: any): void;
   closeContainer(baseContainer: any): void;
   isInCombat(): boolean;
   isOnline(): boolean;

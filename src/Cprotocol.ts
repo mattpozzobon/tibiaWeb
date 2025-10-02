@@ -244,17 +244,35 @@ export class CreatureForgetPacket extends PacketWriter {
 }
 
 export class ContainerOpenPacket extends PacketWriter {
-  constructor(cid: number, name: string, container: BaseContainer) {
+  constructor(cid: number, name: string, container: BaseContainer, containerItem?: any) {
     const stringEncoded = PacketWriter.encodeString(name);
-    super(CONST.PROTOCOL.SERVER.CONTAINER_OPEN, getEncodedLength(stringEncoded) + 7 + container.getPacketSize());
+    const hasExclusive = !!(containerItem?.hasExclusiveSlots?.());
+    const slotTypeBytes = hasExclusive ? container.size : 0;
+    const baseHeader = 7;
+    const flagBytes = 1;
+    const itemsBytes = container.getPacketSize();
+    const packetSize =
+      getEncodedLength(stringEncoded) +
+      baseHeader +
+      flagBytes +
+      slotTypeBytes +
+      itemsBytes;
+
+    super(CONST.PROTOCOL.SERVER.CONTAINER_OPEN, packetSize);
 
     this.writeUInt32(container.guid);
     this.writeClientId(cid);
     this.writeBuffer(stringEncoded);
     this.writeUInt8(container.size);
+    this.writeUInt8(hasExclusive ? 1 : 0);
+    if (hasExclusive) {
+      const slotTypes = containerItem.getAllSlotTypesForPacket();
+      for (let i = 0; i < container.size; i++) this.writeUInt8(slotTypes[i] ?? 0);
+    }
     container.getSlots().forEach(this.writeItem.bind(this));
   }
 }
+
 
 export class ContainerClosePacket extends PacketWriter {
   constructor(cid: number) {

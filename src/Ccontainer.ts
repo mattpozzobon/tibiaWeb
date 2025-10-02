@@ -5,6 +5,7 @@ import { CONFIG, getGameServer } from "./helper/appContext";
 import { IContainer, IItem, IThing } from "interfaces/IThing";
 import { IPlayer } from "interfaces/IPlayer";
 import Item from "./Citem";
+import exclusiveSlotsManager from "./utils/exclusive-slots";
 
 class Container extends Item implements IContainer{
   private __childWeight: number = 0;
@@ -14,9 +15,14 @@ class Container extends Item implements IContainer{
   constructor(id: number, size: number) {
     super(id);
 
+    // Add extra slots for exclusive slots
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(id);
+    const extraSlots = exclusiveSlots.length;
+    const totalSize = size + extraSlots;
+
     this.container = new BaseContainer(
       getGameServer().world.creatureHandler.assignUID(),
-      size
+      totalSize
     );
   }
 
@@ -31,9 +37,31 @@ class Container extends Item implements IContainer{
       return false;
     }
 
-    thing.setParent(this);
-    this.container.addFirstEmpty(thing);
-    return true;
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
+    const originalSize = this.container.size - exclusiveSlots.length;
+
+    // Find first empty slot that allows this item
+    for (let i = 0; i < this.container.size; i++) {
+      if (this.container.peekIndex(i) === null) {
+        // Check if this slot allows the item
+        let canPlace = true;
+        
+        if (i >= originalSize) {
+          // This is an exclusive slot, check if the item is allowed
+          const exclusiveSlotIndex = i - originalSize;
+          canPlace = exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, thing.id);
+        }
+        
+        if (canPlace) {
+          this.container.addThing(thing, i);
+          thing.setParent(this);
+          this.__updateParentWeightRecursion(thing.getWeight());
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   hasIdentifier(cid: number): boolean {
@@ -139,6 +167,18 @@ class Container extends Item implements IContainer{
     index: number
   ): number {
     if (!this.container.isValidIndex(index)) return 0;
+
+    // Check exclusive slot restrictions
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
+    const originalSize = this.container.size - exclusiveSlots.length;
+    
+    if (index >= originalSize) {
+      // This is an exclusive slot, check if the item is allowed
+      const exclusiveSlotIndex = index - originalSize;
+      if (!exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, thing.id)) {
+        return 0;
+      }
+    }
 
     if (thing.isContainer()) {
       if (this.__includesSelf(thing) || thing.exceedsMaximumChildCount()) {
@@ -247,7 +287,91 @@ class Container extends Item implements IContainer{
     }
     return current;
   }
-  
+
+  // Exclusive slot methods
+  isExclusiveSlot(slotIndex: number): boolean {
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
+    const originalSize = this.container.size - exclusiveSlots.length;
+    
+    // Exclusive slots are at the end of the container
+    if (slotIndex >= originalSize) {
+      return true;
+    }
+    return false;
+  }
+
+  getAllowedItemTypes(slotIndex: number): string[] {
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
+    const originalSize = this.container.size - exclusiveSlots.length;
+    
+    if (slotIndex >= originalSize) {
+      const exclusiveSlotIndex = slotIndex - originalSize;
+      return exclusiveSlotsManager.getAllowedItemTypes(this.id, exclusiveSlotIndex);
+    }
+    return [];
+  }
+
+  getAllowedItemIds(slotIndex: number): number[] {
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
+    const originalSize = this.container.size - exclusiveSlots.length;
+    
+    if (slotIndex >= originalSize) {
+      const exclusiveSlotIndex = slotIndex - originalSize;
+      return exclusiveSlotsManager.getAllowedItemIds(this.id, exclusiveSlotIndex);
+    }
+    return [];
+  }
+
+  getSlotName(slotIndex: number): string | null {
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
+    const originalSize = this.container.size - exclusiveSlots.length;
+    
+    if (slotIndex >= originalSize) {
+      const exclusiveSlotIndex = slotIndex - originalSize;
+      return exclusiveSlotsManager.getSlotName(this.id, exclusiveSlotIndex);
+    }
+    return null;
+  }
+
+  // Slot type information for packets
+  hasExclusiveSlots(): boolean {
+    return exclusiveSlotsManager.getContainerSlots(this.id).length > 0;
+  }
+
+  getSlotTypeForPacket(slotIndex: number): number {
+    const slotName = this.getSlotName(slotIndex);
+    return this.getSlotTypeFromName(slotName);
+  }
+
+  getAllSlotTypesForPacket(): number[] {
+    const slotTypes: number[] = [];
+    for (let i = 0; i < this.container.size; i++) {
+      slotTypes.push(this.getSlotTypeForPacket(i));
+    }
+    return slotTypes;
+  }
+
+  getPacketSizeWithSlotTypes(): number {
+    let size = this.container.getPacketSize();
+    if (this.hasExclusiveSlots()) {
+      size += this.container.size; // One byte per slot for slot type
+    }
+    return size;
+  }
+
+  private getSlotTypeFromName(slotName: string | null): number {
+    if (!slotName) return 0; // Normal slot
+    
+    const slotTypeMap: { [key: string]: number } = {
+      'Rope Slot': 1,
+      'Shovel Slot': 2,
+      'Pick Slot': 3,
+      'Knife Slot': 4,
+      'Fishing Rod Slot': 5,
+      'Tool Slot': 6
+    };
+    return slotTypeMap[slotName] || 0; // 0 = normal slot
+  }
 }
 
 export default Container;

@@ -1,0 +1,57 @@
+{
+  "itemTypes": {
+    "rope": {
+      "name": "Rope",
+      "itemIds": [2120, 2554, 6982, 6983, 6984, 82348]
+    },
+    "shovel": {
+      "name": "Shovel", 
+      "itemIds": [2554, 82334, 82340, 18211]
+    },
+    "pick": {
+      "name": "Pick",
+      "itemIds": [2553]
+    },
+    "knife": {
+      "name": "Knife",
+      "itemIds": [2566]
+    },
+    "fishingRod": {
+      "name": "Fishing Rod",
+      "itemIds": [2580]
+    },
+    "tool": {
+      "name": "Tool",
+      "itemIds": [2120, 2553, 2554, 6982, 6983, 6984, 82334, 82340, 82348, 18211]
+    }
+  },
+  "containerSlots": {
+    "1988": [
+      {
+        "slotIndex": 0,
+        "allowedItemTypes": ["rope"],
+        "name": "Rope Slot"
+      },
+      {
+        "slotIndex": 1, 
+        "allowedItemTypes": ["shovel"],
+        "name": "Shovel Slot"
+      },
+      {
+        "slotIndex": 2,
+        "allowedItemTypes": ["pick"],
+        "name": "Pick Slot"
+      },
+      {
+        "slotIndex": 3,
+        "allowedItemTypes": ["knife"],
+        "name": "Knife Slot"
+      },
+      {
+        "slotIndex": 4,
+        "allowedItemTypes": ["fishingRod"],
+        "name": "Fishing Rod Slot"
+      }
+    ]
+  }
+}

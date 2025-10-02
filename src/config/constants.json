@@ -2,7 +2,8 @@
   "CONTAINER": {
     "EQUIPMENT": 0,
     "DEPOT": 1,
-    "KEYRING": 2
+    "KEYRING": 2,
+    "BACKPACK": 3
   },
   "CHANNEL": {
     "DEFAULT": 0,

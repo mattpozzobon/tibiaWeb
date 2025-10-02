@@ -251,6 +251,15 @@ class Equipment {
     }
 
     this.__isTrackedEquipmentSlot(true, index, IThing.id);
+
+    // Ensure equipped backpack's container has a stable GUID
+    if (index === CONST.EQUIPMENT.BACKPACK && typeof (IThing as any).isContainer === "function" && (IThing as any).isContainer()) {
+      const backpackContainer = (IThing as any).container as BaseContainer;
+      if (backpackContainer) {
+        backpackContainer.guid = CONST.CONTAINER.BACKPACK;
+      }
+    }
+
     this.container.addThing(IThing, index);
     IThing.setParent(this);
     return this.__updateWeight(IThing.getWeight());

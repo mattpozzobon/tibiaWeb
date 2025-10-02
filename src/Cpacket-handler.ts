@@ -67,9 +67,9 @@ export class PacketHandler {
      */
     const { fromWhere, fromIndex, toWhere, toIndex, count } = packet;
 
-    //console.log('fromWhere.constructor.name', fromWhere.constructor.name);
-    //console.log('toWhere.constructor.name', toWhere.constructor.name);
-    //console.log('toWhere',toWhere);
+    console.log('=== MOVE ITEM DEBUG ===');
+    console.log('fromWhere.constructor.name', fromWhere.constructor.name);
+    console.log('toWhere.constructor.name', toWhere.constructor.name);
     console.log('fromIndex',fromIndex);
     console.log('toIndex',toIndex);
     console.log('count',count);
@@ -111,8 +111,13 @@ export class PacketHandler {
     }
 
     const maxCount = toWhere.getMaximumAddCount(player, fromItem, toIndex);
-    if (maxCount === 0) return player.sendCancelMessage("You cannot add this item here.");
+    console.log('maxCount:', maxCount, 'fromItem.id:', fromItem.id, 'toIndex:', toIndex);
+    if (maxCount === 0) {
+      console.log('Item rejected - cannot add here');
+      return player.sendCancelMessage("You cannot add this item here.");
+    }
     const realCount = Math.min(count, maxCount);
+    console.log('Moving item, realCount:', realCount);
     this.__moveItem(player, fromWhere, fromIndex, toWhere, toIndex, realCount);
   }
 

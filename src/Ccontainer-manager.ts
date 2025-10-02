@@ -60,6 +60,13 @@ class ContainerManager {
         return this.equipment;
       case CONST.CONTAINER.KEYRING:
         return this.keyring;
+      case CONST.CONTAINER.BACKPACK:
+        // Resolve the equipped backpack's BaseContainer if present
+        const backpackItem = this.equipment.peekIndex(CONST.EQUIPMENT.BACKPACK);
+        if (backpackItem && typeof (backpackItem as any).isContainer === "function" && (backpackItem as any).isContainer()) {
+          return backpackItem as any;
+        }
+        return null;
       default:
         return this.__getContainer(cid);
     }
@@ -147,7 +154,7 @@ class ContainerManager {
       this.__player.closeContainer(this.keyring.container);
     } else {
       this.__openedContainers.set(CONST.CONTAINER.KEYRING, this.keyring);
-      this.__player.openContainer(1987, "Keyring", this.keyring.container);
+      this.__player.openContainer(1987, "Keyring", this.keyring.container, this.keyring);
     }
   }
 
@@ -172,7 +179,7 @@ class ContainerManager {
 
     if (!container.isDepot()) {
       this.__openedContainers.set(container.container.guid, container);
-      this.__player.openContainer(container.id, container.getName(), container.container);
+      this.__player.openContainer(container.id, container.getName(), container.container, container);
     } else {
       this.__openedContainers.set(CONST.CONTAINER.DEPOT, this.depot);
       this.depot.openAtPosition(container.getPosition());

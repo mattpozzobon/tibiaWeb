@@ -3,6 +3,7 @@ export interface Constants {
     EQUIPMENT: number;
     DEPOT: number;
     KEYRING: number;
+    BACKPACK: number;
   };
   CHANNEL: {
     DEFAULT: number;

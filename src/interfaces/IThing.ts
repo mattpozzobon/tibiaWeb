@@ -131,4 +131,10 @@ export interface IContainer extends IItem {
   toJSON(): object;
   getTopParent(): any;
   __updateWeight(weight: number): void;
+  
+  // Exclusive slot methods
+  isExclusiveSlot(slotIndex: number): boolean;
+  getAllowedItemTypes(slotIndex: number): string[];
+  getAllowedItemIds(slotIndex: number): number[];
+  getSlotName(slotIndex: number): string | null;
 }
