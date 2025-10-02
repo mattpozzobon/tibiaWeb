@@ -18,17 +18,10 @@ class ContainerManager {
   readonly MAXIMUM_OPENED_CONTAINERS: number = 5;
 
   constructor(player: IPlayer, containers: any) {
-    /*
-     * Class ContainerManager
-     * Manager for all the containers that a player has opened (e.g., depot, backpacks, equipment, corpses)
-     */
-
     this.__player = player;
 
-    // Keep a set of the opened containers
     this.__openedContainers = new Map<number, any>();
 
-    // Depots and equipments are owned by individual players
     this.depot = new DepotContainer(CONST.CONTAINER.DEPOT, containers.depot);
     this.equipment = new Equipment(CONST.CONTAINER.EQUIPMENT, player, containers.equipment);
     this.keyring = new Keyring(CONST.CONTAINER.KEYRING, player, containers.keyring);
@@ -36,10 +29,6 @@ class ContainerManager {
   }
 
   toJSON(): object {
-    /*
-     * Function ContainerManager.toJSON
-     * Serializes the container manager
-     */
     return {
       depot: this.depot,
       equipment: this.equipment,
@@ -61,10 +50,15 @@ class ContainerManager {
       case CONST.CONTAINER.KEYRING:
         return this.keyring;
       case CONST.CONTAINER.BACKPACK:
-        // Resolve the equipped backpack's BaseContainer if present
         const backpackItem = this.equipment.peekIndex(CONST.EQUIPMENT.BACKPACK);
         if (backpackItem && typeof (backpackItem as any).isContainer === "function" && (backpackItem as any).isContainer()) {
           return backpackItem as any;
+        }
+        return null;
+      case CONST.CONTAINER.BELT:
+        const beltItem = this.equipment.peekIndex(CONST.EQUIPMENT.BELT);
+        if (beltItem && typeof (beltItem as any).isContainer === "function" && (beltItem as any).isContainer()) {
+          return beltItem as any;
         }
         return null;
       default:

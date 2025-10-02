@@ -260,6 +260,14 @@ class Equipment {
       }
     }
 
+    // Ensure equipped belt's container has a stable GUID
+    if (index === CONST.EQUIPMENT.BELT && typeof (IThing as any).isContainer === "function" && (IThing as any).isContainer()) {
+      const beltContainer = (IThing as any).container as BaseContainer;
+      if (beltContainer) {
+        beltContainer.guid = CONST.CONTAINER.BELT;
+      }
+    }
+
     this.container.addThing(IThing, index);
     IThing.setParent(this);
     return this.__updateWeight(IThing.getWeight());

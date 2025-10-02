@@ -4,6 +4,7 @@ export interface Constants {
     DEPOT: number;
     KEYRING: number;
     BACKPACK: number;
+    BELT: number;
   };
   CHANNEL: {
     DEFAULT: number;

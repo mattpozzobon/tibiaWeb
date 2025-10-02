@@ -3,7 +3,8 @@
     "EQUIPMENT": 0,
     "DEPOT": 1,
     "KEYRING": 2,
-    "BACKPACK": 3
+    "BACKPACK": 3,
+    "BELT": 4
   },
   "CHANNEL": {
     "DEFAULT": 0,
