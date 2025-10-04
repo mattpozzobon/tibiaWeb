@@ -66,8 +66,7 @@ export default class Player extends Creature implements IPlayer{
   }
 
   private addPlayerProperties(properties: any): void {
-    this.properties.add(CONST.PROPERTIES.MOUNTS, properties.availableMounts);
-    this.properties.add(CONST.PROPERTIES.OUTFITS, properties.availableOutfits);
+    this.properties.add(CONST.PROPERTIES.HAIRS, properties.availableHairs);
     this.properties.add(CONST.PROPERTIES.SEX, properties.sex);
     this.properties.add(CONST.PROPERTIES.ROLE, properties.role);
     this.properties.add(CONST.PROPERTIES.VOCATION, properties.vocation);

@@ -65,7 +65,7 @@ export interface Constants {
       DISTANCE_EFFECT: number;
       PLAYER_LOGIN: number;
       PLAYER_LOGOUT: number;
-      OUTFIT: number;
+      HAIR: number;
       ITEM_INFORMATION: number;
       ITEM_TEXT: number;
       ITEM_TRANSFORM: number;
@@ -172,8 +172,7 @@ export interface Constants {
     ROLE: number;
     SEX: number;
     VOCATION: number;
-    MOUNTS: number;
-    OUTFITS: number;
+    HAIRS: number;
     MAGIC: number;
     FIST: number;
     CLUB: number;

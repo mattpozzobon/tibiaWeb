@@ -104,7 +104,7 @@ export class NetworkManager {
   
       [CONST.PROTOCOL.CLIENT.THING_USE_WITH]:           (gs, p) => gs.player!.useHandler.handleActionUseWith(p.readItemUseWith(gs.player!)),
   
-      [CONST.PROTOCOL.CLIENT.OUTFIT]:                   (gs, p) => gs.player!.changeOutfit(p.readOutfit()),
+      [CONST.PROTOCOL.CLIENT.OUTFIT]:                   (gs, p) => gs.player!.changeOutfit(p.readOutfit(gs.player!)),
   
       [CONST.PROTOCOL.CLIENT.CAST_SPELL]:               (gs, p) => gs.player!.spellbook.handleSpell(p.readUInt16()),
   

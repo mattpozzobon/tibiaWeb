@@ -206,7 +206,8 @@ export default class Creature extends EventEmitter implements ICreature{
   }
 
   isMounted(): boolean {
-    return this.getOutfit().mounted;
+    // Mount functionality removed - always return false
+    return false;
   }
 
   isZeroHealth(): boolean {

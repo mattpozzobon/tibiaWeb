@@ -206,8 +206,7 @@ export class CreatureProperties {
       vocation: this.__properties.get(CONST.PROPERTIES.VOCATION.toString())?.get(),
       sex: this.__properties.get(CONST.PROPERTIES.SEX.toString())?.get(),
 
-      availableOutfits: this.__properties.get(CONST.PROPERTIES.OUTFITS.toString())?.get(),
-      availableMounts: this.__properties.get(CONST.PROPERTIES.MOUNTS.toString())?.get(),
+      availableHairs: this.__properties.get(CONST.PROPERTIES.HAIRS.toString())?.get(),
     };
   }
   

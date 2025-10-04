@@ -30,7 +30,7 @@ export class StringCreaturePropertyPacket extends PacketWriter {
 
 export class OutfitPacket extends PacketWriter {
   constructor(guid: number, outfit: any) {
-    super(CONST.PROTOCOL.SERVER.OUTFIT, 37);
+    super(CONST.PROTOCOL.SERVER.HAIR, 33); // 4 bytes (guid) + 29 bytes (outfit)
     this.writeUInt32(guid);
     this.writeOutfit(outfit);
   }
@@ -175,7 +175,7 @@ export class CreatureStatePacket extends PacketWriter {
   constructor(creature: Creature) {
 
     const stringEncoded = PacketWriter.encodeString(creature.getProperty(CONST.PROPERTIES.NAME));
-    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, 52 + 2 + stringEncoded.length);
+    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, 51 + 2 + stringEncoded.length);
 
     this.writeUInt32(creature.getId());
     this.writeCreatureType(creature);
@@ -476,11 +476,8 @@ export class PlayerStatePacket extends PacketWriter {
     // 4. equipment
     this.writeEquipment(player.containerManager.equipment);
 
-    // 5. mounts
-    this.writeMounts(player.getProperty(CONST.PROPERTIES.MOUNTS));
-
-    // 6. outfits
-    this.writeOutfits(player.getProperty(CONST.PROPERTIES.OUTFITS));
+    // 6. hairs
+    this.writeHairs(player.getProperty(CONST.PROPERTIES.HAIRS));
 
     // 7. spellbook (placeholder)
     this.writeUInt8(0); // TODO: send real spells

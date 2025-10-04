@@ -24,65 +24,39 @@ export interface AddonDetails {
 
 export interface OutfitConfig {
   id: number;
-  details?: OutfitDetails | null;
-  equipment?: EquipmentDetails | null;
-  mount?: number | null;
-  mounted?: boolean;
-  addonOne?: boolean;
-  addonTwo?: boolean;
-  addons?: AddonDetails | null;
+  renderHelmet?: boolean;
+  details?: OutfitDetails;
+  equipment?: EquipmentDetails;
+  addons?: AddonDetails;
 }
 
 export class Outfit {
   id: number;
-  details: OutfitDetails | null;
-  equipment: EquipmentDetails | null;
-  mount: number | null;
-  mounted: boolean;
-  addonOne: boolean;
-  addonTwo: boolean;
-  addons: AddonDetails | null;
+  renderHelmet: boolean;
+  details: OutfitDetails;
+  equipment: EquipmentDetails;
+  addons: AddonDetails;
 
-  static MOUNTS: Record<number, { name: string }> = require(getDataFile("mounts", "mounts"));
-  static OUTFITS: Record<number, { name: string }> = require(getDataFile("outfits", "outfits"));
+  static HAIRS: Record<number, { name: string }> = require(getDataFile("outfits", "hairs"));
 
   constructor(outfit: OutfitConfig) {
-    this.id = outfit.id ?? 1;
-    this.details = outfit.details ?? null;
-    this.equipment = outfit.equipment ?? {hair: 904, head: 0, body: 0, legs: 0, feet: 0, lefthand: 0, righthand: 0, backpack: 0, belt: 0};
-    this.mount = outfit.mount ?? null;
-    this.mounted = outfit.mounted ?? false;
-    this.addonOne = outfit.addonOne ?? false;
-    this.addonTwo = outfit.addonTwo ?? false;
-    this.addons = outfit.addons ?? {healthPotion: 0, manaPotion: 0, energyPotion: 0, bag: 0};
+    this.id = outfit.id ?? 128;
+    this.renderHelmet = outfit.renderHelmet ?? true;
+    this.details = outfit.details ?? { head: 0, body: 0, legs: 0, feet: 0 };
+    this.equipment = outfit.equipment ?? { hair: 904, head: 0, body: 0, legs: 0, feet: 0, lefthand: 0, righthand: 0, backpack: 0, belt: 0 };
+    this.addons = outfit.addons ?? { healthPotion: 0, manaPotion: 0, energyPotion: 0, bag: 0 };
   }
 
-  static getMountName(id: number): string | null {
-    /*
-     * Returns the name of a mount with a particular identifier
-     */
-    return Outfit.MOUNTS[id]?.name ?? null;
-  }
-
-  static getName(id: number): string | null {
-    /*
-     * Returns the name of an outfit with a particular identifier
-     */
-    return Outfit.OUTFITS[id]?.name ?? null;
+  static getHairName(id: number): string | null {
+    return Outfit.HAIRS[id]?.name ?? null;
   }
 
   toJSON(): OutfitConfig {
-    /*
-     * Serializes the outfit class to JSON to be stored in a database or file
-     */
     return {
       id: this.id,
+      renderHelmet: this.renderHelmet,
       details: this.details,
       equipment: this.equipment,
-      mount: this.mount,
-      mounted: this.mounted,
-      addonOne: this.addonOne,
-      addonTwo: this.addonTwo,
       addons: this.addons,
     };
   }

@@ -231,31 +231,13 @@ export class PacketReader extends Packet {
     return this.readUInt8() === 1;
   }
 
-  readOutfit(): Outfit {
-    return new Outfit({
-      id: this.readUInt16(),
-      equipment: {
-        hair: this.readUInt16(),
-        head: 0,
-        body: 0,
-        legs: 0,
-        feet: 0,
-        lefthand: 0,
-        righthand: 0,
-        backpack: 0,
-        belt: 0,
-      },
-      details: {
-        head: this.readUInt8(),
-        body: this.readUInt8(),
-        legs: this.readUInt8(),
-        feet: this.readUInt8(),
-      },
-      mount: this.readUInt16(),
-      mounted: this.readBoolean(),
-      addonOne: this.readBoolean(),
-      addonTwo: this.readBoolean(),
-    });
+  readOutfit(player?: any): Outfit {
+    const updatedOutfit =  player.getOutfit();
+
+    updatedOutfit.equipment.hair = this.readUInt16();
+    updatedOutfit.details.head = this.readUInt8();
+    updatedOutfit.renderHelmet = this.readBoolean();
+    return updatedOutfit;
   }
 
   readWorldPosition(): Position {

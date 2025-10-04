@@ -154,32 +154,17 @@ export class PacketWriter extends Packet {
     }
   }
 
-  writeMounts(ids: Set<number>): void {
-    /*
-     * Writes the available mount identifiers and names to the packet
-     */
-    ids = ids ?? new Set(); 
-
-    const mounts = Array.from(ids).filter((id) => Outfit.MOUNTS.hasOwnProperty(id));
-    this.writeUInt8(mounts.length);
-
-    mounts.forEach((id) => {
-      this.writeUInt16(id);
-      const stringEncoded = PacketWriter.encodeString(Outfit.getMountName(id));
-      this.writeBuffer(stringEncoded);
-    });
-  }
-
-  writeOutfits(ids: Set<number>): void {
+  writeHairs(ids: Set<number>): void {
     /*
      * Writes the available outfits to the client
      */
-    const outfits = Array.from(ids).filter((id) => Outfit.OUTFITS.hasOwnProperty(id));
-    this.writeUInt8(outfits.length);
+    const hairs = Array.from(ids).filter((id) => Outfit.HAIRS.hasOwnProperty(id));
+    console.log('hairs', hairs);
+    this.writeUInt8(hairs.length);
 
-    outfits.forEach((id) => {
+    hairs.forEach((id) => {
       this.writeUInt16(id);
-      const stringEncoded = PacketWriter.encodeString(Outfit.getName(id));
+      const stringEncoded = PacketWriter.encodeString(Outfit.getHairName(id));
       this.writeBuffer(stringEncoded);
     });
   }
@@ -286,6 +271,7 @@ export class PacketWriter extends Packet {
      * Writes outfit details to the packet
      */
     this.writeUInt16(outfit.id);
+    this.writeBoolean(outfit.renderHelmet);
 
     if (outfit.details) {
       this.writeUInt8(outfit.details.head);
@@ -308,15 +294,6 @@ export class PacketWriter extends Packet {
       this.writeUInt16(outfit.equipment.belt);
     } else {
       this.writeNull(9); 
-    }
-  
-    if (getGameServer().isFeatureEnabled()) {
-      this.writeUInt16(outfit.mount);
-      this.writeBoolean(outfit.mounted);
-      this.writeBoolean(outfit.addonOne);
-      this.writeBoolean(outfit.addonTwo);
-    } else {
-      this.writeNull(5);
     }
 
     // Write addon properties
