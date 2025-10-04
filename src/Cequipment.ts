@@ -235,6 +235,7 @@ class Equipment {
      * Function Equipment.addThing
      * Adds an item to the passed slot index
      */
+    console.log('INDEX', index);
     if (!IThing.isPickupable()) return false;
 
     const change = IThing.getChangeOnEquip();
@@ -257,22 +258,9 @@ class Equipment {
 
     this.__isTrackedEquipmentSlot(true, index, IThing.id);
 
-    // Ensure equipped backpack's container has a stable GUID
-    if (index === CONST.EQUIPMENT.BACKPACK && typeof (IThing as any).isContainer === "function" && (IThing as any).isContainer()) {
-      const backpackContainer = (IThing as any).container as BaseContainer;
-      if (backpackContainer) {
-        backpackContainer.guid = CONST.CONTAINER.BACKPACK;
-      }
-    }
-
-    // Ensure equipped belt's container has a stable GUID
-    if (index === CONST.EQUIPMENT.BELT && typeof (IThing as any).isContainer === "function" && (IThing as any).isContainer()) {
-      const beltContainer = (IThing as any).container as BaseContainer;
-      if (beltContainer) {
-        beltContainer.guid = CONST.CONTAINER.BELT;
-        // Update addons based on existing potions in the belt
-        this.__updateBeltAddonsFromContainer(IThing);
-      }
+    // Update addons based on existing potions in the belt when equipping
+    if (index === CONST.EQUIPMENT.BELT) {
+      this.__updateBeltAddonsFromContainer(IThing);
     }
 
     this.container.addThing(IThing, index);

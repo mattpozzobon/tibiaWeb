@@ -18,10 +18,7 @@ class Container extends Item implements IContainer{
     const extraSlots = exclusiveSlots.length;
     const totalSize = size + extraSlots;
 
-    this.container = new BaseContainer(
-      getGameServer().world.creatureHandler.assignUID(),
-      totalSize
-    );
+    this.container = new BaseContainer(getGameServer().world.creatureHandler.assignUID(), totalSize);
   }
 
   getNumberItems(): number {
@@ -93,8 +90,16 @@ class Container extends Item implements IContainer{
     thing.setParent(null);
 
     // Update belt outfit when potion is removed from belt container
-    if (this.container.guid === CONST.CONTAINER.BELT) {
-      this.__updateBeltOutfit(null);
+    // Check if the container's parent is equipment and specifically a belt container
+    const parent = this.getParent();
+    if (parent && parent.constructor.name === "Equipment") {
+      // This container belongs to equipment, check if it's the belt slot
+      const equipment = parent as any;
+      const beltItem = equipment.peekIndex(CONST.EQUIPMENT.BELT);
+      if (beltItem === this) {
+        // This container is the equipped belt, update outfit
+        this.__updateBeltOutfit(null); // Pass null to indicate item was removed
+      }
     }
 
     return thing;
@@ -131,8 +136,16 @@ class Container extends Item implements IContainer{
     this.__updateParentWeightRecursion(thing.getWeight());
 
     // Update belt outfit when potion is added to belt container
-    if (this.container.guid === CONST.CONTAINER.BELT) {
-      this.__updateBeltOutfit(thing);
+    // Check if the container's parent is equipment and specifically a belt container
+    const parent = this.getParent();
+    if (parent && parent.constructor.name === "Equipment") {
+      // This container belongs to equipment, check if it's the belt slot
+      const equipment = parent as any;
+      const beltItem = equipment.peekIndex(CONST.EQUIPMENT.BELT);
+      if (beltItem === this) {
+        // This container is the equipped belt, update outfit
+        this.__updateBeltOutfit(thing);
+      }
     }
 
     return true;
@@ -390,8 +403,6 @@ class Container extends Item implements IContainer{
      * Function Container.__updateBeltOutfit
      * Updates the belt outfit when potions are added/removed
      */
-    if (this.container.guid !== CONST.CONTAINER.BELT) return;
-
     // Find the player who owns this belt container
     const player = this.__findPlayerOwner();
     if (!player) return;

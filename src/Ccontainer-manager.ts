@@ -49,18 +49,6 @@ class ContainerManager {
         return this.equipment;
       case CONST.CONTAINER.KEYRING:
         return this.keyring;
-      case CONST.CONTAINER.BACKPACK:
-        const backpackItem = this.equipment.peekIndex(CONST.EQUIPMENT.BACKPACK);
-        if (backpackItem && typeof (backpackItem as any).isContainer === "function" && (backpackItem as any).isContainer()) {
-          return backpackItem as any;
-        }
-        return null;
-      case CONST.CONTAINER.BELT:
-        const beltItem = this.equipment.peekIndex(CONST.EQUIPMENT.BELT);
-        if (beltItem && typeof (beltItem as any).isContainer === "function" && (beltItem as any).isContainer()) {
-          return beltItem as any;
-        }
-        return null;
       default:
         return this.__getContainer(cid);
     }

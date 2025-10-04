@@ -58,14 +58,13 @@ export class PacketReader extends Packet {
     * Reads a complete move item event from the packet
     */
 
-    console.log('=== READ MOVE ITEM DEBUG ===');
-    console.log('Packet index before readMoveEvent:', this.index);
+
     
     const fromWhere = this.readMoveEvent(player);
-    console.log('fromWhere:', fromWhere);
+
     
     const fromIndex = this.readUInt8();
-    console.log('fromIndex:', fromIndex);
+
     
     const toWhere = this.readMoveEvent(player);
 
@@ -74,7 +73,6 @@ export class PacketReader extends Packet {
 
     
     const count = this.readUInt8();
-    console.log('count:', count);
 
     const t = {
       fromWhere,
@@ -84,7 +82,6 @@ export class PacketReader extends Packet {
       count,
     }
 
-    console.log('Final move item data:', t);
     return t;
   } 
 
