@@ -318,6 +318,16 @@ export class PacketWriter extends Packet {
     } else {
       this.writeNull(5);
     }
+
+    // Write addon properties
+    if (outfit.addons) {
+      this.writeUInt8(outfit.addons.healthPotion);
+      this.writeUInt8(outfit.addons.manaPotion);
+      this.writeUInt8(outfit.addons.energyPotion);
+      this.writeUInt8(outfit.addons.bag);
+    } else {
+      this.writeNull(4);
+    }
   }
 
   writeBoolean(value: boolean): void {

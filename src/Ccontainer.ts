@@ -1,7 +1,6 @@
-import { IBaseContainer } from "interfaces/IBase-container";
 import BaseContainer from "./Cbase-container";
 import { ContainerClosePacket, ContainerOpenPacket } from "./Cprotocol";
-import { CONFIG, getGameServer } from "./helper/appContext";
+import { CONFIG, CONST, getGameServer } from "./helper/appContext";
 import { IContainer, IItem, IThing } from "interfaces/IThing";
 import { IPlayer } from "interfaces/IPlayer";
 import Item from "./Citem";
@@ -15,7 +14,6 @@ class Container extends Item implements IContainer{
   constructor(id: number, size: number) {
     super(id);
 
-    // Add extra slots for exclusive slots
     const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(id);
     const extraSlots = exclusiveSlots.length;
     const totalSize = size + extraSlots;
@@ -94,6 +92,11 @@ class Container extends Item implements IContainer{
     this.__updateParentWeightRecursion(-thing.getWeight());
     thing.setParent(null);
 
+    // Update belt outfit when potion is removed from belt container
+    if (this.container.guid === CONST.CONTAINER.BELT) {
+      this.__updateBeltOutfit(null);
+    }
+
     return thing;
   }
 
@@ -126,6 +129,12 @@ class Container extends Item implements IContainer{
     this.container.addThing(thing, index);
     thing.setParent(this);
     this.__updateParentWeightRecursion(thing.getWeight());
+
+    // Update belt outfit when potion is added to belt container
+    if (this.container.guid === CONST.CONTAINER.BELT) {
+      this.__updateBeltOutfit(thing);
+    }
+
     return true;
   }
 
@@ -375,6 +384,108 @@ class Container extends Item implements IContainer{
     };
     return slotTypeMap[slotName] || 0; // 0 = normal slot
   }
+
+  private __updateBeltOutfit(addedItem: IThing | null): void {
+    /*
+     * Function Container.__updateBeltOutfit
+     * Updates the belt outfit when potions are added/removed
+     */
+    if (this.container.guid !== CONST.CONTAINER.BELT) return;
+
+    // Find the player who owns this belt container
+    const player = this.__findPlayerOwner();
+    if (!player) return;
+
+    // Check existing potions in the belt
+    const existingHealthPotions = this.container.getSlots().filter(slot => {
+      if (!slot) return false;
+      const clientId = getGameServer().database.getClientId(slot.id);
+      return clientId === 266; // Health potion
+    });
+
+    const existingManaPotions = this.container.getSlots().filter(slot => {
+      if (!slot) return false;
+      const clientId = getGameServer().database.getClientId(slot.id);
+      return clientId === 268; // Mana potion
+    });
+
+    const existingEnergyPotions = this.container.getSlots().filter(slot => {
+      if (!slot) return false;
+      const clientId = getGameServer().database.getClientId(slot.id);
+      return clientId === 237; // Energy potion
+    });
+
+    console.log(`Belt potions - Health: ${existingHealthPotions.length}, Mana: ${existingManaPotions.length}, Energy: ${existingEnergyPotions.length}`);
+
+    // Check if the added item is a potion
+    if (addedItem) {
+      const addedItemClientId = getGameServer().database.getClientId(addedItem.id);
+      console.log(`Adding item with client ID: ${addedItemClientId}`);
+      
+      if (addedItemClientId === 266) { // Health potion
+        // If this is the first health potion, update outfit
+        if (existingHealthPotions.length <= 1) {
+          player.properties.updateOutfitAddon('healthPotion', 1);
+          console.log('Health potion addon set to true');
+        } else {
+          console.log('Belt already has health potion, skipping outfit update');
+        }
+      } else if (addedItemClientId === 268) { // Mana potion
+        // If this is the first mana potion, update outfit
+        if (existingManaPotions.length <= 1) {
+          player.properties.updateOutfitAddon('manaPotion', 1);
+          console.log('Mana potion addon set to true');
+        } else {
+          console.log('Belt already has mana potion, skipping outfit update');
+        }
+      } else if (addedItemClientId === 237) { // Energy potion
+        // If this is the first energy potion, update outfit
+        if (existingEnergyPotions.length <= 1) {
+          player.properties.updateOutfitAddon('energyPotion', 1);
+          console.log('Energy potion addon set to true');
+        } else {
+          console.log('Belt already has energy potion, skipping outfit update');
+        }
+      }
+    } else {
+      console.log('Item was removed from belt');
+      // Item was removed - check each potion type and update addons accordingly
+      
+      // Check health potions
+      if (existingHealthPotions.length === 0) {
+        player.properties.updateOutfitAddon('healthPotion', 0);
+        console.log('Health potion addon set to false');
+      }
+      
+      // Check mana potions  
+      if (existingManaPotions.length === 0) {
+        player.properties.updateOutfitAddon('manaPotion', 0);
+        console.log('Mana potion addon set to false');
+      }
+      
+      // Check energy potions
+      if (existingEnergyPotions.length === 0) {
+        player.properties.updateOutfitAddon('energyPotion', 0);
+        console.log('Energy potion addon set to false');
+      }
+    }
+  }
+
+  private __findPlayerOwner(): IPlayer | null {
+    /*
+     * Function Container.__findPlayerOwner
+     * Finds the player who owns this container by traversing up the parent chain
+     */
+    let current = this.getParent();
+    while (current) {
+      if (current.constructor.name === "Player") {
+        return current as IPlayer;
+      }
+      current = current.getParent ? current.getParent() : null;
+    }
+    return null;
+  }
+
 }
 
 export default Container;

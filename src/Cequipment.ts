@@ -114,6 +114,11 @@ class Equipment {
       console.log(`removeIndex to slot ${index}: Thing ID = ${IThing.id}`);
     }
 
+    // Reset belt addons when belt is unequipped
+    if (index === CONST.EQUIPMENT.BELT) {
+      this.__resetBeltAddons();
+    }
+
     return IThing;
   }
 
@@ -265,6 +270,8 @@ class Equipment {
       const beltContainer = (IThing as any).container as BaseContainer;
       if (beltContainer) {
         beltContainer.guid = CONST.CONTAINER.BELT;
+        // Update addons based on existing potions in the belt
+        this.__updateBeltAddonsFromContainer(IThing);
       }
     }
 
@@ -600,6 +607,59 @@ class Equipment {
     });
   
     return sum;
+  }
+
+  private __updateBeltAddonsFromContainer(beltContainer: IThing): void {
+    /*
+     * Function Equipment.__updateBeltAddonsFromContainer
+     * Updates belt addons based on existing potions in the container when equipped
+     */
+    if (!beltContainer || typeof (beltContainer as any).isContainer !== "function" || !(beltContainer as any).isContainer()) {
+      return;
+    }
+
+    const container = (beltContainer as any).container as BaseContainer;
+    if (!container) return;
+
+    // Check existing potions in the belt
+    const existingHealthPotions = container.getSlots().filter(slot => {
+      if (!slot) return false;
+      const clientId = getGameServer().database.getClientId(slot.id);
+      return clientId === 266; // Health potion
+    });
+
+    const existingManaPotions = container.getSlots().filter(slot => {
+      if (!slot) return false;
+      const clientId = getGameServer().database.getClientId(slot.id);
+      return clientId === 268; // Mana potion
+    });
+
+    const existingEnergyPotions = container.getSlots().filter(slot => {
+      if (!slot) return false;
+      const clientId = getGameServer().database.getClientId(slot.id);
+      return clientId === 237; // Energy potion
+    });
+
+    console.log(`Belt equipped - Health: ${existingHealthPotions.length}, Mana: ${existingManaPotions.length}, Energy: ${existingEnergyPotions.length}`);
+
+    // Update addons based on existing potions
+    this.IPlayer.properties.updateOutfitAddon('healthPotion', existingHealthPotions.length > 0 ? 1 : 0);
+    this.IPlayer.properties.updateOutfitAddon('manaPotion', existingManaPotions.length > 0 ? 1 : 0);
+    this.IPlayer.properties.updateOutfitAddon('energyPotion', existingEnergyPotions.length > 0 ? 1 : 0);
+
+    console.log('Belt addons updated on equip');
+  }
+
+  private __resetBeltAddons(): void {
+    /*
+     * Function Equipment.__resetBeltAddons
+     * Resets all belt addons to 0 when belt is unequipped
+     */
+    this.IPlayer.properties.updateOutfitAddon('healthPotion', 0);
+    this.IPlayer.properties.updateOutfitAddon('manaPotion', 0);
+    this.IPlayer.properties.updateOutfitAddon('energyPotion', 0);
+    
+    console.log('Belt addons reset to 0 on unequip');
   }
   
 }

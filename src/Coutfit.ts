@@ -15,6 +15,13 @@ export interface EquipmentDetails extends OutfitDetails {
   belt: number;
 }
 
+export interface AddonDetails {
+  healthPotion: number;
+  manaPotion: number;
+  energyPotion: number;
+  bag: number;
+}
+
 export interface OutfitConfig {
   id: number;
   details?: OutfitDetails | null;
@@ -23,6 +30,7 @@ export interface OutfitConfig {
   mounted?: boolean;
   addonOne?: boolean;
   addonTwo?: boolean;
+  addons?: AddonDetails | null;
 }
 
 export class Outfit {
@@ -33,20 +41,12 @@ export class Outfit {
   mounted: boolean;
   addonOne: boolean;
   addonTwo: boolean;
+  addons: AddonDetails | null;
 
   static MOUNTS: Record<number, { name: string }> = require(getDataFile("mounts", "mounts"));
   static OUTFITS: Record<number, { name: string }> = require(getDataFile("outfits", "outfits"));
 
   constructor(outfit: OutfitConfig) {
-    /*
-     * Class Outfit
-     * Container for a creature outfit (player, NPC, monster)
-     *
-     * API:
-     *
-     * Outfit.getMountName(id) - returns the mount name that belongs to a mount identifier
-     * Outfit.getName(id) - returns the name that belongs to an outfit identifier
-     */
     this.id = outfit.id ?? 1;
     this.details = outfit.details ?? null;
     this.equipment = outfit.equipment ?? {hair: 904, head: 0, body: 0, legs: 0, feet: 0, lefthand: 0, righthand: 0, backpack: 0, belt: 0};
@@ -54,6 +54,7 @@ export class Outfit {
     this.mounted = outfit.mounted ?? false;
     this.addonOne = outfit.addonOne ?? false;
     this.addonTwo = outfit.addonTwo ?? false;
+    this.addons = outfit.addons ?? {healthPotion: 0, manaPotion: 0, energyPotion: 0, bag: 0};
   }
 
   static getMountName(id: number): string | null {
@@ -82,6 +83,7 @@ export class Outfit {
       mounted: this.mounted,
       addonOne: this.addonOne,
       addonTwo: this.addonTwo,
+      addons: this.addons,
     };
   }
 

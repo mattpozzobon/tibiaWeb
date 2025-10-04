@@ -9,19 +9,9 @@ export class CreatureProperties {
   private __properties: Map<string, Property<any>>;
 
   constructor(creature: any, properties: any) {
-    /*
-     * Class CreatureProperties
-     * Wrapper for the creature properties
-     */
-    //console.log("CreatureProperties: ", properties);
-
-    // Reference parent
     this.__creature = creature;
 
-    // Assign a unique ID
     this.__guid = getGameServer().world.creatureHandler.assignUID();
-
-    // Map of properties
     this.__properties = new Map<string, Property<any>>();
 
     // Add shared properties
@@ -76,6 +66,20 @@ export class CreatureProperties {
   
     // Apply the new outfit
     this.setProperty(CONST.PROPERTIES.OUTFIT, newOutfit);
+  }
+
+  updateOutfitAddon(addonType: 'healthPotion' | 'manaPotion' | 'energyPotion' | 'bag', value: number): void {
+    const currentOutfit = this.getProperty(CONST.PROPERTIES.OUTFIT);
+    const newOutfit = currentOutfit.copy();
+  
+  
+    // Update the specific addon
+    newOutfit.addons[addonType] = value;
+  
+    // Apply the new outfit
+    this.setProperty(CONST.PROPERTIES.OUTFIT, newOutfit);
+    
+    console.log(`Outfit addon ${addonType} set to: ${value}`);
   }
 
   incrementProperty(type: number, amount: number): void {

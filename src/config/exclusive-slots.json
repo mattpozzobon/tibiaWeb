@@ -22,7 +22,7 @@
     },
     "potion": {
       "name": "Potion",
-      "itemIds": [266, 268]
+      "itemIds": [266, 268, 269, 237]
     }
   },
   "containerSlots": {

@@ -30,7 +30,7 @@ export class StringCreaturePropertyPacket extends PacketWriter {
 
 export class OutfitPacket extends PacketWriter {
   constructor(guid: number, outfit: any) {
-    super(CONST.PROTOCOL.SERVER.OUTFIT, 33);
+    super(CONST.PROTOCOL.SERVER.OUTFIT, 37);
     this.writeUInt32(guid);
     this.writeOutfit(outfit);
   }
