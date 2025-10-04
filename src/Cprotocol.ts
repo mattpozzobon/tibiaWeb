@@ -175,7 +175,7 @@ export class CreatureStatePacket extends PacketWriter {
   constructor(creature: Creature) {
 
     const stringEncoded = PacketWriter.encodeString(creature.getProperty(CONST.PROPERTIES.NAME));
-    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, 51 + 2 + stringEncoded.length);
+    super(CONST.PROTOCOL.SERVER.CREATURE_STATE, 53 + 2 + stringEncoded.length);
 
     this.writeUInt32(creature.getId());
     this.writeCreatureType(creature);

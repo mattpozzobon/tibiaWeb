@@ -13,8 +13,7 @@ export class CharacterCreator {
       sex: number;
       capacity: number;
       maxCapacity: number;
-      availableMounts: number[];
-      availableOutfits: number[];
+      availableHairs: number[];
       name: string;
       attack: number;
       attackSpeed: number;
@@ -66,12 +65,11 @@ export class CharacterCreator {
       templePosition: new Position(10, 10, 9),
       properties: {
         vocation: CONST.VOCATION.NONE,
-        role: CONST.ROLES.GOD,
+        role: CONST.ROLES.NONE,
         sex: CONST.SEX.MALE,
         capacity: 100000,
         maxCapacity: 100000,
-        availableMounts: [],
-        availableOutfits: [],
+        availableHairs: [0, 904, 905], 
         name: "Unknown",
         attack: 4,
         attackSpeed: 20,

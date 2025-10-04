@@ -159,7 +159,6 @@ export class PacketWriter extends Packet {
      * Writes the available outfits to the client
      */
     const hairs = Array.from(ids).filter((id) => Outfit.HAIRS.hasOwnProperty(id));
-    console.log('hairs', hairs);
     this.writeUInt8(hairs.length);
 
     hairs.forEach((id) => {

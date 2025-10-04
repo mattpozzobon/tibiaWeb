@@ -66,6 +66,7 @@ export default class Player extends Creature implements IPlayer{
   }
 
   private addPlayerProperties(properties: any): void {
+    // Convert availableHairs array to Set if it exists, otherwise create empty Set
     this.properties.add(CONST.PROPERTIES.HAIRS, properties.availableHairs);
     this.properties.add(CONST.PROPERTIES.SEX, properties.sex);
     this.properties.add(CONST.PROPERTIES.ROLE, properties.role);
