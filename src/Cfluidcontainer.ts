@@ -1,3 +1,4 @@
+import Player from "Cplayer";
 import Item from "./Citem";
 import { CONST, getGameServer } from "./helper/appContext";
 
@@ -16,7 +17,7 @@ class FluidContainer extends Item {
     this.count = 0;
   }
 
-  handleUseWith(player: any, item: any, tile: any, index: number): void {
+  handleUseWith(player: Player, item: any, tile: any, index: number): void {
     /*
      * Function FluidContainer.handleUseWith
      * Callback fired when the fluid container is used with something
@@ -28,7 +29,7 @@ class FluidContainer extends Item {
     }
 
     if (tile.getCreature() === player) {
-      player.speechHandler.internalCreatureSay(this.__getDrinkText(), CONST.COLOR.YELLOW);
+      player.speechHandler.internalCreatureSay(this.__getDrinkText(), CONST.COLOR.RED);
 
       if (this.isAlcohol()) {
         player.addCondition(CONST.CONDITION.DRUNK, 1, 500, null);

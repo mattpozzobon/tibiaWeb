@@ -38,7 +38,8 @@
       "BUY_OFFER": 18,
       "OPEN_KEYRING": 19,
       "CLIENT_USE_TILE": 20,
-      "TARGET_CANCEL": 21
+      "TARGET_CANCEL": 21,
+      "USE_BELT_POTION": 22
     },
     "SERVER": {
       "LATENCY": 0,

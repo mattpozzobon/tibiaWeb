@@ -1,8 +1,0 @@
-[
-  {"uid": 1000, "on": "use", "callback": "enter-trunk.ts"},
-  {"uid": 1001, "on": "use", "callback": "touch-magic-flame.ts"},
-  {"uid": 1002, "on": "use", "callback": "crypt-chest.ts"},
-  {"uid": 1003, "on": "use", "callback": "crypt-chest.ts"},
-  {"uid": 1004, "on": "enter", "callback": "crypt-tile.ts"},
-  {"uid": 1005, "on": "use", "callback": "clock-secret.ts"}
-]

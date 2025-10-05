@@ -88,9 +88,8 @@ export class NetworkManager {
     }
   
     const handlers: Record<number, (gs: GameSocket, p: PacketReader) => void> = {
-      [CONST.PROTOCOL.CLIENT.BUY_OFFER]: (gs, p) =>
-        gs.player!.handleBuyOffer(p.readBuyOffer()),
-  
+
+      [CONST.PROTOCOL.CLIENT.BUY_OFFER]:                (gs, p) => gs.player!.handleBuyOffer(p.readBuyOffer()),
       // TODO
       //[CONST.PROTOCOL.CLIENT.TARGET_CANCEL]:            (gs, p) => gs.player!.setTarget(null),
 
@@ -112,6 +111,7 @@ export class NetworkManager {
   
       [CONST.PROTOCOL.CLIENT.OPEN_KEYRING]:             (gs, p) => gs.player!.containerManager.openKeyring(),
 
+      [CONST.PROTOCOL.CLIENT.USE_BELT_POTION]:          (gs, p) => gs.player!.useHandler.handleUseBeltPotion(p.readUInt8()),
   
       [CONST.PROTOCOL.CLIENT.TARGET]:                   (gs, p) => this.packetHandler.handleTargetCreature(gs.player!, p.readUInt32()),
   

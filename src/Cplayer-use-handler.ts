@@ -3,11 +3,12 @@
 import { IPlayer } from "interfaces/IPlayer";
 import GenericLock from "./Cgeneric-lock";
 import { ReadTextPacket } from "./Cprotocol";
+import { getGameServer, CONST } from "./helper/appContext";
 
 class UseHandler {
   private __player: IPlayer;
   private __useWithLock: GenericLock;
-  readonly GLOBAL_USE_COOLDOWN: number = 20;
+  readonly GLOBAL_USE_COOLDOWN: number = 50;
 
   constructor(player: any) {
     /*
@@ -143,6 +144,89 @@ class UseHandler {
     }
 
     return tile.getTopItem();
+  }
+
+  handleUseBeltPotion(index: number): void {
+    /*
+     * Function UseHandler.handleUseBeltPotion
+     * Handles the use of a belt potion
+     * Index 0 = Health, Index 1 = Mana, Index 2 = Energy
+     */
+    
+    // Check if the action is locked
+    if (this.__useWithLock.isLocked()) {
+      this.__player.sendCancelMessage("You cannot use this object yet.");
+      return;
+    }
+
+    // Get the belt container from equipment
+    const beltItem = this.__player.containerManager.equipment.peekIndex(CONST.EQUIPMENT.BELT);
+    if (!beltItem || !beltItem.isContainer()) {
+      this.__player.sendCancelMessage("You don't have a belt equipped.");
+      return;
+    }
+
+    // Find the appropriate potion in the belt container based on index
+    let potion = null;
+    let potionSlot = -1;
+    let expectedClientId = 0;
+    
+    // Determine which potion type we're looking for based on index
+    if (index === 0) {
+      expectedClientId = 266; // Health potion
+    } else if (index === 1) {
+      expectedClientId = 268; // Mana potion
+    } else if (index === 2) {
+      expectedClientId = 237; // Energy potion
+    } else {
+      this.__player.sendCancelMessage("Invalid potion slot.");
+      return;
+    }
+    
+    // Search through the belt container to find the matching potion
+    for (let i = 0; i < beltItem.container.size; i++) {
+      const item = beltItem.peekIndex(i);
+      if (item) {
+        const clientId = getGameServer().database.getClientId(item.id);
+        if (clientId === expectedClientId) {
+          potion = item;
+          potionSlot = i;
+          break;
+        }
+      }
+    }
+    
+    if (!potion) {
+      const potionType = index === 0 ? 'health' : index === 1 ? 'mana' : 'energy';
+      this.__player.sendCancelMessage(`You don't have a ${potionType} potion in your belt.`);
+      return;
+    }
+    
+    // Apply the appropriate effect based on potion type
+    let effectApplied = false;
+    
+    if (index === 0) { // Health potion
+      this.__player.increaseHealth(50);
+      effectApplied = true;
+    } else if (index === 1) { // Mana potion
+      this.__player.increaseMana(50);
+      effectApplied = true;
+    } else if (index === 2) { // Energy potion
+      this.__player.increaseEnergy(50);
+      effectApplied = true;
+    }
+
+    if (effectApplied) {
+      // Remove the potion from the belt
+      beltItem.removeIndex(potionSlot, 1);
+      
+      // Lock the action for cooldown
+      this.__useWithLock.lock(this.GLOBAL_USE_COOLDOWN);
+      
+      console.log(`Used ${index === 0 ? 'health' : index === 1 ? 'mana' : 'energy'} potion from belt slot ${potionSlot}`);
+    } else {
+      this.__player.sendCancelMessage("You cannot use that potion in this slot.");
+    }
   }
 }
 

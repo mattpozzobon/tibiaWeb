@@ -172,7 +172,7 @@ export class ConditionManager implements IConditionManager {
      * Called when the condition has expired
      */
     const conditionData = getGameServer().database.getCondition(condition.id.toString());
-    if (conditionData)
+    if (conditionData && conditionData.onExpire)
       conditionData.onExpire.call(condition, this.__creature);
 
     this.__conditions.delete(condition.id);

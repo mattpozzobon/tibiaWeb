@@ -39,6 +39,7 @@ export interface Constants {
       OPEN_KEYRING: number;
       CLIENT_USE_TILE: number;
       TARGET_CANCEL: number;
+      USE_BELT_POTION: number;
     };
     SERVER: {
       LATENCY: number;
