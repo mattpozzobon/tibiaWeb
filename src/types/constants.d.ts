@@ -211,8 +211,8 @@ export interface Constants {
     ELECTRIFIED: number;
     INVISIBLE: number;
     PROTECTION_ZONE: number;
+    COMBAT_LOCK: number;
     SUPPRESS_DRUNK: number;
-    LIGHT: number;
     HEALING: number;
     REGENERATION: number;
     MORPH: number;
@@ -221,6 +221,9 @@ export interface Constants {
     SATED: number;
     HASTE: number;
     ARENA: number;
+    HEALTH_HEALING: number;
+    MANA_HEALING: number;
+    ENERGY_HEALING: number;
   };
   BLOODTYPE: {
     BLOOD: number;

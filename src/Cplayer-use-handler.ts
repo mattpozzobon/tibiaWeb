@@ -206,13 +206,16 @@ class UseHandler {
     let effectApplied = false;
     
     if (index === 0) { // Health potion
-      this.__player.increaseHealth(50);
+      // Add healing condition: 5 ticks, 10 seconds duration, heals 10 HP per tick
+      this.__player.addCondition(CONST.CONDITION.HEALTH_HEALING, 5, 10, null);
       effectApplied = true;
     } else if (index === 1) { // Mana potion
-      this.__player.increaseMana(50);
+      // Add mana healing condition: 5 ticks, 10 seconds duration, heals 10 MP per tick
+      this.__player.addCondition(CONST.CONDITION.MANA_HEALING, 5, 10, null);
       effectApplied = true;
     } else if (index === 2) { // Energy potion
-      this.__player.increaseEnergy(50);
+      // Add energy healing condition: 5 ticks, 10 seconds duration, heals 10 EP per tick
+      this.__player.addCondition(CONST.CONDITION.ENERGY_HEALING, 5, 10, null);
       effectApplied = true;
     }
 

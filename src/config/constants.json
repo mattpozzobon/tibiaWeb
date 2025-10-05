@@ -211,8 +211,8 @@
     "ELECTRIFIED": 3,
     "INVISIBLE": 4,
     "PROTECTION_ZONE": 5,
-    "SUPPRESS_DRUNK": 6,
-    "LIGHT": 7,
+    "COMBAT_LOCK": 6,
+    "SUPPRESS_DRUNK": 7,
     "HEALING": 8,
     "REGENERATION": 9,
     "MORPH": 10,
@@ -220,7 +220,10 @@
     "MAGIC_FLAME": 12,
     "SATED": 13,
     "HASTE": 14,
-    "ARENA": 15
+    "ARENA": 15,
+    "HEALTH_HEALING": 16,
+    "MANA_HEALING": 17,
+    "ENERGY_HEALING": 18
   },
   "BLOODTYPE": {
     "BLOOD": 0,
