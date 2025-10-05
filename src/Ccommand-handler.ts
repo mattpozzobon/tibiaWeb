@@ -79,19 +79,23 @@ export class CommandHandler {
         getGameServer().world.creatureHandler.spawnCreature(id, player.getPosition());
         break;
 
-      case "/+":
-        player.increaseHealth(10);
-        player.increaseMana(10);
-        player.increaseEnergy(10);
-        getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.MAGIC_BLUE);
-        break;
-
-      case "/-":
-        player.decreaseHealth(10);
-        player.decreaseMana(10);
-        player.decreaseEnergy(10);
-        getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.DRAWBLOOD);
-        break;
+        case "/+": {
+          const amt = this.parseAmount(args[1], 10);
+          player.increaseHealth(amt);
+          player.increaseMana(amt);
+          player.increaseEnergy(amt);
+          getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.MAGIC_BLUE);
+          break;
+        }
+  
+        case "/-": {
+          const amt = this.parseAmount(args[1], 10);
+          player.decreaseHealth(amt);
+          player.decreaseMana(amt);
+          player.decreaseEnergy(amt);
+          getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.DRAWBLOOD);
+          break;
+        }
 
       case "/path":
         const start = player.getPosition();
@@ -109,6 +113,13 @@ export class CommandHandler {
       default:
         player.sendCancelMessage("Unknown command.");
     }
+  }
+
+  private parseAmount(arg?: string, def = 10): number {
+    const n = Number(arg);
+    if (!Number.isFinite(n)) return def;
+    const v = Math.abs(Math.trunc(n));
+    return v > 0 ? v : def;
   }
 
   private handleCommandSetTime(player: IPlayer, timeStr?: string): void {
