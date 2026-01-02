@@ -8,9 +8,9 @@
     "TOKEN_VALID_MS": 3000
   },
   "IPC": {
-    "RECONNECT_MS": 1000,
-    "HOST": "127.0.0.1",
     "PORT": 2000,
+    "HOST": "127.0.0.1",
+    "RECONNECT_MS": 1000,
     "SOCKET": "game.sock"
   },
   "LOGGING": {

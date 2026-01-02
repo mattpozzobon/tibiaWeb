@@ -35,13 +35,13 @@ class GameServer implements IGameServer{
     this.database = new Database();
     
     // Initialize the account database for character management
-    this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
+    this.accountDatabase = new AccountDatabaseGrouped(process.env.ACCOUNT_DB_PATH || CONFIG.DATABASE.ACCOUNT_DATABASE);
 
     // Create the game loop with an interval and callback function
     this.gameLoop = new GameLoop(CONFIG.SERVER.MS_TICK_INTERVAL, this.__loop.bind(this));
 
     // Open the server for HTTP connections
-    this.server = new HTTPServer(CONFIG.SERVER.HOST, CONFIG.SERVER.PORT);
+    this.server = new HTTPServer(process.env.GAME_HOST || CONFIG.SERVER.HOST, Number(process.env.GAME_PORT || CONFIG.SERVER.PORT));
 
     // The IPC socket for communicating with the server
     this.IPCSocket = new IPCSocket();

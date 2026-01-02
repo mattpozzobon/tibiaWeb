@@ -17,9 +17,8 @@ class LoginServer {
   public server: http.Server;
 
   constructor() {
-    this.__host = CONFIG.LOGIN.HOST;
-    this.__port = CONFIG.LOGIN.PORT;
-
+    this.__host = process.env.LOGIN_HOST || CONFIG.LOGIN.HOST;
+    this.__port = Number(process.env.LOGIN_PORT || CONFIG.LOGIN.PORT);
     this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
 
     this.server = http.createServer((req, res) => {
