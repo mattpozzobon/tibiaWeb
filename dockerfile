@@ -1,4 +1,10 @@
 FROM node:20-bookworm-slim
+
+# sqlite3 CLI for debugging inside the Fly machine
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends sqlite3 \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -6,13 +12,10 @@ RUN npm ci
 
 COPY . .
 
-ENV NODE_ENV=production
+# Seed DB baked into the image
+RUN mkdir -p /seed /data
+COPY accounts.db /seed/accounts.db
 
-# IMPORTANT: bind inside container
-ENV LOGIN_HOST=0.0.0.0
-ENV GAME_HOST=0.0.0.0
+# Copy seed DB into the volume only if the volume doesn't already have one
+CMD sh -c 'if [ ! -s /data/accounts.db ]; then cp -f /seed/accounts.db /data/accounts.db; fi && npm run start:all'
 
-EXPOSE 1338
-EXPOSE 2222
-
-CMD ["npm","run","start:all"]

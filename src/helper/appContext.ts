@@ -1,56 +1,74 @@
-import path from 'path';
-import config from '../config/config.json';
-import constants from '../config/constants.json';
-import items from "../config/itemToSprite.json"; 
-import { Config } from 'types/config';
-import { Constants } from 'types/constants';
-import { IGameServer } from 'interfaces/IGameserver';
+import path from "path";
+import baseConfig from "../config/config.json";
+import constants from "../config/constants.json";
+import items from "../config/itemToSprite.json";
+import { Config } from "types/config";
+import { Constants } from "types/constants";
 
+/* ----------------------------------------------------
+   Helpers
+---------------------------------------------------- */
 
-// Configuration and constants
-export const CONFIG: Config = config;
+function envStr(name: string): string | undefined {
+  const v = process.env[name];
+  return v && v.trim().length ? v : undefined;
+}
+
+function envInt(name: string): number | undefined {
+  const v = process.env[name];
+  if (!v) return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/* ----------------------------------------------------
+   Build CONFIG with env overrides
+---------------------------------------------------- */
+
+function buildConfig(): Config {
+  const cfg: Config = JSON.parse(JSON.stringify(baseConfig));
+
+  /* Login server */
+  cfg.LOGIN.HOST = envStr("LOGIN_HOST") ?? cfg.LOGIN.HOST;
+  cfg.LOGIN.PORT = envInt("LOGIN_PORT") ?? cfg.LOGIN.PORT;
+
+  /* Game server */
+  cfg.SERVER.HOST = envStr("SERVER_HOST") ?? cfg.SERVER.HOST;
+  cfg.SERVER.PORT = envInt("SERVER_PORT") ?? cfg.SERVER.PORT;
+  cfg.SERVER.EXTERNAL_HOST = envStr("EXTERNAL_HOST") ?? cfg.SERVER.EXTERNAL_HOST;
+
+  /* Database */
+  cfg.DATABASE.ACCOUNT_DATABASE =
+    envStr("ACCOUNT_DATABASE") ?? cfg.DATABASE.ACCOUNT_DATABASE;
+
+  /* Crypto */
+  cfg.HMAC.SHARED_SECRET =
+    envStr("HMAC_SHARED_SECRET") ?? cfg.HMAC.SHARED_SECRET;
+
+  return cfg;
+}
+
+/* ----------------------------------------------------
+   Exports
+---------------------------------------------------- */
+
+export const CONFIG: Config = buildConfig();
 export const CONST: Constants = constants;
 
-export const ITEM_TO_SPRITE: Record<number, number> = items.items.reduce((acc, item) => {
-  acc[item.id] = item.sprite_id;
-  return acc;
-}, {} as Record<number, number>);
+/* ----------------------------------------------------
+   Item → sprite lookup
+---------------------------------------------------- */
 
-// Build a hand-aware lookup so left/right hands can map to different sprite IDs where needed
-type Hand = "left" | "right";
-type HandSpriteMapping = { left?: number; right?: number; default?: number };
-
-export const ITEM_TO_SPRITE_BY_HAND: Record<number, HandSpriteMapping> = items.items.reduce(
-  (acc: Record<number, HandSpriteMapping>, item: { name: string; id: number; sprite_id: number }) => {
-    const name = (item.name || "").toLowerCase();
-    const mapping = acc[item.id] || {};
-
-    const isLeft = name.includes("left-hand") || name.includes("lefthand") || name.includes("left hand");
-    const isRight = name.includes("right-hand") || name.includes("righthand") || name.includes("right hand");
-
-    if (isLeft) {
-      mapping.left = item.sprite_id;
-    } else if (isRight) {
-      mapping.right = item.sprite_id;
-    } else {
-      mapping.default = item.sprite_id;
-    }
-
-    acc[item.id] = mapping;
+export const ITEM_TO_SPRITE: Record<number, number> = items.items.reduce(
+  (acc, item) => {
+    acc[item.id] = item.sprite_id;
     return acc;
   },
-  {} as Record<number, HandSpriteMapping>
+  {} as Record<number, number>
 );
 
-// Utility function to get data file paths
-export const getDataFile = (...args: string[]): string => {
-  return path.join(__dirname, '..', 'data', CONFIG.SERVER.CLIENT_VERSION, ...args);
-};
-
-export const requireModule = (...args: string[]): any => {
-  const resolvedPath = path.join(__dirname, '..', 'src', ...args);
-  return require(resolvedPath);
-};
+type Hand = "left" | "right";
+type HandSpriteMapping = { left?: number; right?: number; default?: number };
 
 export function getSpriteIdForItem(itemId: number, hand?: Hand): number | null {
   // Prefer hand-aware mapping if available
@@ -64,63 +82,85 @@ export function getSpriteIdForItem(itemId: number, hand?: Hand): number | null {
   // Fallback to generic mapping
   return ITEM_TO_SPRITE[itemId] || null;
 }
+export const ITEM_TO_SPRITE_BY_HAND: Record<number, HandSpriteMapping> =
+  items.items.reduce((acc: Record<number, HandSpriteMapping>, item) => {
+    const name = (item.name || "").toLowerCase();
+    const mapping = acc[item.id] || {};
 
+    const isLeft =
+      name.includes("left-hand") ||
+      name.includes("lefthand") ||
+      name.includes("left hand");
 
-// GameServer instance management
+    const isRight =
+      name.includes("right-hand") ||
+      name.includes("righthand") ||
+      name.includes("right hand");
+
+    if (isLeft) mapping.left = item.sprite_id;
+    else if (isRight) mapping.right = item.sprite_id;
+    else mapping.default = item.sprite_id;
+
+    acc[item.id] = mapping;
+    return acc;
+  }, {} as Record<number, HandSpriteMapping>);
+
+/* ----------------------------------------------------
+   Utilities
+---------------------------------------------------- */
+
+export const getDataFile = (...args: string[]): string => {
+  return path.join(__dirname, "..", "data", CONFIG.SERVER.CLIENT_VERSION, ...args);
+};
+
+export const requireModule = (...args: string[]): any => {
+  return require(path.join(__dirname, "..", "src", ...args));
+};
+
+/* ----------------------------------------------------
+   GameServer instance registry
+---------------------------------------------------- */
+
+import { IGameServer } from "interfaces/IGameserver";
+
 let gameServerInstance: IGameServer | null = null;
 
 export const initializeGameServer = (server: IGameServer): IGameServer => {
-  if (!gameServerInstance) {
-    gameServerInstance = server;
-  }
+  if (!gameServerInstance) gameServerInstance = server;
   return gameServerInstance;
 };
 
 export const getGameServer = (): IGameServer => {
-  if (!gameServerInstance) {
-    throw new Error('GameServer is not initialized. Call initializeGameServer() first.');
-  }
+  if (!gameServerInstance) throw new Error("GameServer not initialized");
   return gameServerInstance;
 };
 
-
-const print = true;
+/* ----------------------------------------------------
+   Debug printer
+---------------------------------------------------- */
 
 export class Print {
-  constructor() {}
-
   static line(): void {
-    console.log('--------------------------------------------------------------------');
+    console.log("----------------------------------------------------");
   }
 
   static savePlayer(character: any): void {
-    if(print){
-      const parsed = JSON.parse(character);
-      console.log("JSON saved successful:\n", JSON.stringify(parsed, null, 2));
-    }
+    const parsed = JSON.parse(character);
+    console.log("JSON saved:\n", JSON.stringify(parsed, null, 2));
   }
 
-  static packet(buffer: any, packet: any): void{
-    const message = packet.index > packet.buffer.length? "🔴": packet.index === packet.buffer.length? "🟡": "🟢"; 
-    const formattedOpcode = buffer[0].toString().padStart(2, '0');                                               
-    console.log(`📤  opcode: ${formattedOpcode} ${message} - ${this.getProtocolServer(buffer[0])}`);
-  }
-  
-  static packetIn(opcode: any): void {
-    const formattedOpcode = opcode.toString().padStart(2, '0');
-    console.log(`📨  opcode: ${formattedOpcode} ⚫ - ${this.getProtocolClient(opcode)}`);
-  }
-
-  static getProtocolServer(value: number): string {
-    const entries = Object.entries(CONST.PROTOCOL.SERVER);
-    const found = entries.find(([key, num]) => num === value);
-    return found ? found[0] : "undefined";
+  static packet(buffer: any, packet: any): void {
+    const msg =
+      packet.index > packet.buffer.length
+        ? "🔴"
+        : packet.index === packet.buffer.length
+        ? "🟡"
+        : "🟢";
+    const opcode = buffer[0].toString().padStart(2, "0");
+    console.log(`📤 opcode ${opcode} ${msg}`);
   }
 
-  static getProtocolClient(value: number): string {
-    const entries = Object.entries(CONST.PROTOCOL.CLIENT);
-    const found = entries.find(([key, num]) => num === value);
-    return found ? found[0] : "undefined";
+  static packetIn(opcode: number): void {
+    console.log(`📨 opcode ${opcode.toString().padStart(2, "0")} ⚫`);
   }
-  
 }

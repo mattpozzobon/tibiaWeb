@@ -3,10 +3,10 @@ import * as http from "http";
 import * as url from "url";
 import { CONFIG } from "./helper/appContext";
 import { AccountDatabaseGrouped } from "./Caccount-database-grouped";
-import { admin } from './Clogin-server-firebase';
+import { admin } from "./Clogin-server-firebase";
 
 interface QueryObject {
-  token?: string; // Firebase ID token
+  token?: string;
   [key: string]: any;
 }
 
@@ -19,7 +19,9 @@ class LoginServer {
   constructor() {
     this.__host = process.env.LOGIN_HOST || CONFIG.LOGIN.HOST;
     this.__port = Number(process.env.LOGIN_PORT || CONFIG.LOGIN.PORT);
-    this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
+
+    // ✅ Persisted DB on Fly (or local default)
+    this.accountDatabase = new AccountDatabaseGrouped(process.env.ACCOUNT_DATABASE || CONFIG.DATABASE.ACCOUNT_DATABASE);
 
     this.server = http.createServer((req, res) => {
       this.__handleRequest(req, res).catch(err => {
@@ -54,24 +56,32 @@ class LoginServer {
     response.setHeader("Access-Control-Allow-Origin", "*");
     response.setHeader("Access-Control-Allow-Methods", "OPTIONS, GET, POST");
     response.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
+  
     if (request.method === "OPTIONS") {
       response.statusCode = 204;
       response.end();
       return;
     }
-
+  
     const parsedUrl = url.parse(request.url || "", true);
     const pathname = parsedUrl.pathname || "";
     const query = parsedUrl.query as QueryObject;
-
+  
+    // ✅ allow health without token
+    if (pathname === "/health" && request.method === "GET") {
+      response.statusCode = 200;
+      response.setHeader("Content-Type", "text/plain");
+      response.end("ok");
+      return;
+    }
+  
     const idToken = query.token;
     if (!idToken) {
       response.statusCode = 401;
       response.end("Missing token");
       return;
     }
-
+  
     let decoded;
     try {
       decoded = await admin.auth().verifyIdToken(idToken);
@@ -80,27 +90,34 @@ class LoginServer {
       response.end("Invalid token");
       return;
     }
-
+  
     const uid = decoded.uid;
     const email = decoded.email || null;
-
+  
     if (pathname === "/" && request.method === "GET") {
-      return this.__handleHandshake(uid, email, idToken, response);
+      return this.__handleHandshake(request, uid, email, idToken, response);
     }
-
+  
     if (pathname === "/characters" && request.method === "GET") {
       return this.__handleGetCharacters(uid, response);
     }
-
+  
     if (pathname === "/characters/create" && request.method === "POST") {
       return this.__handleCreateCharacter(request, uid, response);
     }
-
+  
     response.statusCode = 404;
     response.end("Not found");
   }
+    
 
-  private __handleHandshake(uid: string, email: string | null, idToken: string, response: http.ServerResponse): void {
+  private __handleHandshake(
+    request: http.IncomingMessage,
+    uid: string,
+    email: string | null,
+    idToken: string,
+    response: http.ServerResponse
+  ): void {
     this.accountDatabase.getAccountByUid(uid, (err, row) => {
       if (err) {
         console.error("DB error:", err);
@@ -108,17 +125,26 @@ class LoginServer {
         response.end();
         return;
       }
-
+  
       const proceed = () => {
+        const externalGameHost = process.env.EXTERNAL_HOST || CONFIG.SERVER.EXTERNAL_HOST;
+  
+        // ✅ Use public host from proxy headers (Fly sets these)
+        const forwardedHost = request.headers["x-forwarded-host"];
+        const hostHeader = (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost)
+          || request.headers.host
+          || "";
+  
         const responsePayload = {
           token: idToken,
-          gameHost: CONFIG.SERVER.EXTERNAL_HOST,
-          loginHost: `${this.__host}:${this.__port}`,
+          gameHost: externalGameHost, // emperia-server.fly.dev:2222
+          loginHost: hostHeader,      // emperia-server.fly.dev  (NOT 0.0.0.0:1338)
         };
+  
         response.writeHead(200, { "Content-Type": "application/json" });
         response.end(JSON.stringify(responsePayload));
       };
-
+  
       if (!row) {
         this.accountDatabase.createAccountForUid(uid, email, createErr => {
           if (createErr) {
@@ -149,46 +175,39 @@ class LoginServer {
 
   private __handleCreateCharacter(request: http.IncomingMessage, uid: string, response: http.ServerResponse): void {
     let body = "";
-    request.on("data", chunk => {body += chunk;});
+    request.on("data", chunk => { body += chunk; });
     request.on("end", () => {
       try {
         const parsed = JSON.parse(body);
-        // Normalize and validate name input
+
         let name: string | undefined = typeof parsed.name === "string" ? parsed.name : undefined;
-        if (name) {
-          name = name.trim().replace(/\s+/g, " ");
-        }
+        if (name) name = name.trim().replace(/\s+/g, " ");
         const sex = parsed.sex;
 
-        // Basic request validation
         if (!name || !sex || !["male", "female"].includes(sex)) {
           response.statusCode = 400;
           response.end("Invalid character data");
           return;
         }
 
-        // Business rules: name validation
         if (name.length > 15) {
           response.statusCode = 400;
           response.end("Name too long (max 20)");
           return;
         }
 
-        // Allow only letters and spaces
         if (!/^[A-Za-z ]+$/.test(name)) {
           response.statusCode = 400;
           response.end("Invalid characters in name");
           return;
         }
 
-        // Must contain at least one letter
         if (!/[A-Za-z]/.test(name)) {
           response.statusCode = 400;
           response.end("Name must contain letters");
           return;
         }
 
-        // Ensure name uniqueness
         this.accountDatabase.getCharacterByName(name, (lookupErr, existing) => {
           if (lookupErr) {
             response.statusCode = 500;
@@ -202,7 +221,6 @@ class LoginServer {
             return;
           }
 
-          // Proceed with creation
           this.accountDatabase.createCharacterForUid(uid, name!, sex, 1, (errCode, newCharacterId) => {
             if (errCode) {
               response.statusCode = 500;
@@ -221,7 +239,6 @@ class LoginServer {
       }
     });
   }
-
 }
 
 export default LoginServer;

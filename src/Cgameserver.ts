@@ -26,30 +26,29 @@ class GameServer implements IGameServer{
   constructor(config: Config) {
     this.SERVER = config.SERVER;
     this.STATUS = config.SERVER.STATUS;
-
-    // Signal interrupt received: gracefully shut down server
-    process.on('SIGINT', this.scheduleShutdown.bind(this, this.SERVER.MS_SHUTDOWN_SCHEDULE));
-    process.on('SIGTERM', this.scheduleShutdown.bind(this, this.SERVER.MS_SHUTDOWN_SCHEDULE));
-
-    // Connect to the information database that keeps all the server data
+  
+    process.on("SIGINT", this.scheduleShutdown.bind(this, this.SERVER.MS_SHUTDOWN_SCHEDULE));
+    process.on("SIGTERM", this.scheduleShutdown.bind(this, this.SERVER.MS_SHUTDOWN_SCHEDULE));
+  
+    // Main world DB
     this.database = new Database();
-    
-    // Initialize the account database for character management
-    this.accountDatabase = new AccountDatabaseGrouped(process.env.ACCOUNT_DB_PATH || CONFIG.DATABASE.ACCOUNT_DATABASE);
-
-    // Create the game loop with an interval and callback function
-    this.gameLoop = new GameLoop(CONFIG.SERVER.MS_TICK_INTERVAL, this.__loop.bind(this));
-
-    // Open the server for HTTP connections
-    this.server = new HTTPServer(process.env.GAME_HOST || CONFIG.SERVER.HOST, Number(process.env.GAME_PORT || CONFIG.SERVER.PORT));
-
-    // The IPC socket for communicating with the server
+  
+    // Account / character DB (Fly volume-safe)
+    this.accountDatabase = new AccountDatabaseGrouped(process.env.ACCOUNT_DATABASE || CONFIG.DATABASE.ACCOUNT_DATABASE);
+  
+    // Game loop
+    this.gameLoop = new GameLoop(config.SERVER.MS_TICK_INTERVAL, this.__loop.bind(this));
+  
+    // Public TCP/WebSocket game server
+    this.server = new HTTPServer(config.SERVER.HOST, config.SERVER.PORT);
+  
+    // IPC socket
     this.IPCSocket = new IPCSocket();
-
-    // State variables to keep the current server status
+  
     this.__serverStatus = null;
     this.__initialized = null;
   }
+  
 
   isShutdown(): boolean {
     return this.__serverStatus === this.SERVER.STATUS.CLOSING;

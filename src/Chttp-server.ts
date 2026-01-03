@@ -47,10 +47,7 @@ class HTTPServer {
 
     this.__server.timeout = 5000;
 
-    this.websocketServer.websocket.on(
-      "wsClientError",
-      this.__handleClientError.bind(this)
-    );
+    this.websocketServer.websocket.on("wsClientError",this.__handleClientError.bind(this));
 
     this.__server.on("close", this.__handleClose.bind(this));
     this.__server.on("clientError", this.__handleClientError.bind(this));
@@ -63,8 +60,6 @@ class HTTPServer {
 
     this.__status = CONFIG.SERVER.STATUS.CLOSED;
   }
-
-
 
   public close(): void {
     if (this.__status !== CONFIG.SERVER.STATUS.OPEN) return;

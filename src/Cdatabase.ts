@@ -3,7 +3,6 @@ import { CONFIG, getDataFile, getGameServer } from "./helper/appContext";
 import DataValidator from "./Cvalidator";
 import ThingPrototype from "./Cthing-prototype";
 import Thing from "./Cthing";
-import Creature from "./Ccreature";
 import Door from "./Cdoor";
 import Key from "./Ckey";
 import Container from "./Ccontainer";
