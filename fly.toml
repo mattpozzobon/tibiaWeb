@@ -1,47 +1,72 @@
-# fly.toml app configuration file generated for emperia-server
 app = "emperia-server"
 primary_region = "lhr"
 
 [build]
 
-# ---- Login server (HTTPS via Fly proxy) ----
-[http_service]
+# -------------------------------
+# Login API (HTTP)
+# -------------------------------
+[[services]]
   internal_port = 1338
-  force_https = true
-  auto_stop_machines = "off"
-  auto_start_machines = true
-  min_machines_running = 1
+  protocol = "tcp"
   processes = ["app"]
 
-  [[http_service.checks]]
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+  [[services.http_checks]]
     interval = "30s"
     timeout = "2s"
     grace_period = "60s"
     method = "GET"
     path = "/health"
 
-# ---- Game server (TCP/WebSocket) ----
+
+# -------------------------------
+# Game Server (RAW TCP + TLS)
+# -------------------------------
 [[services]]
   internal_port = 2222
   protocol = "tcp"
   processes = ["app"]
 
-# ---- Persist SQLite ----
+  [[services.ports]]
+    port = 2222
+    handlers = ["tls", "http"]    
+
+  [[services.tcp_checks]]
+    interval = "30s"
+    timeout = "2s"
+
+
+# -------------------------------
+# Persistent Volume
+# -------------------------------
 [mounts]
   source = "data"
   destination = "/data"
 
-# ---- Runtime env overrides (Fly only) ----
+
+# -------------------------------
+# Runtime Environment
+# -------------------------------
 [env]
   LOGIN_HOST = "0.0.0.0"
   LOGIN_PORT = "1338"
-
   SERVER_HOST = "0.0.0.0"
   SERVER_PORT = "2222"
-
   EXTERNAL_HOST = "emperia-server.fly.dev:2222"
   ACCOUNT_DATABASE = "/data/accounts.db"
 
+
+# -------------------------------
+# VM
+# -------------------------------
 [[vm]]
   memory = "1gb"
   cpus = 1

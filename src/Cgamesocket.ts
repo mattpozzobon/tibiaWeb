@@ -20,6 +20,8 @@ class GameSocket {
   public __address: string;
   public __connected: number;
   public __alive: boolean = true;
+  private __lastPingTime: number = 0;
+  private readonly __pingTimeoutMs: number = 30000; // 30 seconds to wait for pong
   public incomingBuffer: PacketBuffer;
   public outgoingBuffer: PacketBuffer;
 
@@ -56,6 +58,9 @@ class GameSocket {
 
   private __handlePong(): void {
     this.__alive = true;
+    this.__lastPingTime = 0; // Reset ping time on successful pong
+    // Update lastPacketReceived on pong to treat WS heartbeat as activity
+    this.incomingBuffer.updateLastPacketReceived();
   }
 
   public isController(): boolean {
@@ -75,12 +80,29 @@ class GameSocket {
   }
 
   public ping(): void {
+    const now = Date.now();
+    
+    // If we're waiting for a pong, check if we've waited too long
+    if (!this.isAlive() && this.__lastPingTime > 0) {
+      const timeSincePing = now - this.__lastPingTime;
+      if (timeSincePing > this.__pingTimeoutMs) {
+        // We've waited too long for a pong - connection is stale
+        console.log(`Disconnecting socket: no pong received after ${timeSincePing}ms`);
+        this.terminate();
+        return;
+      }
+      // Still waiting for pong from previous ping - skip this cycle
+      return;
+    }
+    
+    // Only ping if we're alive (either just connected or received pong)
     if (!this.isAlive()) {
-      this.terminate();
       return;
     }
 
+    // Send ping and mark as waiting for pong
     this.__alive = false;
+    this.__lastPingTime = now;
     this.socket.ping();
   }
 

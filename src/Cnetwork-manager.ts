@@ -50,6 +50,21 @@ export class NetworkManager {
      * Function readIncomingBuffer
      * Flushes the incoming network message buffer
      */
+    
+    // Check for socket timeout - only for logged-in players
+    if (gameSocket.player) {
+      const lastPacketReceived = gameSocket.getLastPacketReceived();
+      const timeSinceLastPacket = Date.now() - lastPacketReceived;
+      const timeoutMs = CONFIG.SERVER.SOCKET_TIMEOUT_MS || 120000; // Default 120 seconds
+      
+      if (timeSinceLastPacket > timeoutMs) {
+        // Socket has been idle too long - disconnect
+        console.log(`Disconnecting socket due to timeout: ${timeSinceLastPacket}ms since last packet`);
+        gameSocket.close();
+        return;
+      }
+    }
+    
     const buffer = gameSocket.incomingBuffer.flush();
     this.packetStream.write(buffer);
 

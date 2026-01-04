@@ -4,175 +4,154 @@ import { CONFIG, CONST, getGameServer } from "./helper/appContext";
 import { AccountDatabaseGrouped } from "./Caccount-database-grouped";
 import { WebsocketSocketHandler } from "./Cwebsocket-server-socket-handler";
 import GameSocket from "./Cgamesocket";
+import { Duplex } from "stream";
+import { Socket } from "net";
 
 class WebsocketServer {
+  private __pingInterval: NodeJS.Timeout | null = null;
+
   websocket: Server;
   accountDatabase: AccountDatabaseGrouped;
   socketHandler: WebsocketSocketHandler;
 
   constructor() {
-    this.websocket = new Server({ noServer: true, perMessageDeflate: this.__getCompressionConfiguration()});
+    console.log("WebsocketServer constructed", { pid: process.pid, time: Date.now() });
+
+    this.websocket = new Server({
+      noServer: true,
+      perMessageDeflate: this.__getCompressionConfiguration(),
+    });
+
+    // ---- Standard heartbeat implementation ----
+    this.websocket.on("connection", (ws: any) => {
+      ws.isAlive = true;
+      ws.on("pong", () => (ws.isAlive = true));
+    });
+
+    if (this.__pingInterval) clearInterval(this.__pingInterval);
+    this.__pingInterval = setInterval(() => {
+      for (const ws of this.websocket.clients as any) {
+        if (ws.isAlive === false) {
+          ws.terminate();
+          continue;
+        }
+        ws.isAlive = false;
+        ws.ping();
+      }
+    }, 20000);
+
     this.accountDatabase = new AccountDatabaseGrouped(CONFIG.DATABASE.ACCOUNT_DATABASE);
     this.socketHandler = new WebsocketSocketHandler();
+
     this.websocket.on("connection", (socket: WebSocket, request: IncomingMessage, characterId: number, uid: string) => {
       this.__handleConnection(socket, request, characterId, uid);
     });
+
     this.websocket.on("close", this.__handleClose.bind(this));
   }
 
-  public getDataDetails(): { sockets: number } {
-    return {
-      sockets: this.socketHandler.getTotalConnectedSockets(),
-    };
+  public getDataDetails() {
+    return { sockets: this.socketHandler.getTotalConnectedSockets() };
   }
 
-  public upgrade(request: IncomingMessage, socket: any, head: Buffer, characterId: number, uid: string): void {
-    console.log(`Attempting to upgrade request from ${socket.id} to WS.`);
-    this.websocket.handleUpgrade(request, socket, head, (websocket: WebSocket) => {
-      console.log(`Upgrade successful for socket with id ${socket.id}.`);
-      this.websocket.emit("connection", websocket, request, characterId, uid);
+  public upgrade(req: IncomingMessage,socket: Socket, head: Buffer,characterId: number,uid: string) {
+    socket.setTimeout(0);
+    socket.setNoDelay(true);
+    socket.setKeepAlive(true, 15000);
+  
+    this.websocket.handleUpgrade(req, socket, head, (ws: any) => {
+  
+      // 🔥 IMPORTANT: ws creates its own socket — keep THAT alive too
+      const s = ws._socket;
+      s.setTimeout(0);
+      s.setNoDelay(true);
+      s.setKeepAlive(true, 15000);
+  
+      this.websocket.emit("connection", ws, req, characterId, uid);
     });
   }
 
-  public close(): void {
-    console.log("The websocket server has started to close.");
+  public close() {
+    if (this.__pingInterval) clearInterval(this.__pingInterval);
+    this.__pingInterval = null;
+
     this.socketHandler.disconnectClients();
     this.websocket.close();
   }
 
-  private __handleClose(): void {
-    console.log("The websocket server has closed.");
+  private __handleClose() {
     this.accountDatabase.close();
   }
 
-  private __handleConnection(
-    socket: WebSocket,
-    request: IncomingMessage,
-    characterId: number,
-    uid: string
-  ): void {
-    const gameSocket = new GameSocket(socket, uid); // Pass the authenticated UID
+  private __handleConnection(socket: WebSocket, request: IncomingMessage, characterId: number, uid: string) {
+    const gameSocket = new GameSocket(socket, uid);
     gameSocket.characterId = characterId;
 
-    if (this.socketHandler.isOverpopulated()) {
-      return gameSocket.closeError("The server is currently overpopulated. Please try again later.");
-    }
-
-    if (getGameServer().isShutdown()) {
-      return gameSocket.closeError("The server is going offline. Please try again later.");
-    }
+    if (this.socketHandler.isOverpopulated()) return gameSocket.closeError("Server is full.");
+    if (getGameServer().isShutdown()) return gameSocket.closeError("Server is shutting down.");
 
     this.__acceptConnection(gameSocket, characterId, uid);
   }
 
-  private __acceptConnection(gameSocket: GameSocket, characterId: number, uid: string): void {
-    const { address } = gameSocket.getAddress();
-    console.log(`A client joined the server: ${address}.`);
-
-    gameSocket.socket.on("close", this.__handleSocketClose.bind(this, gameSocket));
+  private __acceptConnection(gameSocket: GameSocket, characterId: number, uid: string) {
+    gameSocket.socket.once("close", () => this.__handleSocketClose(gameSocket));
     this.__handleLoginRequest(gameSocket, characterId, uid);
   }
 
-  private __handleLoginRequest(gameSocket: GameSocket, characterId: number, uid: string): void {
-    // ✅ SECURITY FIX: Validate that the character belongs to the authenticated user
+  private __handleLoginRequest(gameSocket: GameSocket, characterId: number, uid: string) {
     this.accountDatabase.getCharacterByIdForUser(characterId, uid, (error, result) => {
-      if (error) {
-        console.error("DB error fetching character:", error);
-        return gameSocket.terminate();
-      }
+      if (error || !result) return gameSocket.closeError("Character not found.");
 
-      if (!result) {
-        console.warn(`Character ${characterId} not found or does not belong to user ${uid}.`);
-        return gameSocket.closeError("Character not found or access denied.");
-      }
-
-      // Convert the grouped database format to legacy format for compatibility
       const character = this.accountDatabase.characterDataToLegacyFormat(result);
-
       this.__acceptCharacterConnection(gameSocket, character);
     });
   }
 
-  private __getCompressionConfiguration(): boolean | object {
-    if (!CONFIG.SERVER.COMPRESSION.ENABLED) return false;
-
-    return {
-      clientNoContextTakeover: true,
-      serverNoContextTakeover: true,
-      threshold: CONFIG.SERVER.COMPRESSION.THRESHOLD,
-      zlibDeflateOptions: {
-        level: CONFIG.SERVER.COMPRESSION.LEVEL,
-      },
-    };
-  }
-
-  private __acceptCharacterConnection(gameSocket: GameSocket, data: any): void {
+  private __acceptCharacterConnection(gameSocket: GameSocket, data: any) {
     this.socketHandler.referenceSocket(gameSocket);
 
-    if (!data?.properties?.name) {
-      console.error("❌ Character data missing or malformed:", data);
-      return gameSocket.closeError("Invalid character data.");
-    }
+    const existing = getGameServer().world.creatureHandler.getPlayerByName(data.properties.name);
+    if (!existing) return getGameServer().world.creatureHandler.createNewPlayer(gameSocket, data);
 
-    const existingPlayer = getGameServer().world.creatureHandler.getPlayerByName(
-      data.properties.name
-    );
+    if (CONFIG.SERVER.ON_ALREADY_ONLINE === "replace") return existing.socketHandler.attachController(gameSocket);
+    if (CONFIG.SERVER.ON_ALREADY_ONLINE === "spectate") return existing.socketHandler.addSpectator(gameSocket);
 
-    if (existingPlayer === null) {
-      return getGameServer().world.creatureHandler.createNewPlayer(gameSocket, data);
-    }
-
-    switch (CONFIG.SERVER.ON_ALREADY_ONLINE) {
-      case "replace":
-        return existingPlayer.socketHandler.attachController(gameSocket);
-      case "spectate":
-        return existingPlayer.socketHandler.addSpectator(gameSocket);
-    }
-
-    gameSocket.closeError("This character is already online.");
+    gameSocket.closeError("Already online.");
   }
 
-  private __handleSocketClose(gameSocket: GameSocket): void {
-    console.log(`A client has left the server: ${gameSocket.__address}.`);
-
+  private __handleSocketClose(gameSocket: GameSocket) {
     this.socketHandler.dereferenceSocket(gameSocket);
-
     if (!gameSocket.player) return;
 
     if (!gameSocket.player.isInCombat() || getGameServer().isClosed()) {
       return this.__removePlayer(gameSocket);
     }
 
-    const logoutEvent = getGameServer().world.eventQueue.addEvent(
+    const event = getGameServer().world.eventQueue.addEvent(
       this.__removePlayer.bind(this, gameSocket),
       gameSocket.player.combatLock.remainingFrames()
     );
 
-    gameSocket.player.socketHandler.setLogoutEvent(logoutEvent);
+    gameSocket.player.socketHandler.setLogoutEvent(event);
   }
 
-  private __removePlayer(gameSocket: GameSocket): void {
-    const playerName = gameSocket.player?.getProperty(CONST.PROPERTIES.NAME);
+  private __removePlayer(gameSocket: GameSocket) {
+    const id = gameSocket.characterId;
+    if (!id) return;
+
     getGameServer().world.creatureHandler.removePlayerFromWorld(gameSocket);
 
-    const characterId = gameSocket.characterId;
-    if (!characterId) {
-      console.warn("Missing characterId on disconnect for", playerName);
-      return;
-    }
+    this.accountDatabase.updateCharacterData(id, JSON.stringify(gameSocket.player), () => {});
+  }
 
-    const characterObj = JSON.stringify(gameSocket.player);
-    if (!characterObj) {
-      console.warn("No character object to save for", playerName);
-      return;
-    }
-
-    this.accountDatabase.updateCharacterData(characterId, characterObj, (error: Error | null) => {
-      if (error) {
-        return console.log(`Error storing player information for ${playerName}:`, error);
-      }
-      console.log(`Stored player information for ${playerName}`);
-    });
+  private __getCompressionConfiguration(): boolean | object {
+    if (!CONFIG.SERVER.COMPRESSION.ENABLED) return false;
+    return {
+      clientNoContextTakeover: true,
+      serverNoContextTakeover: true,
+      threshold: CONFIG.SERVER.COMPRESSION.THRESHOLD,
+      zlibDeflateOptions: { level: CONFIG.SERVER.COMPRESSION.LEVEL },
+    };
   }
 }
 

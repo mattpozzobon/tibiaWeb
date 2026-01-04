@@ -51,6 +51,7 @@ export interface Config {
       MS_TICK_INTERVAL: number;
       MS_SHUTDOWN_SCHEDULE: number;
       MAX_PACKET_SIZE: number;
+      SOCKET_TIMEOUT_MS?: number;
     };
     WORLD: {
       MAXIMUM_STACK_COUNT: number;

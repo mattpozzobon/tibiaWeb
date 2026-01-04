@@ -43,9 +43,13 @@ class HTTPServer {
     this.authService = new AuthService();
     this.bandwidthHandler = new BandwidthHandler();
     this.accountManager = new AccountManager();
-    this.__server = http.createServer();
 
-    this.__server.timeout = 5000;
+    this.__server = http.createServer();
+    this.__server.timeout = 0;            // disables inactivity timeout on sockets
+    this.__server.keepAliveTimeout = 0;   // default is 5s in Node -> can bite you
+    this.__server.requestTimeout = 0;     // Node 20 has this (default 300s)
+    this.__server.headersTimeout = 0;     // Node 20 has this (default 60s)
+
 
     this.websocketServer.websocket.on("wsClientError",this.__handleClientError.bind(this));
 
@@ -55,7 +59,7 @@ class HTTPServer {
     this.__server.on("error", this.__handleError.bind(this));
     this.__server.on("listening", this.__handleListening.bind(this));
     this.__server.on("request", this.__handleRequest.bind(this));
-    this.__server.on("timeout", this.__handleTimeout.bind(this));
+    //this.__server.on("timeout", this.__handleTimeout.bind(this));
     this.__server.on("upgrade", this.__handleUpgrade.bind(this));
 
     this.__status = CONFIG.SERVER.STATUS.CLOSED;
@@ -104,14 +108,18 @@ class HTTPServer {
   }
 
   private __handleUpgrade(request: IncomingMessage, socket: any, head: Buffer): void {
+    socket.setTimeout(0);
+    socket.setNoDelay(true);
+    socket.setKeepAlive(true, 15000);
+  
     const code = this.__validateHTTPRequest(request);
     if (code !== null) {
       return this.__generateRawHTTPResponse(socket, code);
     }
-
+  
     let token: string | null = null;
     let characterId: number | null = null;
-
+  
     try {
       const reqUrl = new URL(request.url || "", `http://${request.headers.host}`);
       token = reqUrl.searchParams.get("token");
@@ -119,21 +127,29 @@ class HTTPServer {
     } catch {
       return this.__generateRawHTTPResponse(socket, 400);
     }
-
+  
     if (!token || isNaN(characterId!)) {
       return this.__generateRawHTTPResponse(socket, 400);
     }
-
+  
     admin.auth().verifyIdToken(token)
       .then(decoded => {
-        // ✅ Token is valid, proceed with upgrade
-        this.websocketServer.upgrade(request, socket, head, characterId!, decoded.uid);
+        this.websocketServer.websocket.handleUpgrade(request, socket, head, (ws: any) => {
+  
+          // 🔥 THIS is the missing Fly fix
+          const s = ws._socket;
+          s.setTimeout(0);
+          s.setNoDelay(true);
+          s.setKeepAlive(true, 15000);
+  
+          this.websocketServer.websocket.emit("connection", ws, request, characterId!, decoded.uid);
+        });
       })
       .catch(err => {
         console.error("❌ Firebase token verification failed:", err);
-        this.__generateRawHTTPResponse(socket, 401); // Unauthorized
+        this.__generateRawHTTPResponse(socket, 401);
       });
-  }
+  }  
 
   private __handleConnection(socket: any): void {
     socket.id = this.__socketId++;

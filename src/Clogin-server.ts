@@ -52,10 +52,33 @@ class LoginServer {
     this.server.listen(this.__port, this.__host);
   }
 
-  private async __handleRequest(request: http.IncomingMessage, response: http.ServerResponse): Promise<void> {
-    response.setHeader("Access-Control-Allow-Origin", "*");
-    response.setHeader("Access-Control-Allow-Methods", "OPTIONS, GET, POST");
-    response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  private async __handleRequest(
+    request: http.IncomingMessage,
+    response: http.ServerResponse
+  ): Promise<void> {
+    // ---- CORS (server-side) ----
+    const origin = request.headers.origin;
+  
+    const allowedOrigins = new Set<string>([
+      "https://emperia.netlify.app",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173",
+    ]);
+  
+    if (origin && allowedOrigins.has(origin)) {
+      response.setHeader("Access-Control-Allow-Origin", origin);
+      response.setHeader("Vary", "Origin");
+    } else {
+      // Allow non-browser callers (no Origin) and keep things permissive if desired
+      response.setHeader("Access-Control-Allow-Origin", "*");
+    }
+  
+    response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+    response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    response.setHeader("Access-Control-Max-Age", "86400");
+  
+    // Helpful while debugging
+    console.log("LOGIN HTTP:", request.method, request.url, "origin=", origin);
   
     if (request.method === "OPTIONS") {
       response.statusCode = 204;
@@ -63,6 +86,7 @@ class LoginServer {
       return;
     }
   
+    // ---- Routing ----
     const parsedUrl = url.parse(request.url || "", true);
     const pathname = parsedUrl.pathname || "";
     const query = parsedUrl.query as QueryObject;
@@ -82,7 +106,7 @@ class LoginServer {
       return;
     }
   
-    let decoded;
+    let decoded: any;
     try {
       decoded = await admin.auth().verifyIdToken(idToken);
     } catch {
@@ -95,21 +119,23 @@ class LoginServer {
     const email = decoded.email || null;
   
     if (pathname === "/" && request.method === "GET") {
-      return this.__handleHandshake(request, uid, email, idToken, response);
+      this.__handleHandshake(request, uid, email, idToken, response);
+      return;
     }
   
     if (pathname === "/characters" && request.method === "GET") {
-      return this.__handleGetCharacters(uid, response);
+      this.__handleGetCharacters(uid, response);
+      return;
     }
   
     if (pathname === "/characters/create" && request.method === "POST") {
-      return this.__handleCreateCharacter(request, uid, response);
+      this.__handleCreateCharacter(request, uid, response);
+      return;
     }
   
     response.statusCode = 404;
     response.end("Not found");
-  }
-    
+  }  
 
   private __handleHandshake(
     request: http.IncomingMessage,

@@ -51,6 +51,14 @@ class PacketBuffer {
      */
     return this.__lastPacketReceived;
   }
+
+  public updateLastPacketReceived(): void {
+    /*
+     * Function PacketBuffer.updateLastPacketReceived
+     * Updates the timestamp of the last received packet (e.g., on WS pong)
+     */
+    this.__lastPacketReceived = Date.now();
+  }
 }
 
 export default PacketBuffer;
