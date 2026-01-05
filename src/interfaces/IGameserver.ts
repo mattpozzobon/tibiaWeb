@@ -18,6 +18,17 @@ export interface IGameServer {
   setServerStatus(serverStatus: string): void;
   isShutdown(): boolean;
   isClosed(): boolean;
+  isMaintenance(): boolean;
   isFeatureEnabled(): boolean;
   scheduleShutdown(seconds: number): void;
+  cancelShutdown(): void;
+  reopen(): void;
+  logoutNonAdminPlayers(seconds: number): void;
+  getStatusInfo(): {
+    status: string;
+    playersOnline: number;
+    uptime: number | null;
+    activeMonsters: number;
+    worldTime: string;
+  };
 }

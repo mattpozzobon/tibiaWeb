@@ -54,9 +54,11 @@ export class CommandHandler {
     /*
      * Handles commands sent by the player
      */
+    console.log('COMMAND: ', message);
     const args = message.split(" ");
+    const command = args[0].trim(); // Trim whitespace just in case
 
-    switch (args[0]) {
+    switch (command) {
       case "/property":
         player.setProperty(Number(args[1]), Number(args[2]));
         break;
@@ -79,23 +81,23 @@ export class CommandHandler {
         getGameServer().world.creatureHandler.spawnCreature(id, player.getPosition());
         break;
 
-        case "/+": {
-          const amt = this.parseAmount(args[1], 10);
-          player.increaseHealth(amt);
-          player.increaseMana(amt);
-          player.increaseEnergy(amt);
-          getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.MAGIC_BLUE);
-          break;
-        }
-  
-        case "/-": {
-          const amt = this.parseAmount(args[1], 10);
-          player.decreaseHealth(amt);
-          player.decreaseMana(amt);
-          player.decreaseEnergy(amt);
-          getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.DRAWBLOOD);
-          break;
-        }
+      case "/+": {
+        const amt = this.parseAmount(args[1], 10);
+        player.increaseHealth(amt);
+        player.increaseMana(amt);
+        player.increaseEnergy(amt);
+        getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.MAGIC_BLUE);
+        break;
+      }
+
+      case "/-": {
+        const amt = this.parseAmount(args[1], 10);
+        player.decreaseHealth(amt);
+        player.decreaseMana(amt);
+        player.decreaseEnergy(amt);
+        getGameServer().world.sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.DRAWBLOOD);
+        break;
+      }
 
       case "/path":
         const start = player.getPosition();
@@ -110,8 +112,35 @@ export class CommandHandler {
         this.handleCommandSetTime(player, args[1]);
         break;
 
+      case "/close": {
+        const defaultSeconds = 1000; // 1 second default
+        const seconds = args[1] ? Number(args[1]) * 1000 : defaultSeconds;
+        if (isNaN(seconds) || seconds < 0) {
+          player.sendCancelMessage("Usage: /close [seconds] (default: 1 second)");
+          return;
+        }
+        getGameServer().logoutNonAdminPlayers(seconds);
+        player.sendCancelMessage(`Server will enter maintenance mode in ${Math.floor(seconds / 1000)} seconds. Players with role > 1 will remain connected.`);
+        break;
+      }
+
+      case "/open":
+      case "/open ": { // Handle with trailing space just in case
+        const gameServer = getGameServer();
+        if (gameServer.isShutdown()) {
+          gameServer.cancelShutdown();
+          player.sendCancelMessage("Server shutdown cancelled. Server is now open.");
+        } else if (gameServer.isClosed() || gameServer.isMaintenance()) {
+          gameServer.reopen();
+          player.sendCancelMessage("Server reopened. Server is now open for connections.");
+        } else {
+          player.sendCancelMessage("Server is already open.");
+        }
+        break;
+      }
+
       default:
-        player.sendCancelMessage("Unknown command.");
+        player.sendCancelMessage(`Unknown command: "${command}"`);
     }
   }
 

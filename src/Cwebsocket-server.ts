@@ -88,8 +88,7 @@ class WebsocketServer {
     gameSocket.characterId = characterId;
 
     if (this.socketHandler.isOverpopulated()) return gameSocket.closeError("Server is full.");
-    if (getGameServer().isShutdown()) return gameSocket.closeError("Server is shutting down.");
-
+  
     this.__acceptConnection(gameSocket, characterId, uid);
   }
 
@@ -108,6 +107,37 @@ class WebsocketServer {
   }
 
   private __acceptCharacterConnection(gameSocket: GameSocket, data: any) {
+    // Check server status now that we have character data (allows role > 1 to bypass)
+    const gameServer = getGameServer();
+    const isShutdown = gameServer.isShutdown();
+    const isClosed = gameServer.isClosed();
+    const isMaintenance = gameServer.isMaintenance();
+    
+    // Only check if server is actually closed, shutting down, or in maintenance
+    // When server is OPEN, all are false, so this block is skipped
+    if (isShutdown || isClosed || isMaintenance) {
+      // Check if player has role > 1 (senior tutors, gamemasters, gods) - allow them to connect
+      const role = data.properties?.role;
+      const hasHighRole = role !== undefined && role !== null && role > 1;
+      
+      console.log(`[Connection] Server status check - isShutdown: ${isShutdown}, isClosed: ${isClosed}, isMaintenance: ${isMaintenance}, role: ${role}, hasHighRole: ${hasHighRole}`);
+      
+      if (!hasHighRole) {
+        if (isShutdown) {
+          return gameSocket.closeError("Server is shutting down.");
+        }
+        if (isClosed) {
+          return gameSocket.closeError("Server is closed.");
+        }
+        if (isMaintenance) {
+          return gameSocket.closeError("Server is in maintenance mode.");
+        }
+      }
+      // Player with role > 1 - allow connection even when server is closed/maintenance
+    }
+    
+    // Server is OPEN (or player with role > 1 when closed/maintenance) - proceed with connection
+
     this.socketHandler.referenceSocket(gameSocket);
 
     const existing = getGameServer().world.creatureHandler.getPlayerByName(data.properties.name);
@@ -123,7 +153,7 @@ class WebsocketServer {
     this.socketHandler.dereferenceSocket(gameSocket);
     if (!gameSocket.player) return;
 
-    if (!gameSocket.player.isInCombat() || getGameServer().isClosed()) {
+    if (!gameSocket.player.isInCombat() || getGameServer().isClosed() || getGameServer().isMaintenance()) {
       return this.__removePlayer(gameSocket);
     }
 
@@ -140,6 +170,16 @@ class WebsocketServer {
     if (!id) return;
 
     getGameServer().world.creatureHandler.removePlayerFromWorld(gameSocket);
+
+    // Don't save player data if server is closing, closed, or in maintenance (except for role > 1 players who need to manage the server)
+    const gameServer = getGameServer();
+    const role = gameSocket.player?.getProperty(CONST.PROPERTIES.ROLE);
+    const hasHighRole = role !== undefined && role !== null && role > 1;
+    
+    if ((gameServer.isShutdown() || gameServer.isClosed() || gameServer.isMaintenance()) && !hasHighRole) {
+      console.log(`Player ${gameSocket.player?.getProperty(CONST.PROPERTIES.NAME)} disconnected during server shutdown/maintenance - data not saved.`);
+      return;
+    }
 
     this.accountDatabase.updateCharacterData(id, JSON.stringify(gameSocket.player), () => {});
   }

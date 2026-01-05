@@ -1,6 +1,6 @@
 import http, { IncomingMessage, ServerResponse } from "http";
 import url from "url";
-import { CONFIG } from "./helper/appContext";
+import { CONFIG, getGameServer } from "./helper/appContext";
 import WebsocketServer from "./Cwebsocket-server";
 import { AuthService } from "./Cauth-service";
 import { BandwidthHandler } from "./Cbandwidth-handler";
@@ -70,6 +70,9 @@ class HTTPServer {
 
     console.log("The HTTP server has started to close.");
 
+    // Set status to CLOSED immediately to prevent new connections
+    this.__status = CONFIG.SERVER.STATUS.CLOSED;
+
     this.websocketServer.close();
     this.__server.closeAllConnections();
     this.__server.close();
@@ -90,6 +93,15 @@ class HTTPServer {
   }
 
   private __handleRequest(request: IncomingMessage, response: ServerResponse): void {
+    const parsedUrl = url.parse(request.url || "");
+    const pathname = parsedUrl.pathname;
+
+    // Handle /api/status endpoint
+    if (pathname === "/api/status") {
+      return this.__handleStatusRequest(request, response);
+    }
+
+    // Original validation for root path
     const code = this.__validateHTTPRequest(request);
 
     if (code !== null) {
@@ -97,6 +109,46 @@ class HTTPServer {
     }
 
     this.__generateRawHTTPResponse(request.socket, 426);
+  }
+
+  private __handleStatusRequest(request: IncomingMessage, response: ServerResponse): void {
+    // Handle CORS preflight
+    if (request.method === "OPTIONS") {
+      response.writeHead(200, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      });
+      response.end();
+      return;
+    }
+
+    if (request.method !== "GET") {
+      return this.__sendJSONResponse(response, 405, { error: "Method not allowed" });
+    }
+
+    if (request.httpVersion === "0.9" || request.httpVersion === "1.0") {
+      return this.__sendJSONResponse(response, 505, { error: "HTTP version not supported" });
+    }
+
+    try {
+      const statusInfo = getGameServer().getStatusInfo();
+      this.__sendJSONResponse(response, 200, statusInfo);
+    } catch (error) {
+      console.error("Error getting server status:", error);
+      this.__sendJSONResponse(response, 500, { error: "Internal server error" });
+    }
+  }
+
+  private __sendJSONResponse(response: ServerResponse, statusCode: number, data: any): void {
+    const json = JSON.stringify(data);
+    response.writeHead(statusCode, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*", // Allow CORS for frontend
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    });
+    response.end(json);
   }
 
   private __validateHTTPRequest(request: IncomingMessage): number | null {
@@ -112,14 +164,23 @@ class HTTPServer {
     socket.setNoDelay(true);
     socket.setKeepAlive(true, 15000);
   
+    // Check if this is an API endpoint - API endpoints should not be WebSocket upgrades
+    const parsedUrl = url.parse(request.url || "");
+    const pathname = parsedUrl.pathname;
+    
+    if (pathname && pathname.startsWith("/api/")) {
+      // API endpoints are not WebSocket upgrades - reject with 400
+      return this.__generateRawHTTPResponse(socket, 400);
+    }
+
     const code = this.__validateHTTPRequest(request);
     if (code !== null) {
       return this.__generateRawHTTPResponse(socket, code);
     }
-  
+
     let token: string | null = null;
     let characterId: number | null = null;
-  
+
     try {
       const reqUrl = new URL(request.url || "", `http://${request.headers.host}`);
       token = reqUrl.searchParams.get("token");
@@ -127,21 +188,50 @@ class HTTPServer {
     } catch {
       return this.__generateRawHTTPResponse(socket, 400);
     }
-  
+
     if (!token || isNaN(characterId!)) {
       return this.__generateRawHTTPResponse(socket, 400);
     }
-  
+
+    // Verify Firebase token first, then check server status (allows god bypass)
     admin.auth().verifyIdToken(token)
       .then(decoded => {
+        // Check if server is closed, shutting down, or in maintenance - but allow role > 1 to bypass
+        const gameServer = getGameServer();
+        if (gameServer.isClosed() || gameServer.isShutdown() || gameServer.isMaintenance()) {
+          // Load character data to check if player has role > 1
+          this.websocketServer.accountDatabase.getCharacterByIdForUser(characterId!, decoded.uid, (error, result) => {
+            if (error || !result) {
+              return this.__generateRawHTTPResponse(socket, 503); // Character not found
+            }
+            
+            // Check if player has role > 1 (senior tutors, gamemasters, gods) - allow them to connect
+            const hasHighRole = result.role !== undefined && result.role !== null && result.role > 1;
+            if (!hasHighRole) {
+              return this.__generateRawHTTPResponse(socket, 503); // Not high role, reject
+            }
+            
+            // Player with role > 1 - allow connection even when server is closed/maintenance
+            this.websocketServer.websocket.handleUpgrade(request, socket, head, (ws: any) => {
+              const s = ws._socket;
+              s.setTimeout(0);
+              s.setNoDelay(true);
+              s.setKeepAlive(true, 15000);
+              this.websocketServer.websocket.emit("connection", ws, request, characterId!, decoded.uid);
+            });
+          });
+          return;
+        }
+        
+        // Server is open - proceed normally
         this.websocketServer.websocket.handleUpgrade(request, socket, head, (ws: any) => {
-  
+
           // 🔥 THIS is the missing Fly fix
           const s = ws._socket;
           s.setTimeout(0);
           s.setNoDelay(true);
           s.setKeepAlive(true, 15000);
-  
+
           this.websocketServer.websocket.emit("connection", ws, request, characterId!, decoded.uid);
         });
       })

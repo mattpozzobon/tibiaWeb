@@ -196,15 +196,30 @@ export class AccountDatabaseGrouped {
     
     // Clean properties - remove outfit-related data that belongs in outfit column
     const properties = { ...data.properties };
+    
+    // Extract outfit data (check both new format and legacy format)
+    const outfit = data.outfit || data.properties?.outfit || {};
+    
+    // Move outfit-related data from properties to outfit column
+    if (data.properties?.availableHairs) {
+      outfit.availableHairs = data.properties.availableHairs;
+    }
+    if (data.properties?.availableOutfits) {
+      outfit.availableOutfits = data.properties.availableOutfits;
+    }
+    if (data.properties?.availableMounts) {
+      outfit.availableMounts = data.properties.availableMounts;
+    }
+    
+    // Now remove outfit-related data from properties
     delete properties.outfit;
     delete properties.availableOutfits;
     delete properties.availableMounts;
+    delete properties.availableHairs; // availableHairs belongs in outfit column
     delete properties.name; // name comes from database column
     delete properties.role; // role comes from database column
     delete properties.sex; // sex comes from database column
     
-    // Extract outfit data (check both new format and legacy format)
-    const outfit = data.outfit || data.properties?.outfit || {};
     const skills = data.skills || {};
 
     const updateSQL = `
@@ -251,7 +266,10 @@ export class AccountDatabaseGrouped {
       lastVisit: data.lastVisit || Date.now(),
       properties: {
         ...cleanProperties,
-        name: data.name, 
+        name: data.name,
+        sex: data.sex, // Add sex from database column
+        role: data.role, // Add role from database column
+        availableHairs: (outfit as any).availableHairs || [0, 904, 905], // Read from outfit column
         availableOutfits: (outfit as any).availableOutfits || [128, 129, 130, 131], 
         availableMounts: (outfit as any).availableMounts || [], 
         outfit: outfit 
@@ -434,6 +452,16 @@ export class AccountDatabaseGrouped {
   }
 
   close(): void {
-    this.db.close();
+    if (!this.db) {
+      return; 
+    }
+    
+    try {
+      this.db.close();
+    } catch (error: any) {
+      if (error.code !== 'SQLITE_MISUSE' && error.message !== 'Database is closed') {
+        console.error('Error closing database:', error);
+      }
+    }
   }
 }

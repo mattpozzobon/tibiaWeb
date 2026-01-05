@@ -1,7 +1,7 @@
 "use strict";
 import * as http from "http";
 import * as url from "url";
-import { CONFIG } from "./helper/appContext";
+import { CONFIG, getGameServer } from "./helper/appContext";
 import { AccountDatabaseGrouped } from "./Caccount-database-grouped";
 import { admin } from "./Clogin-server-firebase";
 
@@ -63,6 +63,8 @@ class LoginServer {
       "https://emperia.netlify.app",
       "http://localhost:5173",
       "http://127.0.0.1:5173",
+      "http://127.0.0.1:1338",
+      
     ]);
   
     if (origin && allowedOrigins.has(origin)) {
@@ -77,19 +79,19 @@ class LoginServer {
     response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
     response.setHeader("Access-Control-Max-Age", "86400");
   
-    // Helpful while debugging
-    console.log("LOGIN HTTP:", request.method, request.url, "origin=", origin);
-  
+    // ---- Routing ----
+    const parsedUrl = url.parse(request.url || "", true);
+    const pathname = parsedUrl.pathname || "";
+    const query = parsedUrl.query as QueryObject;
+
+    // Helpful while debugging - simplified one-line log
+    console.log(`LOGIN: ${request.method} ${pathname}${origin ? ` from ${origin}` : ''}`);
+
     if (request.method === "OPTIONS") {
       response.statusCode = 204;
       response.end();
       return;
     }
-  
-    // ---- Routing ----
-    const parsedUrl = url.parse(request.url || "", true);
-    const pathname = parsedUrl.pathname || "";
-    const query = parsedUrl.query as QueryObject;
   
     // ✅ allow health without token
     if (pathname === "/health" && request.method === "GET") {
@@ -98,7 +100,21 @@ class LoginServer {
       response.end("ok");
       return;
     }
-  
+
+    // ✅ allow /api/status without token (public endpoint)
+    if (pathname === "/api/status" && request.method === "GET") {
+      try {
+        const gameServer = getGameServer();
+        const statusInfo = gameServer.getStatusInfo();
+        response.statusCode = 200;
+        response.setHeader("Content-Type", "application/json");
+        response.end(JSON.stringify(statusInfo));
+      } catch (error: any) {
+        this.__sendFallbackStatus(response);
+      }
+      return;
+    }
+
     const idToken = query.token;
     if (!idToken) {
       response.statusCode = 401;
@@ -264,6 +280,21 @@ class LoginServer {
         response.end("Invalid JSON");
       }
     });
+  }
+
+  private __sendFallbackStatus(response: http.ServerResponse): void {
+    const fallbackStatus = {
+      status: "closed",
+      playersOnline: 0,
+      uptime: null,
+      activeMonsters: 0,
+      worldTime: "00:00",
+      error: "Game server not available"
+    };
+    console.log("✅ Returning fallback status");
+    response.statusCode = 200;
+    response.setHeader("Content-Type", "application/json");
+    response.end(JSON.stringify(fallbackStatus));
   }
 }
 

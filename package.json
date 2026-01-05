@@ -5,7 +5,8 @@
         "start": "node dist/bundle.js",
         "start:login": "ts-node login.ts",
         "start:engine": "ts-node engine.ts",
-        "start:all": "concurrently \"npm run start:login\" \"npm run start:engine\""
+        "start:all": "concurrently \"npm run start:login\" \"npm run start:engine\"",
+        "start:combined": "ts-node server.ts"
     },
     "dependencies": {
         "@types/dotenv": "^6.1.1",

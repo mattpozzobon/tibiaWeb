@@ -39,6 +39,7 @@ export interface Config {
         OPENING: string;
         CLOSING: string;
         CLOSED: string;
+        MAINTENANCE: string;
       };
       ON_ALREADY_ONLINE: string;
       EXTERNAL_HOST: string;
