@@ -1,11 +1,11 @@
-import { Config } from "../types/config";
+import { CONFIG } from "../helper/appContext";
 
 export class ServerStatusManager {
   private __status: string | null = null;
-  private readonly STATUS: Config["SERVER"]["STATUS"];
+  private readonly STATUS = CONFIG.SERVER.STATUS;
 
-  constructor(statusConfig: Config["SERVER"]["STATUS"]) {
-    this.STATUS = statusConfig;
+  constructor() {
+    // No parameters needed - uses global CONFIG
   }
 
   // ============================================================================

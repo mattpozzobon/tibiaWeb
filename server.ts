@@ -8,7 +8,7 @@ if (require.main === module) {
   console.log('Setting data directory to ', getDataFile(''));
 
   // Initialize Game Server first
-  const gameServer = initializeGameServer(new GameServer(CONFIG));
+  const gameServer = initializeGameServer(new GameServer());
   gameServer.initialize();
   console.log('GameServer initialized successfully!');
 

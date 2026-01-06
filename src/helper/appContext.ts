@@ -1,9 +1,7 @@
 import path from "path";
-import baseConfig from "../config/config.json";
-import constants from "../config/constants.json";
+import { CONFIG as baseConfig } from "../config/config";
+import { CONST } from "../config/constants";
 import items from "../config/itemToSprite.json";
-import { Config } from "../types/config";
-import { Constants } from "../types/constants";
 
 /* ----------------------------------------------------
    Helpers
@@ -25,35 +23,42 @@ function envInt(name: string): number | undefined {
    Build CONFIG with env overrides
 ---------------------------------------------------- */
 
-function buildConfig(): Config {
-  const cfg: Config = JSON.parse(JSON.stringify(baseConfig));
+/* ----------------------------------------------------
+   Apply environment variable overrides
+---------------------------------------------------- */
 
-  /* Login server */
-  cfg.LOGIN.HOST = envStr("LOGIN_HOST") ?? cfg.LOGIN.HOST;
-  cfg.LOGIN.PORT = envInt("LOGIN_PORT") ?? cfg.LOGIN.PORT;
+// Clone config to allow mutations
+const config = { ...baseConfig };
+config.LOGIN = { ...baseConfig.LOGIN };
+config.SERVER = { ...baseConfig.SERVER };
+config.DATABASE = { ...baseConfig.DATABASE };
+config.HMAC = { ...baseConfig.HMAC };
 
-  /* Game server */
-  cfg.SERVER.HOST = envStr("SERVER_HOST") ?? cfg.SERVER.HOST;
-  cfg.SERVER.PORT = envInt("SERVER_PORT") ?? cfg.SERVER.PORT;
-  cfg.SERVER.EXTERNAL_HOST = envStr("EXTERNAL_HOST") ?? cfg.SERVER.EXTERNAL_HOST;
+/* Login server */
+if (envStr("LOGIN_HOST")) config.LOGIN.HOST = envStr("LOGIN_HOST")!;
+if (envInt("LOGIN_PORT") !== undefined) config.LOGIN.PORT = envInt("LOGIN_PORT")!;
 
-  /* Database */
-  cfg.DATABASE.ACCOUNT_DATABASE =
-    envStr("ACCOUNT_DATABASE") ?? cfg.DATABASE.ACCOUNT_DATABASE;
+/* Game server */
+if (envStr("SERVER_HOST")) config.SERVER.HOST = envStr("SERVER_HOST")!;
+if (envInt("SERVER_PORT") !== undefined) config.SERVER.PORT = envInt("SERVER_PORT")!;
+if (envStr("EXTERNAL_HOST")) config.SERVER.EXTERNAL_HOST = envStr("EXTERNAL_HOST")!;
 
-  /* Crypto */
-  cfg.HMAC.SHARED_SECRET =
-    envStr("HMAC_SHARED_SECRET") ?? cfg.HMAC.SHARED_SECRET;
+/* Database */
+if (envStr("ACCOUNT_DATABASE")) {
+  config.DATABASE.ACCOUNT_DATABASE = envStr("ACCOUNT_DATABASE")!;
+}
 
-  return cfg;
+/* Crypto */
+if (envStr("HMAC_SHARED_SECRET")) {
+  config.HMAC.SHARED_SECRET = envStr("HMAC_SHARED_SECRET")!;
 }
 
 /* ----------------------------------------------------
    Exports
 ---------------------------------------------------- */
 
-export const CONFIG: Config = buildConfig();
-export const CONST: Constants = constants;
+export { config as CONFIG };
+export { CONST };
 
 /* ----------------------------------------------------
    Item → sprite lookup
@@ -110,7 +115,7 @@ export const ITEM_TO_SPRITE_BY_HAND: Record<number, HandSpriteMapping> =
 ---------------------------------------------------- */
 
 export const getDataFile = (...args: string[]): string => {
-  return path.join(__dirname, "..", "data", CONFIG.SERVER.CLIENT_VERSION, ...args);
+  return path.join(__dirname, "..", "data", config.SERVER.CLIENT_VERSION, ...args);
 };
 
 export const requireModule = (...args: string[]): any => {

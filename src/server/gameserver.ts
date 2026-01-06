@@ -1,5 +1,4 @@
 import Database from "../database/database";
-import { Config } from "../types/config";
 import GameLoop from "./gameloop";
 import { CONFIG, CONST } from "../helper/appContext";
 import HTTPServer from "./http-server";
@@ -21,23 +20,19 @@ class GameServer implements IGameServer {
   public readonly statusManager: ServerStatusManager;
   private __initialized: number | null;
   private __shutdownTimeout: NodeJS.Timeout | null = null;
-  private readonly SERVER: Config["SERVER"];
 
-  constructor(config: Config) {
-    this.SERVER = config.SERVER;
-    this.statusManager = new ServerStatusManager(config.SERVER.STATUS);
+  constructor() {
+    this.statusManager = new ServerStatusManager();
 
     // Setup signal handlers for graceful shutdown
-    process.on("SIGINT", this.scheduleShutdown.bind(this, this.SERVER.MS_SHUTDOWN_SCHEDULE));
-    process.on("SIGTERM", this.scheduleShutdown.bind(this, this.SERVER.MS_SHUTDOWN_SCHEDULE));
+    process.on("SIGINT", this.scheduleShutdown.bind(this, CONFIG.SERVER.MS_SHUTDOWN_SCHEDULE));
+    process.on("SIGTERM", this.scheduleShutdown.bind(this, CONFIG.SERVER.MS_SHUTDOWN_SCHEDULE));
 
     // Initialize core components
     this.database = new Database();
-    this.accountDatabase = new AccountDatabaseGrouped(
-      process.env.ACCOUNT_DATABASE || CONFIG.DATABASE.ACCOUNT_DATABASE
-    );
-    this.gameLoop = new GameLoop(config.SERVER.MS_TICK_INTERVAL, this.__loop.bind(this));
-    this.server = new HTTPServer(config.SERVER.HOST, config.SERVER.PORT);
+    this.accountDatabase = new AccountDatabaseGrouped(process.env.ACCOUNT_DATABASE || CONFIG.DATABASE.ACCOUNT_DATABASE);
+    this.gameLoop = new GameLoop(CONFIG.SERVER.MS_TICK_INTERVAL, this.__loop.bind(this));
+    this.server = new HTTPServer(CONFIG.SERVER.HOST, CONFIG.SERVER.PORT);
     this.IPCSocket = new IPCSocket();
 
     this.__initialized = null;
@@ -81,7 +76,7 @@ class GameServer implements IGameServer {
     const worldTime = this.world.clock.getTimeString();
 
     return {
-      status: this.statusManager.getStatus() || this.SERVER.STATUS.CLOSED,
+      status: this.statusManager.getStatus() || CONFIG.SERVER.STATUS.CLOSED,
       playersOnline,
       uptime,
       worldTime,
