@@ -1,6 +1,6 @@
-import Creature from "../../../../src/Ccreature"; // Adjust the import path as needed
-import Player from "../../../../src/Cplayer"; // Adjust the import path as needed
-import { CONST, getGameServer } from "../../../../src/helper/appContext";
+import Creature from "../../../../creature/creature";
+import Player from "../../../../creature/player/player";
+import { CONST, getGameServer } from "../../../../helper/appContext";
 
 export function onStart(creature: Creature): void {
   if (creature instanceof Player) {

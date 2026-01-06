@@ -4,7 +4,7 @@ import { IHTTPServer } from "./IHttp-server";
 import { IIPCSocket } from "./IIpcsocket";
 import { IWorld } from "./IWorld";
 import { AccountDatabaseGrouped } from "../account-database-grouped";
-import { ServerStatusManager } from "../server-status-manager";
+import { ServerStatusManager } from "../server/server-status-manager";
 
 export interface IGameServer {
   database: IDatabase;

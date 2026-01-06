@@ -1,5 +1,5 @@
-import GameServer from './src/gameserver';
-import LoginServer from './src/login-server';
+import GameServer from "./src/server/gameserver";
+import LoginServer from "./src/server/login-server";
 import { CONFIG, getDataFile, initializeGameServer } from './src/helper/appContext';
 
 if (require.main === module) {

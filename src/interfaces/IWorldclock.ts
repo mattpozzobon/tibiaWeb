@@ -1,4 +1,4 @@
-import { EventEmitter } from "../eventemitter";
+import { EventEmitter } from "../event/eventemitter";
 
 
 export interface IWorldClock extends EventEmitter {

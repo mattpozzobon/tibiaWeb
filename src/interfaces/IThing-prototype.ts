@@ -1,4 +1,4 @@
-import { EventEmitter } from "../eventemitter";
+import { EventEmitter } from "../event/eventemitter";
 import { IBitFlag } from "./IBitflag";
 
 

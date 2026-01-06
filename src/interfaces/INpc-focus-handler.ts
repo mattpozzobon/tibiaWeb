@@ -1,4 +1,4 @@
-import { EventEmitter } from "../eventemitter";
+import { EventEmitter } from "../event/eventemitter";
 import { IPlayer } from "./IPlayer";
 import { ITalkStateHandler } from "./INpc-talk-state-handler";
 

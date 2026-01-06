@@ -1,4 +1,4 @@
-import CreatureHandler from "Cworld-creature-handler";
+import CreatureHandler from "../world/world-creature-handler";
 import { ICreature } from "./ICreature";
 import { IEventQueue } from "./IEventqueue";
 import { ILattice } from "./ILattice";

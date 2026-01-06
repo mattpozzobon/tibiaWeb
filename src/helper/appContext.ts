@@ -2,8 +2,8 @@ import path from "path";
 import baseConfig from "../config/config.json";
 import constants from "../config/constants.json";
 import items from "../config/itemToSprite.json";
-import { Config } from "types/config";
-import { Constants } from "types/constants";
+import { Config } from "../types/config";
+import { Constants } from "../types/constants";
 
 /* ----------------------------------------------------
    Helpers

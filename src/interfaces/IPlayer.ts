@@ -1,4 +1,4 @@
-import Creature from "../creature";
+import Creature from "../creature/creature";
 import { IContainerManager } from "./IContainer-manager";
 import { IActionHandler } from "./IPlayer-action-handler";
 import { ISocketHandler } from "./IPlayer-socket-handler";
@@ -11,7 +11,7 @@ import { IPlayerMovementHandler } from "./IPlayer-movement-handler";
 import { ICombatLock } from "./IPlayer-combat-lock";
 import { IUseHandler } from "./IPlayer-use-handler";
 import { IGlobalChannel } from "./IChannel-global";
-import Channel from "../channel";
+import Channel from "../channel/channel";
 
 
 export interface IPlayer extends Creature {

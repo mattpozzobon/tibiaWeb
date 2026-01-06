@@ -1,6 +1,6 @@
-import Outfit from "../../../../src/Coutfit"; // Adjust the import path as needed
-import Creature from "../../../../src/Ccreature"; // Adjust the import path as needed
-import { CONST, getGameServer } from "../../../../src/helper/appContext";
+import Outfit from "../../../../game-object/outfit";
+import Creature from "../../../../creature/creature";
+import { CONST, getGameServer } from "../../../../helper/appContext";
 
 let defaultOutfit: Outfit | null = null;
 

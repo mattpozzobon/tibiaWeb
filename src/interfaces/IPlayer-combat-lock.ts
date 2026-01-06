@@ -1,4 +1,4 @@
-import GenericLock from "../generic-lock";
+import GenericLock from "../utils/generic-lock";
 
 export interface ICombatLock extends GenericLock {
   activate(): void;
