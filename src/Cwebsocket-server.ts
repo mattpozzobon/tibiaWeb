@@ -109,9 +109,9 @@ class WebsocketServer {
   private __acceptCharacterConnection(gameSocket: GameSocket, data: any) {
     // Check server status now that we have character data (allows role > 1 to bypass)
     const gameServer = getGameServer();
-    const isShutdown = gameServer.isShutdown();
-    const isClosed = gameServer.isClosed();
-    const isMaintenance = gameServer.isMaintenance();
+    const isShutdown = gameServer.statusManager.isShutdown();
+    const isClosed = gameServer.statusManager.isClosed();
+    const isMaintenance = gameServer.statusManager.isMaintenance();
     
     // Only check if server is actually closed, shutting down, or in maintenance
     // When server is OPEN, all are false, so this block is skipped
@@ -153,7 +153,7 @@ class WebsocketServer {
     this.socketHandler.dereferenceSocket(gameSocket);
     if (!gameSocket.player) return;
 
-    if (!gameSocket.player.isInCombat() || getGameServer().isClosed() || getGameServer().isMaintenance()) {
+    if (!gameSocket.player.isInCombat() || getGameServer().statusManager.isClosed() || getGameServer().statusManager.isMaintenance()) {
       return this.__removePlayer(gameSocket);
     }
 
@@ -176,7 +176,7 @@ class WebsocketServer {
     const role = gameSocket.player?.getProperty(CONST.PROPERTIES.ROLE);
     const hasHighRole = role !== undefined && role !== null && role > 1;
     
-    if ((gameServer.isShutdown() || gameServer.isClosed() || gameServer.isMaintenance()) && !hasHighRole) {
+    if ((gameServer.statusManager.isShutdown() || gameServer.statusManager.isClosed() || gameServer.statusManager.isMaintenance()) && !hasHighRole) {
       console.log(`Player ${gameSocket.player?.getProperty(CONST.PROPERTIES.NAME)} disconnected during server shutdown/maintenance - data not saved.`);
       return;
     }

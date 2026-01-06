@@ -4,6 +4,7 @@ import { IHTTPServer } from "./IHttp-server";
 import { IIPCSocket } from "./IIpcsocket";
 import { IWorld } from "./IWorld";
 import { AccountDatabaseGrouped } from "../Caccount-database-grouped";
+import { ServerStatusManager } from "../Cserver-status-manager";
 
 export interface IGameServer {
   database: IDatabase;
@@ -12,14 +13,10 @@ export interface IGameServer {
   gameLoop: IGameLoop;
   server: IHTTPServer;
   IPCSocket: IIPCSocket;
+  statusManager: ServerStatusManager;
 
   initialize(): void;
   shutdown(): void;
-  setServerStatus(serverStatus: string): void;
-  isShutdown(): boolean;
-  isClosed(): boolean;
-  isMaintenance(): boolean;
-  isFeatureEnabled(): boolean;
   scheduleShutdown(seconds: number): void;
   cancelShutdown(): void;
   reopen(): void;
@@ -28,7 +25,6 @@ export interface IGameServer {
     status: string;
     playersOnline: number;
     uptime: number | null;
-    activeMonsters: number;
     worldTime: string;
   };
 }

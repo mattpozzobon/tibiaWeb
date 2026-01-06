@@ -95,7 +95,7 @@ class GameLoop {
 
     this.__internalTickCounter++;
 
-    if (getGameServer().isClosed()) {
+    if (getGameServer().statusManager.isClosed()) {
       console.log("Game loop has been aborted.");
       return;
     }

@@ -198,7 +198,7 @@ class HTTPServer {
       .then(decoded => {
         // Check if server is closed, shutting down, or in maintenance - but allow role > 1 to bypass
         const gameServer = getGameServer();
-        if (gameServer.isClosed() || gameServer.isShutdown() || gameServer.isMaintenance()) {
+        if (gameServer.statusManager.isClosed() || gameServer.statusManager.isShutdown() || gameServer.statusManager.isMaintenance()) {
           // Load character data to check if player has role > 1
           this.websocketServer.accountDatabase.getCharacterByIdForUser(characterId!, decoded.uid, (error, result) => {
             if (error || !result) {

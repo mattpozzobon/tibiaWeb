@@ -127,10 +127,10 @@ export class CommandHandler {
       case "/open":
       case "/open ": { // Handle with trailing space just in case
         const gameServer = getGameServer();
-        if (gameServer.isShutdown()) {
+        if (gameServer.statusManager.isShutdown()) {
           gameServer.cancelShutdown();
           player.sendCancelMessage("Server shutdown cancelled. Server is now open.");
-        } else if (gameServer.isClosed() || gameServer.isMaintenance()) {
+        } else if (gameServer.statusManager.isClosed() || gameServer.statusManager.isMaintenance()) {
           gameServer.reopen();
           player.sendCancelMessage("Server reopened. Server is now open for connections.");
         } else {
