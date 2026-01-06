@@ -113,14 +113,14 @@ export class CommandHandler {
         break;
 
       case "/close": {
-        const defaultSeconds = 1000; // 1 second default
-        const seconds = args[1] ? Number(args[1]) * 1000 : defaultSeconds;
+        const defaultSeconds = 1; // 1 second default
+        const seconds = args[1] ? Number(args[1]) : defaultSeconds;
         if (isNaN(seconds) || seconds < 0) {
           player.sendCancelMessage("Usage: /close [seconds] (default: 1 second)");
           return;
         }
-        getGameServer().logoutNonAdminPlayers(seconds);
-        player.sendCancelMessage(`Server will enter maintenance mode in ${Math.floor(seconds / 1000)} seconds. Players with role > 1 will remain connected.`);
+        getGameServer().shutdownManager.logoutNonAdminPlayers(seconds);
+        player.sendCancelMessage(`Server will enter maintenance mode in ${seconds} seconds. Players with role > 1 will remain connected.`);
         break;
       }
 
@@ -128,10 +128,10 @@ export class CommandHandler {
       case "/open ": { // Handle with trailing space just in case
         const gameServer = getGameServer();
         if (gameServer.statusManager.isShutdown()) {
-          gameServer.cancelShutdown();
+          gameServer.shutdownManager.cancelShutdown();
           player.sendCancelMessage("Server shutdown cancelled. Server is now open.");
         } else if (gameServer.statusManager.isClosed() || gameServer.statusManager.isMaintenance()) {
-          gameServer.reopen();
+          gameServer.shutdownManager.reopen();
           player.sendCancelMessage("Server reopened. Server is now open for connections.");
         } else {
           player.sendCancelMessage("Server is already open.");

@@ -91,7 +91,7 @@ export class IPCSocket {
      */
     switch (packet.readUInt8()) {
       case 0x00:
-        getGameServer().scheduleShutdown(packet.readUInt16());
+        getGameServer().shutdownManager.scheduleShutdown(packet.readUInt16());
         break;
       case 0x01:
         throw new Error("Unhandled case");

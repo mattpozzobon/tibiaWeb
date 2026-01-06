@@ -109,7 +109,7 @@ export const CONFIG = {
     SOCKET_TIMEOUT_MS: 120000,
     SCHEDULED_SHUTDOWN: {
       ENABLED: true,
-      TIME: "18:19", // Format: "HH:MM" in 24-hour format
+      TIME: "09:35", // Format: "HH:MM" in 24-hour format
       WARNING_MINUTES: 5, // Warn players X minutes before shutdown
     },
   },

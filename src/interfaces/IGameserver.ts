@@ -3,8 +3,9 @@ import { IGameLoop } from "./IGameloop";
 import { IHTTPServer } from "./IHttp-server";
 import { IIPCSocket } from "./IIpcsocket";
 import { IWorld } from "./IWorld";
-import { AccountDatabaseGrouped } from "../account-database-grouped";
 import { ServerStatusManager } from "../server/server-status-manager";
+import { ShutdownManager } from "../server/shutdown-Manager";
+import { AccountDatabaseGrouped } from "database/account-database-grouped";
 
 export interface IGameServer {
   database: IDatabase;
@@ -14,17 +15,14 @@ export interface IGameServer {
   server: IHTTPServer;
   IPCSocket: IIPCSocket;
   statusManager: ServerStatusManager;
+  shutdownManager: ShutdownManager;
 
   initialize(): void;
-  shutdown(): void;
-  scheduleShutdown(seconds: number): void;
-  cancelShutdown(): void;
-  reopen(): void;
-  logoutNonAdminPlayers(seconds: number): void;
   getStatusInfo(): {
     status: string;
     playersOnline: number;
     uptime: number | null;
     worldTime: string;
+    scheduledShutdownTime: string | null;
   };
 }

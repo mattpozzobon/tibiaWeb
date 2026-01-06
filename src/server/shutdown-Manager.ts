@@ -5,25 +5,33 @@ import { spawn } from "child_process";
 import * as path from "path";
 
 /**
- * Scheduled Shutdown Manager
- * Handles daily scheduled server shutdowns with player saving and database backup
+ * Shutdown Manager
+ * Handles all server shutdown operations including:
+ * - Daily scheduled shutdowns with player saving and database backup
+ * - Manual shutdowns (via signals or commands)
+ * - Maintenance mode (logout non-admin players)
  */
-export class ScheduledShutdown {
+export class ShutdownManager {
   private gameServer: IGameServer;
   private checkInterval: NodeJS.Timeout | null = null;
   private lastCheckDate: string = "";
   private warningTimers: NodeJS.Timeout[] = [];
   private shutdownTriggered: boolean = false;
   private warningsScheduled: boolean = false;
+  private shutdownTimeout: NodeJS.Timeout | null = null;
 
   constructor(gameServer: IGameServer) {
     this.gameServer = gameServer;
+    
+    // Setup signal handlers for graceful shutdown
+    process.on("SIGINT", this.scheduleShutdown.bind(this, CONFIG.SERVER.MS_SHUTDOWN_SCHEDULE / 1000));
+    process.on("SIGTERM", this.scheduleShutdown.bind(this, CONFIG.SERVER.MS_SHUTDOWN_SCHEDULE / 1000));
   }
 
   /**
    * Start the scheduled shutdown scheduler
    */
-  public start(): void {
+  public startScheduledShutdown(): void {
     if (!CONFIG.SERVER.SCHEDULED_SHUTDOWN.ENABLED) {
       console.log("Scheduled shutdown is disabled.");
       return;
@@ -52,7 +60,171 @@ export class ScheduledShutdown {
     // Clear all warning timers
     this.warningTimers.forEach(timer => clearTimeout(timer));
     this.warningTimers = [];
+    // Clear manual shutdown timeout
+    this.cancelShutdownTimeout();
   }
+
+  // ============================================================================
+  // Manual Shutdown Management
+  // ============================================================================
+
+  /**
+   * Schedule a manual shutdown after specified seconds
+   */
+  public scheduleShutdown(seconds: number): void {
+    const ms = seconds * 1000;
+    if (!this.gameServer.statusManager.canShutdown()) {
+      return console.log("Shutdown command refused because the server is already shutting down.");
+    }
+
+    this.cancelShutdownTimeout();
+    this.gameServer.statusManager.setClosing();
+    
+    if (this.gameServer.world) {
+      this.gameServer.world.broadcastMessage(
+        `The gameserver is closing in ${seconds} seconds. Please log out in a safe place.`
+      );
+    }
+
+    this.shutdownTimeout = setTimeout(() => {
+      this.shutdown();
+    }, ms);
+  }
+
+  /**
+   * Cancel a scheduled shutdown
+   */
+  public cancelShutdown(): void {
+    if (!this.gameServer.statusManager.isClosing()) {
+      return;
+    }
+
+    this.cancelShutdownTimeout();
+    this.gameServer.statusManager.setOpen();
+    this.gameServer.server.listen();
+    
+    if (this.gameServer.world) {
+      this.gameServer.world.broadcastMessage("The gameserver is now open for connections.");
+    }
+  }
+
+  /**
+   * Reopen the server (exit maintenance/closed mode)
+   */
+  public reopen(): void {
+    if (!this.gameServer.statusManager.canReopen()) {
+      return;
+    }
+
+    this.gameServer.statusManager.setOpen();
+    this.gameServer.server.listen();
+    
+    if (this.gameServer.world) {
+      this.gameServer.world.broadcastMessage("The gameserver is now open for connections.");
+    }
+    console.log("Server reopened and is now accepting connections.");
+  }
+
+  /**
+   * Perform shutdown (without restart)
+   */
+  public shutdown(): void {
+    console.log("The game server is shutting down.");
+
+    // Stop scheduled shutdown if running
+    this.stop();
+
+    this.cancelShutdownTimeout();
+    this.gameServer.statusManager.setClosed();
+
+    this.gameServer.server.close();
+    this.gameServer.IPCSocket.close();
+  }
+
+  /**
+   * Logout non-admin players (enter maintenance mode)
+   * @param seconds - Delay in seconds before logging out players (0 = immediate)
+   */
+  public logoutNonAdminPlayers(seconds: number = 0): void {
+    const ms = seconds * 1000;
+    if (!this.gameServer.statusManager.canEnterMaintenance()) {
+      return console.log(
+        "Close command refused because the server is already closed, closing, or in maintenance."
+      );
+    }
+
+    this.cancelShutdownTimeout();
+
+    const logoutPlayers = () => {
+      const connectedSockets = this.gameServer.server.websocketServer.socketHandler.getConnectedSockets();
+      const socketsToCheck = Array.from(connectedSockets);
+      let loggedOut = 0;
+
+      socketsToCheck.forEach((gameSocket: any) => {
+        if (!gameSocket.player) return;
+
+        const role = gameSocket.player.getProperty(CONST.PROPERTIES.ROLE);
+
+        // Logout players with role <= 1 (keep only role > 1: senior tutors, gamemasters, gods)
+        const shouldLogout = role === undefined || role === null || role <= 1;
+
+        if (shouldLogout) {
+          // Force immediate removal - bypass combat checks
+          if (gameSocket.isController()) {
+            this.gameServer.world.creatureHandler.removePlayerFromWorld(gameSocket);
+          } else {
+            this.gameServer.world.creatureHandler.removePlayer(gameSocket.player);
+          }
+
+          gameSocket.close();
+          loggedOut++;
+        }
+      });
+
+      this.gameServer.statusManager.setMaintenance();
+
+      const message =
+        loggedOut > 0
+          ? `Server is now in maintenance. ${loggedOut} player(s) have been logged out.`
+          : "Server is now in maintenance.";
+
+      console.log(
+        loggedOut > 0
+          ? `Logged out ${loggedOut} player(s). Server is now in maintenance. Players with role > 1 remain connected.`
+          : "No players to logout. Server is now in maintenance."
+      );
+      
+      if (this.gameServer.world) {
+        this.gameServer.world.broadcastMessage(message);
+      }
+    };
+
+    if (seconds > 0) {
+      this.gameServer.statusManager.setClosing();
+      if (this.gameServer.world) {
+        this.gameServer.world.broadcastMessage(
+          `The gameserver will enter maintenance mode in ${seconds} seconds. Players with role > 1 will remain connected.`
+        );
+      }
+      this.shutdownTimeout = setTimeout(logoutPlayers, ms);
+    } else {
+      logoutPlayers();
+    }
+  }
+
+  /**
+   * Cancel shutdown timeout
+   */
+  private cancelShutdownTimeout(): void {
+    if (this.shutdownTimeout) {
+      clearTimeout(this.shutdownTimeout);
+      this.shutdownTimeout = null;
+    }
+  }
+
+  // ============================================================================
+  // Scheduled Shutdown Management
+  // ============================================================================
 
   /**
    * Check if it's time to shutdown or send warnings
@@ -171,18 +343,18 @@ export class ScheduledShutdown {
       console.log("[Scheduled Shutdown] Kicking all players...");
       this.kickAllPlayers();
 
-      // Step 4: Close server connections
+      // Step 4: Close server connections (only for scheduled shutdowns with restart)
       console.log("[Scheduled Shutdown] Closing server connections...");
-      this.closeServer();
+      this.closeServerForRestart();
 
-      // Step 5: Restart server
+      // Step 5: Restart server (only for scheduled shutdowns)
       console.log("[Scheduled Shutdown] Restarting server...");
       this.restartServer();
     } catch (error) {
       console.error("[Scheduled Shutdown] Error during shutdown process:", error);
       // Still try to kick players and restart even if there was an error
       this.kickAllPlayers();
-      this.closeServer();
+      this.closeServerForRestart();
       this.restartServer();
     }
   }
@@ -293,9 +465,9 @@ export class ScheduledShutdown {
   }
 
   /**
-   * Close all server connections
+   * Close all server connections (for restart)
    */
-  private closeServer(): void {
+  private closeServerForRestart(): void {
     // Set server status to closing first to prevent new connections
     this.gameServer.statusManager.setClosing();
     
