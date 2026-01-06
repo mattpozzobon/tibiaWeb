@@ -107,6 +107,11 @@ export const CONFIG = {
     MS_SHUTDOWN_SCHEDULE: 10000,
     MAX_PACKET_SIZE: 1024,
     SOCKET_TIMEOUT_MS: 120000,
+    SCHEDULED_SHUTDOWN: {
+      ENABLED: true,
+      TIME: "18:19", // Format: "HH:MM" in 24-hour format
+      WARNING_MINUTES: 5, // Warn players X minutes before shutdown
+    },
   },
   WORLD: {
     MAXIMUM_STACK_COUNT: 100,

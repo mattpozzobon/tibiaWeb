@@ -31,6 +31,7 @@ function envInt(name: string): number | undefined {
 const config = { ...baseConfig };
 config.LOGIN = { ...baseConfig.LOGIN };
 config.SERVER = { ...baseConfig.SERVER };
+config.SERVER.SCHEDULED_SHUTDOWN = { ...baseConfig.SERVER.SCHEDULED_SHUTDOWN };
 config.DATABASE = { ...baseConfig.DATABASE };
 config.HMAC = { ...baseConfig.HMAC };
 
@@ -42,6 +43,17 @@ if (envInt("LOGIN_PORT") !== undefined) config.LOGIN.PORT = envInt("LOGIN_PORT")
 if (envStr("SERVER_HOST")) config.SERVER.HOST = envStr("SERVER_HOST")!;
 if (envInt("SERVER_PORT") !== undefined) config.SERVER.PORT = envInt("SERVER_PORT")!;
 if (envStr("EXTERNAL_HOST")) config.SERVER.EXTERNAL_HOST = envStr("EXTERNAL_HOST")!;
+
+/* Scheduled shutdown */
+if (envStr("SCHEDULED_SHUTDOWN_ENABLED")) {
+  config.SERVER.SCHEDULED_SHUTDOWN.ENABLED = envStr("SCHEDULED_SHUTDOWN_ENABLED") === "true";
+}
+if (envStr("SCHEDULED_SHUTDOWN_TIME")) {
+  config.SERVER.SCHEDULED_SHUTDOWN.TIME = envStr("SCHEDULED_SHUTDOWN_TIME")!;
+}
+if (envInt("SCHEDULED_SHUTDOWN_WARNING_MINUTES") !== undefined) {
+  config.SERVER.SCHEDULED_SHUTDOWN.WARNING_MINUTES = envInt("SCHEDULED_SHUTDOWN_WARNING_MINUTES")!;
+}
 
 /* Database */
 if (envStr("ACCOUNT_DATABASE")) {

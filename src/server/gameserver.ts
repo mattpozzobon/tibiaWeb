@@ -8,6 +8,7 @@ import { IWorld } from "../interfaces/IWorld";
 import { IGameServer } from "../interfaces/IGameserver";
 import { AccountDatabaseGrouped } from "../database/account-database-grouped";
 import { ServerStatusManager } from "./server-status-manager";
+import { ScheduledShutdown } from "./scheduled-shutdown";
 
 class GameServer implements IGameServer {
   database: IDatabase;
@@ -20,6 +21,7 @@ class GameServer implements IGameServer {
   public readonly statusManager: ServerStatusManager;
   private __initialized: number | null;
   private __shutdownTimeout: NodeJS.Timeout | null = null;
+  private __scheduledShutdown: ScheduledShutdown | null = null;
 
   constructor() {
     this.statusManager = new ServerStatusManager();
@@ -49,10 +51,21 @@ class GameServer implements IGameServer {
     this.database.initialize();
     this.gameLoop.initialize();
     this.server.listen();
+
+    // Initialize scheduled shutdown if enabled
+    if (CONFIG.SERVER.SCHEDULED_SHUTDOWN.ENABLED) {
+      this.__scheduledShutdown = new ScheduledShutdown(this);
+      this.__scheduledShutdown.start();
+    }
   }
 
   shutdown(): void {
     console.log("The game server is shutting down.");
+
+    // Stop scheduled shutdown if running
+    if (this.__scheduledShutdown) {
+      this.__scheduledShutdown.stop();
+    }
 
     this.__cancelShutdownTimeout();
     this.statusManager.setClosed();
