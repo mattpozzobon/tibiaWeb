@@ -1,4 +1,4 @@
-import { Position } from "../../../../Cposition";
+import { Position } from "../../../../position";
 import { CONST, getGameServer } from "../../../../helper/appContext";
 import { IPlayer } from "../../../../interfaces/IPlayer";
 import { IItem, IThing } from "../../../../interfaces/IThing";

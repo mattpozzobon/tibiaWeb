@@ -1,4 +1,4 @@
-import { EventEmitter } from "Ceventemitter";
+import { EventEmitter } from "../eventemitter";
 
 
 export interface IWorldClock extends EventEmitter {
@@ -14,4 +14,7 @@ export interface IWorldClock extends EventEmitter {
   changeTime(time: string): void;
   between(start: string, end: string): boolean;
   tick(): void;
+
+  // From EventEmitter
+  on(which: string, callback: (...args: any[]) => any): (...args: any[]) => any;
 }

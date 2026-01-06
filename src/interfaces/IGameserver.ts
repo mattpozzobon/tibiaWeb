@@ -3,8 +3,8 @@ import { IGameLoop } from "./IGameloop";
 import { IHTTPServer } from "./IHttp-server";
 import { IIPCSocket } from "./IIpcsocket";
 import { IWorld } from "./IWorld";
-import { AccountDatabaseGrouped } from "../Caccount-database-grouped";
-import { ServerStatusManager } from "../Cserver-status-manager";
+import { AccountDatabaseGrouped } from "../account-database-grouped";
+import { ServerStatusManager } from "../server-status-manager";
 
 export interface IGameServer {
   database: IDatabase;

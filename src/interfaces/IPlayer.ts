@@ -1,4 +1,4 @@
-import Creature from "Ccreature";
+import Creature from "../creature";
 import { IContainerManager } from "./IContainer-manager";
 import { IActionHandler } from "./IPlayer-action-handler";
 import { ISocketHandler } from "./IPlayer-socket-handler";
@@ -11,7 +11,7 @@ import { IPlayerMovementHandler } from "./IPlayer-movement-handler";
 import { ICombatLock } from "./IPlayer-combat-lock";
 import { IUseHandler } from "./IPlayer-use-handler";
 import { IGlobalChannel } from "./IChannel-global";
-import Channel from "Cchannel";
+import Channel from "../channel";
 
 
 export interface IPlayer extends Creature {
@@ -30,6 +30,10 @@ export interface IPlayer extends Creature {
   useHandler: IUseHandler;
   lastVisit: number;
   attackMode: number;
+
+  // Movement / step duration is defined on Creature and used by doors, monsters, NPCs, etc.
+  // Expose it here so IPlayer matches the concrete Player implementation.
+  getStepDuration(friction: number): number;
 
   getTarget(): any;
   getTextColor(): number;

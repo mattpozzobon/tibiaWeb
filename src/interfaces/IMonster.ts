@@ -1,11 +1,11 @@
-import Creature from "Ccreature";
+import { ICreature } from "./ICreature";
 import { IDamageMap } from "./IDamage-map";
 import { ILootHandler } from "./IMonster-loot-handler";
 import ICorpse from "./ICorpse";
 import { IPlayer } from "./IPlayer";
 import ITile from "./ITile";
 
-export interface IMonster extends Creature {
+export interface IMonster extends ICreature {
   cid: number;
   corpse: number;
   fluidType: number;

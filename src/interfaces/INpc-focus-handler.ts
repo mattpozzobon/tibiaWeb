@@ -1,4 +1,4 @@
-import { EventEmitter } from "Ceventemitter";
+import { EventEmitter } from "../eventemitter";
 import { IPlayer } from "./IPlayer";
 import { ITalkStateHandler } from "./INpc-talk-state-handler";
 
@@ -9,4 +9,7 @@ export interface IFocusHandler extends EventEmitter {
   reset(): void;
   getFocus(): IPlayer | null;
   isInConversation(player?: IPlayer): boolean;
+
+  // From EventEmitter
+  on(which: string, callback: (...args: any[]) => any): (...args: any[]) => any;
 }

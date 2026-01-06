@@ -1,4 +1,4 @@
-import { EventEmitter } from "Ceventemitter";
+import { EventEmitter } from "../eventemitter";
 import { IBitFlag } from "./IBitflag";
 
 
@@ -27,6 +27,9 @@ export interface IThingPrototype extends EventEmitter{
   isFluidContainer(): boolean;
   isSplash(): boolean;
   isContainer(): boolean;
+
+  // From EventEmitter
+  on(which: string, callback: (...args: any[]) => any): (...args: any[]) => any;
 
   // Internal helpers (can be excluded if not needed externally)
   //__isType(type: string): boolean;
