@@ -128,6 +128,13 @@ class ExclusiveSlotsManager {
     const slotConfig = containerSlots.find(slot => slot.slotIndex === slotIndex);
     return slotConfig ? slotConfig.name || null : null;
   }
+
+  /**
+   * Get an item type by name
+   */
+  getItemType(typeName: string): ItemType | undefined {
+    return this.itemTypes.get(typeName);
+  }
 }
 
 // Export singleton instance

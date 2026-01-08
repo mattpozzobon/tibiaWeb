@@ -10,15 +10,167 @@ class Container extends Item implements IContainer{
   private __childWeight: number = 0;
   public container: BaseContainer;
   public static MAXIMUM_DEPTH: number = 2;
+  private __containerSizePotions: number = 0;
 
   constructor(id: number, size: number) {
     super(id);
 
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(id);
-    const extraSlots = exclusiveSlots.length;
-    const totalSize = size + extraSlots;
+    // Check if containerSizePotions is defined in properties (for belts)
+    const proto = this.getPrototype();
+    this.__containerSizePotions = proto.properties?.containerSizePotions || 0;
+    
+    // Get exclusive slots from config (check definitions.json first, then exclusive-slots.json)
+    const slotsFromProperties = proto.properties?.exclusiveSlots || [];
+    let exclusiveSlots = slotsFromProperties.length > 0 ? slotsFromProperties : exclusiveSlotsManager.getContainerSlots(id);
+    
+    // Filter out potion slots if containerSizePotions is defined
+    let filteredExclusiveSlots = exclusiveSlots;
+    if (this.__containerSizePotions > 0) {
+      filteredExclusiveSlots = exclusiveSlots.filter((slot: any) => {
+        const isPotionSlot = slot.allowedItemTypes?.includes("potion") || slot.name === "Potion Slot";
+        return !isPotionSlot;
+      });
+    }
+    
+    // Exclusive slots are ADDED to the container size (not replacing slots)
+    // So if containerSize is 20 and there are 2 exclusive slots, total is 22
+    // Exclusive slots are placed at the end: indices 20, 21, etc.
+    const exclusiveSlotsCount = filteredExclusiveSlots.length;
+    
+    // Total size = base size + potion slots + exclusive slots
+    const totalSize = size + this.__containerSizePotions + exclusiveSlotsCount;
 
     this.container = new BaseContainer(getGameServer().world.creatureHandler.assignUID(), totalSize);
+  }
+
+  private __getExclusiveSlotsFromProperties(): any[] {
+    /*
+     * Function Container.__getExclusiveSlotsFromProperties
+     * Returns exclusive slots defined in definitions.json properties, or empty array if not defined
+     */
+    const proto = this.getPrototype();
+    return proto.properties?.exclusiveSlots || [];
+  }
+
+  private __getExclusiveSlotsCount(): number {
+    /*
+     * Function Container.__getExclusiveSlotsCount
+     * Returns the count of exclusive slots from config, excluding potion slots if containerSizePotions is defined
+     */
+    // First check if exclusive slots are defined in properties (definitions.json)
+    const slotsFromProperties = this.__getExclusiveSlotsFromProperties();
+    if (slotsFromProperties.length > 0) {
+      // If we have containerSizePotions, don't count potion slots
+      if (this.__containerSizePotions > 0) {
+        const potionSlotsInProperties = slotsFromProperties.filter((slot: any) => 
+          slot.allowedItemTypes?.includes("potion") || slot.name === "Potion Slot"
+        );
+        return slotsFromProperties.length - potionSlotsInProperties.length;
+      }
+      return slotsFromProperties.length;
+    }
+    
+    // Fall back to exclusive-slots.json
+    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
+    
+    // If we have containerSizePotions, don't count potion slots from exclusive-slots.json
+    if (this.__containerSizePotions > 0) {
+      const potionSlotsInConfig = exclusiveSlots.filter(slot => 
+        slot.allowedItemTypes?.includes("potion") || slot.name === "Potion Slot"
+      );
+      return exclusiveSlots.length - potionSlotsInConfig.length;
+    }
+    
+    return exclusiveSlots.length;
+  }
+
+  private __getExclusiveSlots(): any[] {
+    /*
+     * Function Container.__getExclusiveSlots
+     * Returns all exclusive slots, checking definitions.json first, then exclusive-slots.json
+     * Filters out potion slots if containerSizePotions is defined
+     */
+    // First check if exclusive slots are defined in properties (definitions.json)
+    const slotsFromProperties = this.__getExclusiveSlotsFromProperties();
+    let exclusiveSlots = slotsFromProperties.length > 0 ? slotsFromProperties : exclusiveSlotsManager.getContainerSlots(this.id);
+    
+    // Filter out potion slots if containerSizePotions is defined
+    if (this.__containerSizePotions > 0) {
+      exclusiveSlots = exclusiveSlots.filter((slot: any) => {
+        const isPotionSlot = slot.allowedItemTypes?.includes("potion") || slot.name === "Potion Slot";
+        return !isPotionSlot;
+      });
+    }
+    
+    return exclusiveSlots;
+  }
+
+  private __getExclusiveSlotIndexFromConfig(containerSlotIndex: number): number | null {
+    /*
+     * Function Container.__getExclusiveSlotIndexFromConfig
+     * Returns the slotIndex to use when calling exclusiveSlotsManager methods
+     * Exclusive slots are placed at the end of the container, after base size and potion slots
+     */
+    const baseSize = this.__getBaseSize();
+    const exclusiveSlotsStartIndex = baseSize + this.__containerSizePotions;
+    
+    // Check if this is an exclusive slot (it should be after base size + potion slots)
+    if (containerSlotIndex < exclusiveSlotsStartIndex) {
+      return null;
+    }
+    
+    // Get all exclusive slots (from definitions.json or exclusive-slots.json)
+    const exclusiveSlots = this.__getExclusiveSlots();
+    
+    // Filter out potion slots if containerSizePotions is defined
+    let filteredExclusiveSlots = exclusiveSlots;
+    if (this.__containerSizePotions > 0) {
+      filteredExclusiveSlots = exclusiveSlots.filter((slot: any) => {
+        const isPotionSlot = slot.allowedItemTypes?.includes("potion") || slot.name === "Potion Slot";
+        return !isPotionSlot;
+      });
+    }
+    
+    // Calculate which exclusive slot this is (0-based index within exclusive slots)
+    const exclusiveSlotIndex = containerSlotIndex - exclusiveSlotsStartIndex;
+    
+    // Find the config slot at this position
+    if (exclusiveSlotIndex >= 0 && exclusiveSlotIndex < filteredExclusiveSlots.length) {
+      const configSlot = filteredExclusiveSlots[exclusiveSlotIndex];
+      // Return the slotIndex from the config (for item type resolution)
+      return configSlot.slotIndex;
+    }
+    
+    return null;
+  }
+
+  private __getBaseSize(): number {
+    /*
+     * Function Container.__getBaseSize
+     * Returns the base container size from definitions.json (containerSize property)
+     * This is the size before adding potion slots or exclusive slots
+     */
+    const proto = this.getPrototype();
+    return proto.properties?.containerSize || 0;
+  }
+
+  private __isPotionSlot(slotIndex: number): boolean {
+    /*
+     * Function Container.__isPotionSlot
+     * Checks if a slot index is a potion slot
+     */
+    const baseSize = this.__getBaseSize();
+    return slotIndex >= baseSize && slotIndex < baseSize + this.__containerSizePotions;
+  }
+
+  private __isPotion(item: IThing): boolean {
+    /*
+     * Function Container.__isPotion
+     * Checks if an item is a potion (health, mana, or energy)
+     */
+    if (!item) return false;
+    const clientId = getGameServer().database.getClientId(item.id);
+    return clientId === 266 || clientId === 268 || clientId === 237;
   }
 
   getNumberItems(): number {
@@ -32,8 +184,7 @@ class Container extends Item implements IContainer{
       return false;
     }
 
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
-    const originalSize = this.container.size - exclusiveSlots.length;
+    const baseSize = this.__getBaseSize();
 
     // Find first empty slot that allows this item
     for (let i = 0; i < this.container.size; i++) {
@@ -41,11 +192,18 @@ class Container extends Item implements IContainer{
         // Check if this slot allows the item
         let canPlace = true;
         
-        if (i >= originalSize) {
-          // This is an exclusive slot, check if the item is allowed
-          const exclusiveSlotIndex = i - originalSize;
-          const clientId = getGameServer().database.getClientId(thing.id);
-          canPlace = exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, clientId);
+        if (this.__isPotionSlot(i)) {
+          // This is a potion slot, only allow potions
+          canPlace = this.__isPotion(thing);
+        } else {
+          // Check if this is an exclusive slot from config (at any position)
+          const configSlotIndex = this.__getExclusiveSlotIndexFromConfig(i);
+          if (configSlotIndex !== null) {
+            // This is an exclusive slot from config, check if the item is allowed
+            const clientId = getGameServer().database.getClientId(thing.id);
+            canPlace = this.__canPlaceItemInSlot(i, clientId);
+          }
+          // If not an exclusive slot, canPlace remains true (normal slot)
         }
         
         if (canPlace) {
@@ -196,17 +354,25 @@ class Container extends Item implements IContainer{
   ): number {
     if (!this.container.isValidIndex(index)) return 0;
 
-    // Check exclusive slot restrictions
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
-    const originalSize = this.container.size - exclusiveSlots.length;
+    // Check slot restrictions
+    const baseSize = this.__getBaseSize();
     
-    if (index >= originalSize) {
-      // This is an exclusive slot, check if the item is allowed
-      const exclusiveSlotIndex = index - originalSize;
-      const clientId = getGameServer().database.getClientId(thing.id);
-      if (!exclusiveSlotsManager.canPlaceItem(this.id, exclusiveSlotIndex, clientId)) {
+    if (this.__isPotionSlot(index)) {
+      // This is a potion slot, only allow potions
+      if (!this.__isPotion(thing)) {
         return 0;
       }
+    } else {
+      // Check if this is an exclusive slot from config (at any position)
+      const configSlotIndex = this.__getExclusiveSlotIndexFromConfig(index);
+      if (configSlotIndex !== null) {
+        // This is an exclusive slot from config, check if the item is allowed
+        const clientId = getGameServer().database.getClientId(thing.id);
+        if (!this.__canPlaceItemInSlot(index, clientId)) {
+          return 0;
+        }
+      }
+      // If not an exclusive slot, allow normal placement
     }
 
     if (thing.isContainer()) {
@@ -319,52 +485,126 @@ class Container extends Item implements IContainer{
 
   // Exclusive slot methods
   isExclusiveSlot(slotIndex: number): boolean {
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
-    const originalSize = this.container.size - exclusiveSlots.length;
-    
-    // Exclusive slots are at the end of the container
-    if (slotIndex >= originalSize) {
+    // Potion slots and config exclusive slots are considered exclusive
+    if (this.__isPotionSlot(slotIndex)) {
       return true;
     }
-    return false;
+    // Check if this is an exclusive slot (exclusive slots are at the end)
+    const baseSize = this.__getBaseSize();
+    const exclusiveSlotsStartIndex = baseSize + this.__containerSizePotions;
+    return slotIndex >= exclusiveSlotsStartIndex;
+  }
+
+  private __canPlaceItemInSlot(slotIndex: number, itemId: number): boolean {
+    /*
+     * Function Container.__canPlaceItemInSlot
+     * Checks if an item can be placed in a specific slot, checking definitions.json first
+     */
+    const baseSize = this.__getBaseSize();
+    const exclusiveSlotsStartIndex = baseSize + this.__containerSizePotions;
+    
+    // Check if this is an exclusive slot (exclusive slots are at the end)
+    if (slotIndex >= exclusiveSlotsStartIndex) {
+      // This is an exclusive slot, find which one
+      const exclusiveSlots = this.__getExclusiveSlots();
+      const exclusiveSlotIndex = slotIndex - exclusiveSlotsStartIndex;
+      
+      if (exclusiveSlotIndex >= 0 && exclusiveSlotIndex < exclusiveSlots.length) {
+        const configSlot = exclusiveSlots[exclusiveSlotIndex];
+        
+        // Check if item ID is explicitly allowed
+        if (configSlot.allowedItemIds && configSlot.allowedItemIds.includes(itemId)) {
+          return true;
+        }
+
+        // Check if item type is allowed (use exclusiveSlotsManager to resolve item types)
+        if (configSlot.allowedItemTypes) {
+          return configSlot.allowedItemTypes.some((typeName: string) => {
+            const itemType = exclusiveSlotsManager.getItemType(typeName);
+            return itemType && itemType.itemIds.includes(itemId);
+          });
+        }
+
+        return false; // Exclusive slot but item doesn't match restrictions
+      }
+    }
+    
+    return true; // No restrictions for this slot (normal slot)
   }
 
   getAllowedItemTypes(slotIndex: number): string[] {
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
-    const originalSize = this.container.size - exclusiveSlots.length;
+    if (this.__isPotionSlot(slotIndex)) {
+      return ["potion"];
+    }
+    // Check if this is an exclusive slot (exclusive slots are at the end)
+    const baseSize = this.__getBaseSize();
+    const exclusiveSlotsStartIndex = baseSize + this.__containerSizePotions;
     
-    if (slotIndex >= originalSize) {
-      const exclusiveSlotIndex = slotIndex - originalSize;
-      return exclusiveSlotsManager.getAllowedItemTypes(this.id, exclusiveSlotIndex);
+    if (slotIndex >= exclusiveSlotsStartIndex) {
+      // This is an exclusive slot, find which one
+      const exclusiveSlots = this.__getExclusiveSlots();
+      const exclusiveSlotIndex = slotIndex - exclusiveSlotsStartIndex;
+      
+      if (exclusiveSlotIndex >= 0 && exclusiveSlotIndex < exclusiveSlots.length) {
+        const configSlot = exclusiveSlots[exclusiveSlotIndex];
+        return configSlot.allowedItemTypes || [];
+      }
     }
     return [];
   }
 
   getAllowedItemIds(slotIndex: number): number[] {
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
-    const originalSize = this.container.size - exclusiveSlots.length;
+    if (this.__isPotionSlot(slotIndex)) {
+      // Return potion client IDs: 266 (health), 268 (mana), 237 (energy)
+      return [266, 268, 237];
+    }
+    // Check if this is an exclusive slot (exclusive slots are at the end)
+    const baseSize = this.__getBaseSize();
+    const exclusiveSlotsStartIndex = baseSize + this.__containerSizePotions;
     
-    if (slotIndex >= originalSize) {
-      const exclusiveSlotIndex = slotIndex - originalSize;
-      return exclusiveSlotsManager.getAllowedItemIds(this.id, exclusiveSlotIndex);
+    if (slotIndex >= exclusiveSlotsStartIndex) {
+      // This is an exclusive slot, find which one
+      const exclusiveSlots = this.__getExclusiveSlots();
+      const exclusiveSlotIndex = slotIndex - exclusiveSlotsStartIndex;
+      
+      if (exclusiveSlotIndex >= 0 && exclusiveSlotIndex < exclusiveSlots.length) {
+        const configSlot = exclusiveSlots[exclusiveSlotIndex];
+        return configSlot.allowedItemIds || [];
+      }
     }
     return [];
   }
 
   getSlotName(slotIndex: number): string | null {
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
-    const originalSize = this.container.size - exclusiveSlots.length;
+    if (this.__isPotionSlot(slotIndex)) {
+      return "Potion Slot";
+    }
+    // Check if this is an exclusive slot (exclusive slots are at the end)
+    const baseSize = this.__getBaseSize();
+    const exclusiveSlotsStartIndex = baseSize + this.__containerSizePotions;
     
-    if (slotIndex >= originalSize) {
-      const exclusiveSlotIndex = slotIndex - originalSize;
-      return exclusiveSlotsManager.getSlotName(this.id, exclusiveSlotIndex);
+    if (slotIndex >= exclusiveSlotsStartIndex) {
+      // This is an exclusive slot, find which one
+      const exclusiveSlots = this.__getExclusiveSlots();
+      const exclusiveSlotIndex = slotIndex - exclusiveSlotsStartIndex;
+      
+      if (exclusiveSlotIndex >= 0 && exclusiveSlotIndex < exclusiveSlots.length) {
+        const configSlot = exclusiveSlots[exclusiveSlotIndex];
+        return configSlot.name || null;
+      }
     }
     return null;
   }
 
   // Slot type information for packets
   hasExclusiveSlots(): boolean {
-    return exclusiveSlotsManager.getContainerSlots(this.id).length > 0;
+    // Check if we have potion slots
+    if (this.__containerSizePotions > 0) {
+      return true;
+    }
+    // Check if we have exclusive slots from definitions.json or exclusive-slots.json
+    const exclusiveSlots = this.__getExclusiveSlots();
+    return exclusiveSlots.length > 0;
   }
 
   getSlotTypeForPacket(slotIndex: number): number {
