@@ -219,26 +219,27 @@ export class PacketWriter extends Packet {
   writeBeltPotionQuantities(equipment: any): void {
     /*
      * Writes belt potion IDs and quantities to a packet
+     * Uses UInt16 for quantities to support values > 255
      */
     const beltQuantities = equipment.getBeltPotionQuantities();
     if (beltQuantities) {
       // Health potion: ID and quantity
       this.writeUInt16(beltQuantities.healthPotionId);
-      this.writeUInt8(beltQuantities.healthQuantity);
+      this.writeUInt16(beltQuantities.healthQuantity);
       // Mana potion: ID and quantity
       this.writeUInt16(beltQuantities.manaPotionId);
-      this.writeUInt8(beltQuantities.manaQuantity);
+      this.writeUInt16(beltQuantities.manaQuantity);
       // Energy potion: ID and quantity
       this.writeUInt16(beltQuantities.energyPotionId);
-      this.writeUInt8(beltQuantities.energyQuantity);
+      this.writeUInt16(beltQuantities.energyQuantity);
     } else {
       // No belt equipped - send zeros for all potions
       this.writeUInt16(0); // Health potion ID
-      this.writeUInt8(0);  // Health quantity
+      this.writeUInt16(0); // Health quantity
       this.writeUInt16(0); // Mana potion ID
-      this.writeUInt8(0);  // Mana quantity
+      this.writeUInt16(0); // Mana quantity
       this.writeUInt16(0); // Energy potion ID
-      this.writeUInt8(0);  // Energy quantity
+      this.writeUInt16(0); // Energy quantity
     }
   }
 

@@ -530,7 +530,8 @@ export class FriendUpdatePacket extends PacketWriter {
 
 export class BeltPotionQuantitiesPacket extends PacketWriter {
   constructor(equipment: any) {
-    super(CONST.PROTOCOL.SERVER.BELT_POTION_QUANTITIES, 9);
+    // Packet size: 6 UInt16 values (3 potion IDs + 3 quantities) = 12 bytes
+    super(CONST.PROTOCOL.SERVER.BELT_POTION_QUANTITIES, 12);
     this.writeBeltPotionQuantities(equipment);
   }
 }

@@ -679,7 +679,10 @@ class Equipment {
       if (!slot) return;
       
       const clientId = getGameServer().database.getClientId(slot.id);
-      const count = slot.count || 1;
+      // Use getCount() to properly get the count for stackable items
+      // For potions (which are stackable), this will return the actual count
+      // For non-stackable items, this returns 0
+      const count = slot.getCount ? slot.getCount() : (slot.count || 1);
       
       if (clientId === 266) { // Health potion
         if (healthPotionId === 0) {
