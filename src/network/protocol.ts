@@ -476,6 +476,9 @@ export class PlayerStatePacket extends PacketWriter {
     // 4. equipment
     this.writeEquipment(player.containerManager.equipment);
 
+    // 5. belt potion quantities
+    this.writeBeltPotionQuantities(player.containerManager.equipment);
+
     // 6. hairs
     this.writeHairs(player.getProperty(CONST.PROPERTIES.HAIRS));
 

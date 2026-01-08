@@ -649,6 +649,65 @@ class Equipment {
     
     console.log('Belt addons reset to 0 on unequip');
   }
+
+  getBeltPotionQuantities(): { healthPotionId: number; healthQuantity: number; manaPotionId: number; manaQuantity: number; energyPotionId: number; energyQuantity: number } | null {
+    /*
+     * Function Equipment.getBeltPotionQuantities
+     * Returns the potion client IDs and quantities for each potion type
+     * Returns null if no belt is equipped
+     */
+    const beltItem = this.peekIndex(CONST.EQUIPMENT.BELT);
+    if (!beltItem || !beltItem.isContainer()) {
+      return null;
+    }
+
+    const container = (beltItem as any).container as BaseContainer;
+    if (!container) {
+      return null;
+    }
+
+    // Get all slots and calculate total quantities for each potion type
+    const slots = container.getSlots();
+    let healthPotionId = 0;
+    let healthQuantity = 0;
+    let manaPotionId = 0;
+    let manaQuantity = 0;
+    let energyPotionId = 0;
+    let energyQuantity = 0;
+
+    slots.forEach((slot: any) => {
+      if (!slot) return;
+      
+      const clientId = getGameServer().database.getClientId(slot.id);
+      const count = slot.count || 1;
+      
+      if (clientId === 266) { // Health potion
+        if (healthPotionId === 0) {
+          healthPotionId = clientId;
+        }
+        healthQuantity += count;
+      } else if (clientId === 268) { // Mana potion
+        if (manaPotionId === 0) {
+          manaPotionId = clientId;
+        }
+        manaQuantity += count;
+      } else if (clientId === 237) { // Energy potion
+        if (energyPotionId === 0) {
+          energyPotionId = clientId;
+        }
+        energyQuantity += count;
+      }
+    });
+
+    return {
+      healthPotionId,
+      healthQuantity,
+      manaPotionId,
+      manaQuantity,
+      energyPotionId,
+      energyQuantity
+    };
+  }
   
 }
 
