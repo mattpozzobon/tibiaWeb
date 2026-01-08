@@ -528,6 +528,13 @@ export class FriendUpdatePacket extends PacketWriter {
   }
 }
 
+export class BeltPotionQuantitiesPacket extends PacketWriter {
+  constructor(equipment: any) {
+    super(CONST.PROTOCOL.SERVER.BELT_POTION_QUANTITIES, 9);
+    this.writeBeltPotionQuantities(equipment);
+  }
+}
+
 export const Packets = {
   CreaturePropertyPacket,
   StringCreaturePropertyPacket,
@@ -570,4 +577,5 @@ export const Packets = {
   NPCTradePacket,
   PlayerStatePacket,
   FriendUpdatePacket,
+  BeltPotionQuantitiesPacket,
 };

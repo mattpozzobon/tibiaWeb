@@ -2,7 +2,7 @@
 
 import { IPlayer } from "../../interfaces/IPlayer";
 import GenericLock from "../../utils/generic-lock";
-import { ReadTextPacket } from "../../network/protocol";
+import { ReadTextPacket, BeltPotionQuantitiesPacket } from "../../network/protocol";
 import { getGameServer, CONST } from "../../helper/appContext";
 
 class UseHandler {
@@ -222,6 +222,9 @@ class UseHandler {
     if (effectApplied) {
       // Remove the potion from the belt
       beltItem.removeIndex(potionSlot, 1);
+      
+      // Send updated belt potion quantities to UI
+      this.__player.write(new BeltPotionQuantitiesPacket(this.__player.containerManager.equipment));
       
       // Lock the action for cooldown
       this.__useWithLock.lock(this.GLOBAL_USE_COOLDOWN);

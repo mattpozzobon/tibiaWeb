@@ -1,5 +1,5 @@
 import BaseContainer from "../base-container";
-import { ContainerClosePacket, ContainerOpenPacket } from "../../network/protocol";
+import { ContainerClosePacket, ContainerOpenPacket, BeltPotionQuantitiesPacket } from "../../network/protocol";
 import { CONFIG, CONST, getGameServer } from "../../helper/appContext";
 import { IContainer, IItem, IThing } from "interfaces/IThing";
 import { IPlayer } from "interfaces/IPlayer";
@@ -86,10 +86,12 @@ class Container extends Item implements IContainer{
     }
 
     const thing = this.container.removeIndex(index, amount);
+    if (thing === null) return null;
+    
     this.__updateParentWeightRecursion(-thing.getWeight());
     thing.setParent(null);
 
-    // Update belt outfit when potion is removed from belt container
+    // Update belt outfit and potion quantities when potion is removed from belt container
     // Check if the container's parent is equipment and specifically a belt container
     const parent = this.getParent();
     if (parent && parent.constructor.name === "Equipment") {
@@ -97,8 +99,9 @@ class Container extends Item implements IContainer{
       const equipment = parent as any;
       const beltItem = equipment.peekIndex(CONST.EQUIPMENT.BELT);
       if (beltItem === this) {
-        // This container is the equipped belt, update outfit
+        // This container is the equipped belt, update outfit and quantities
         this.__updateBeltOutfit(null); // Pass null to indicate item was removed
+        this.__updateBeltPotionQuantities(equipment);
       }
     }
 
@@ -145,6 +148,8 @@ class Container extends Item implements IContainer{
       if (beltItem === this) {
         // This container is the equipped belt, update outfit
         this.__updateBeltOutfit(thing);
+        // Send updated belt potion quantities to UI
+        this.__updateBeltPotionQuantities(equipment);
       }
     }
 
@@ -495,6 +500,17 @@ class Container extends Item implements IContainer{
       current = current.getParent ? current.getParent() : null;
     }
     return null;
+  }
+
+  private __updateBeltPotionQuantities(equipment: any): void {
+    /*
+     * Function Container.__updateBeltPotionQuantities
+     * Sends updated belt potion quantities to the player
+     */
+    const player = this.__findPlayerOwner();
+    if (player) {
+      player.write(new BeltPotionQuantitiesPacket(equipment));
+    }
   }
 
 }

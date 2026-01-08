@@ -88,6 +88,7 @@ export const CONST = {
       CREATURE_PROPERTY: 37,
       CHANNEL_JOIN: 50,
       FRIEND_UPDATE: 51,
+      BELT_POTION_QUANTITIES: 52,
     },
   },
   DIRECTION: {
