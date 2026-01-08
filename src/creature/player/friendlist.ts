@@ -1,3 +1,4 @@
+import { FriendUpdatePacket } from "../../network/protocol";
 import { CONST, getGameServer } from "../../helper/appContext";
 
 export class Friendlist {
@@ -280,7 +281,7 @@ export class Friendlist {
     const friendRequests = this.getFriendRequests();
     
     // Import FriendUpdatePacket dynamically to avoid circular imports
-    const { FriendUpdatePacket } = require('../network/protocol');
+
     player.write(new FriendUpdatePacket(friends, friendRequests));
   }
 

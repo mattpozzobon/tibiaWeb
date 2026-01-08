@@ -409,6 +409,11 @@ export class AccountDatabaseGrouped {
         // @ts-ignore
         const friendsData = this.parseJSON(row.friends, { friends: [], requests: [] });
         
+        // Ensure friends array exists
+        if (!friendsData.friends) {
+          friendsData.friends = [];
+        }
+        
         // @ts-ignore
         if (!friendsData.friends.includes(player2Name)) {
           // @ts-ignore
@@ -431,6 +436,11 @@ export class AccountDatabaseGrouped {
 
                 // @ts-ignore
                 const friendsData2 = this.parseJSON(row.friends, { friends: [], requests: [] });
+                
+                // Ensure friends array exists
+                if (!friendsData2.friends) {
+                  friendsData2.friends = [];
+                }
                 
                 // @ts-ignore
                 if (!friendsData2.friends.includes(player1Name)) {
