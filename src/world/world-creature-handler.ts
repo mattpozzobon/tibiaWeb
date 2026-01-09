@@ -335,6 +335,10 @@ class CreatureHandler {
 
     let stepDuration = creature.getStepDuration(tile.getFriction());
 
+    // Update the creature's facing direction based on movement
+    const direction = creature.position.getFacingDirection(position);
+    creature.setDirection(direction);
+
     this.updateCreaturePosition(creature, position);
 
     creature.broadcast(
