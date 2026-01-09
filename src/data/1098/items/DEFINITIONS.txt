@@ -1,0 +1,180 @@
+================================================================================
+ITEM DEFINITIONS DOCUMENTATION
+================================================================================
+
+This file documents the structure and properties used in definitions.json.
+
+================================================================================
+ITEM TYPES
+================================================================================
+
+Items can be assigned an "itemType" property in their "properties" object. 
+This is used to categorize items for exclusive slot validation in containers.
+
+Available Item Types:
+--------------------
+
+- rope: Items that can be placed in rope slots
+  Example clientId: 3003 (rope)
+
+- shovel: Items that can be placed in shovel slots
+  Example clientId: 3457 (shovel)
+
+- pick: Items that can be placed in pick slots
+  Example clientId: 3456 (pick)
+
+- knife: Items that can be placed in knife slots
+  Example clientId: 3469 (knife)
+
+- fishingRod: Items that can be placed in fishing rod slots
+  Example clientId: 3483 (fishing rod)
+
+- potion: Items that can be placed in potion slots
+  Example clientIds: 266 (health potion), 268 (mana potion), 
+                     269 (strong health potion), 237 (energy potion)
+
+Adding an Item Type:
+--------------------
+To add an "itemType" to an item, add the property to the item's "properties" object:
+
+Example:
+  "2120": {
+      "id": 3003,
+      "properties": {
+          "name": "rope",
+          "itemType": "rope"
+      }
+  }
+
+================================================================================
+CONTAINER EXCLUSIVE SLOTS
+================================================================================
+
+Containers can define exclusive slots that only accept specific item types or 
+item IDs. These slots are ADDED to the container size, not replacing existing 
+slots.
+
+Structure:
+----------
+Exclusive slots are defined in the container's "properties" object using the 
+"exclusiveSlots" array.
+
+Example:
+  "1988": {
+      "properties": {
+          "containerSize": 30,
+          "exclusiveSlots": [
+              {
+                  "slotIndex": 0,
+                  "allowedItemTypes": ["rope"],
+                  "name": "Rope Slot"
+              },
+              {
+                  "slotIndex": 1,
+                  "allowedItemTypes": ["shovel"],
+                  "name": "Shovel Slot"
+              }
+          ]
+      }
+  }
+
+Slot Properties:
+----------------
+Each exclusive slot object can have the following properties:
+
+- slotIndex (required): 
+  The position of the slot within the exclusive slots array (0-based). 
+  Exclusive slots are added at the end of the container, after base slots 
+  and potion slots.
+
+- allowedItemTypes (optional): 
+  Array of item type names (e.g., ["rope", "shovel"]). Items with matching 
+  "itemType" property will be allowed.
+
+- allowedItemIds (optional): 
+  Array of specific client IDs that are allowed in this slot 
+  (e.g., [3003, 3457]).
+
+- name (optional): 
+  Display name for the slot (e.g., "Rope Slot").
+
+Container Size Calculation:
+----------------------------
+Exclusive slots are ADDED to the container size:
+
+  Total Size = containerSize + containerSizePotions + exclusiveSlots.length
+
+Example:
+  - containerSize: 20
+  - containerSizePotions: 0
+  - exclusiveSlots: 2 slots
+  - Total Size: 22 slots
+
+================================================================================
+EXAMPLES
+================================================================================
+
+Example 1: Backpack with Tool Slots
+------------------------------------
+  "1988": {
+      "id": 2854,
+      "properties": {
+          "name": "backpack",
+          "containerSize": 30,
+          "exclusiveSlots": [
+              {
+                  "slotIndex": 0,
+                  "allowedItemTypes": ["rope"],
+                  "name": "Rope Slot"
+              },
+              {
+                  "slotIndex": 1,
+                  "allowedItemTypes": ["shovel"],
+                  "name": "Shovel Slot"
+              },
+              {
+                  "slotIndex": 2,
+                  "allowedItemTypes": ["pick"],
+                  "name": "Pick Slot"
+              },
+              {
+                  "slotIndex": 3,
+                  "allowedItemTypes": ["knife"],
+                  "name": "Knife Slot"
+              },
+              {
+                  "slotIndex": 4,
+                  "allowedItemTypes": ["fishingRod"],
+                  "name": "Fishing Rod Slot"
+              }
+          ]
+      }
+  }
+
+This backpack will have:
+  - 30 base slots (indices 0-29)
+  - 5 exclusive tool slots (indices 30-34)
+  - Total: 35 slots
+
+Example 2: Belt with Potion Slots
+----------------------------------
+  "2002": {
+      "id": 2869,
+      "properties": {
+          "name": "brown belt",
+          "containerSize": 0,
+          "containerSizePotions": 5,
+          "exclusiveSlots": []
+      }
+  }
+
+This belt will have:
+  - 0 base slots
+  - 5 potion slots (indices 0-4)
+  - Total: 5 slots
+
+Note: When "containerSizePotions" is defined, potion slots are automatically 
+created and any potion slots in "exclusiveSlots" are filtered out to avoid 
+duplication.
+
+================================================================================

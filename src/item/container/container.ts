@@ -19,7 +19,7 @@ class Container extends Item implements IContainer{
     const proto = this.getPrototype();
     this.__containerSizePotions = proto.properties?.containerSizePotions || 0;
     
-    // Get exclusive slots from config (check definitions.json first, then exclusive-slots.json)
+    // Get exclusive slots from definitions.json (single source of truth)
     const slotsFromProperties = proto.properties?.exclusiveSlots || [];
     let exclusiveSlots = slotsFromProperties.length > 0 ? slotsFromProperties : exclusiveSlotsManager.getContainerSlots(id);
     
@@ -57,7 +57,7 @@ class Container extends Item implements IContainer{
      * Function Container.__getExclusiveSlotsCount
      * Returns the count of exclusive slots from config, excluding potion slots if containerSizePotions is defined
      */
-    // First check if exclusive slots are defined in properties (definitions.json)
+    // Get exclusive slots from definitions.json properties (single source of truth)
     const slotsFromProperties = this.__getExclusiveSlotsFromProperties();
     if (slotsFromProperties.length > 0) {
       // If we have containerSizePotions, don't count potion slots
@@ -70,29 +70,19 @@ class Container extends Item implements IContainer{
       return slotsFromProperties.length;
     }
     
-    // Fall back to exclusive-slots.json
-    const exclusiveSlots = exclusiveSlotsManager.getContainerSlots(this.id);
-    
-    // If we have containerSizePotions, don't count potion slots from exclusive-slots.json
-    if (this.__containerSizePotions > 0) {
-      const potionSlotsInConfig = exclusiveSlots.filter(slot => 
-        slot.allowedItemTypes?.includes("potion") || slot.name === "Potion Slot"
-      );
-      return exclusiveSlots.length - potionSlotsInConfig.length;
-    }
-    
-    return exclusiveSlots.length;
+    // No exclusive slots defined in properties
+    return 0;
   }
 
   private __getExclusiveSlots(): any[] {
     /*
      * Function Container.__getExclusiveSlots
-     * Returns all exclusive slots, checking definitions.json first, then exclusive-slots.json
+     * Returns all exclusive slots from definitions.json (single source of truth)
      * Filters out potion slots if containerSizePotions is defined
      */
-    // First check if exclusive slots are defined in properties (definitions.json)
+    // Get exclusive slots from definitions.json properties
     const slotsFromProperties = this.__getExclusiveSlotsFromProperties();
-    let exclusiveSlots = slotsFromProperties.length > 0 ? slotsFromProperties : exclusiveSlotsManager.getContainerSlots(this.id);
+    let exclusiveSlots = slotsFromProperties;
     
     // Filter out potion slots if containerSizePotions is defined
     if (this.__containerSizePotions > 0) {
@@ -119,7 +109,7 @@ class Container extends Item implements IContainer{
       return null;
     }
     
-    // Get all exclusive slots (from definitions.json or exclusive-slots.json)
+    // Get all exclusive slots from definitions.json (single source of truth)
     const exclusiveSlots = this.__getExclusiveSlots();
     
     // Filter out potion slots if containerSizePotions is defined
@@ -521,7 +511,15 @@ class Container extends Item implements IContainer{
         if (configSlot.allowedItemTypes) {
           return configSlot.allowedItemTypes.some((typeName: string) => {
             const itemType = exclusiveSlotsManager.getItemType(typeName);
-            return itemType && itemType.itemIds.includes(itemId);
+            if (!itemType) {
+              console.log(`[Container] Item type "${typeName}" not found in itemTypes map`);
+              return false;
+            }
+            const isAllowed = itemType.itemIds.includes(itemId);
+            if (!isAllowed) {
+              console.log(`[Container] Item ID ${itemId} not in itemType "${typeName}" itemIds:`, itemType.itemIds);
+            }
+            return isAllowed;
           });
         }
 
@@ -602,7 +600,7 @@ class Container extends Item implements IContainer{
     if (this.__containerSizePotions > 0) {
       return true;
     }
-    // Check if we have exclusive slots from definitions.json or exclusive-slots.json
+    // Check if we have exclusive slots from definitions.json
     const exclusiveSlots = this.__getExclusiveSlots();
     return exclusiveSlots.length > 0;
   }

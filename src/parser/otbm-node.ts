@@ -67,7 +67,7 @@ export class OTBMNode {
       return new Position(
         this.properties.x + this.parentNode!.properties.position.x,
         this.properties.y + this.parentNode!.properties.position.y,
-        15 - this.parentNode!.properties.position.z // Swap the z-coordinate
+        this.parentNode!.properties.position.z // Z-Down: Z=0 is sky, Z=7 is ground, Z=15 is deepest
       );
     }
 

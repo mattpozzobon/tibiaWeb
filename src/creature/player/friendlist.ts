@@ -110,24 +110,34 @@ export class Friendlist {
       return;
     }
 
+    const playerName = player.getProperty(CONST.PROPERTIES.NAME);
+    const gameServer = getGameServer();
+
     // Remove from friends list
     this.friends.delete(friendName);
 
     // Try to find the other player to update their friend list
-    const friendPlayer = getGameServer().world.creatureHandler.getPlayerByName(friendName);
+    const friendPlayer = gameServer.world.creatureHandler.getPlayerByName(friendName);
     if (friendPlayer) {
       // Other player is online, remove from their friends list too
-      friendPlayer.friendlist.friends.delete(player.getProperty(CONST.PROPERTIES.NAME));
+      friendPlayer.friendlist.friends.delete(playerName);
       
       // Send friend status updates to both players
       player.friendlist.sendFriendUpdate(player);
       friendPlayer.friendlist.sendFriendUpdate(friendPlayer);
       
-      friendPlayer.sendCancelMessage(`${player.getProperty(CONST.PROPERTIES.NAME)} removed you from their friends list.`);
+      friendPlayer.sendCancelMessage(`${playerName} removed you from their friends list.`);
     } else {
       // Send update to player even if friend is offline
       player.friendlist.sendFriendUpdate(player);
     }
+
+    // Remove from database for both players (even if one is offline)
+    gameServer.accountDatabase.removeFriendFromBothPlayers(playerName, friendName, (err: Error | null) => {
+      if (err) {
+        console.error(`Failed to remove friend from database: ${playerName} <-> ${friendName}`, err);
+      }
+    });
 
     player.sendCancelMessage(`${friendName} has been removed from your friends list.`);
   }

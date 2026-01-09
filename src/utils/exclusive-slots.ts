@@ -1,4 +1,4 @@
-import exclusiveSlotsConfig from '../config/exclusive-slots.json';
+import { getGameServer } from '../helper/appContext';
 import { ExclusiveSlotConfig, ContainerExclusiveSlots, ItemType } from '../types/exclusive-slots';
 
 class ExclusiveSlotsManager {
@@ -8,15 +8,50 @@ class ExclusiveSlotsManager {
   constructor() {
     this.itemTypes = new Map();
     this.containerSlots = {};
+    // Don't load item types here - wait for initialize() to be called after database is ready
+  }
 
-    // Load item types
-    Object.entries(exclusiveSlotsConfig.itemTypes).forEach(([key, itemType]) => {
-      this.itemTypes.set(key, itemType as ItemType);
+  /**
+   * Initialize item types (called after database is loaded)
+   * Builds the itemTypes map by scanning all items in definitions.json
+   */
+  initialize(): void {
+    const database = getGameServer()?.database;
+    if (!database) {
+      console.warn('ExclusiveSlotsManager.initialize() called but database is not available');
+      return;
+    }
+
+    // Read definitions.json to build itemTypes map from item properties
+    const definitions = database.readDataDefinition('items');
+    
+    // Build itemTypes map by scanning all items and grouping by itemType property
+    const itemTypesMap: { [key: string]: number[] } = {};
+    
+    Object.entries(definitions).forEach(([key, item]: [string, any]) => {
+      // Skip non-item entries
+      if (!item || !item.properties) {
+        return;
+      }
+      
+      const itemType = item.properties.itemType;
+      if (itemType && item.id) {
+        // item.id is the client ID
+        if (!itemTypesMap[itemType]) {
+          itemTypesMap[itemType] = [];
+        }
+        if (!itemTypesMap[itemType].includes(item.id)) {
+          itemTypesMap[itemType].push(item.id);
+        }
+      }
     });
-
-    // Load container slot configurations
-    Object.entries(exclusiveSlotsConfig.containerSlots).forEach(([containerId, slots]) => {
-      this.containerSlots[parseInt(containerId)] = slots as ExclusiveSlotConfig[];
+    
+    // Convert to ItemType format and store in map
+    Object.entries(itemTypesMap).forEach(([typeName, itemIds]) => {
+      this.itemTypes.set(typeName, {
+        name: typeName.charAt(0).toUpperCase() + typeName.slice(1),
+        itemIds: itemIds.sort((a, b) => a - b)
+      });
     });
   }
 
@@ -52,9 +87,12 @@ class ExclusiveSlotsManager {
 
   /**
    * Get the exclusive slot configuration for a container
+   * Note: Container slots are now defined in definitions.json properties, not here
+   * This method is kept for backward compatibility but always returns empty array
    */
   getContainerSlots(containerId: number): ExclusiveSlotConfig[] {
-    return this.containerSlots[containerId] || [];
+    // definitions.json is the single source of truth - container slots are in item properties
+    return [];
   }
 
   /**
@@ -131,8 +169,13 @@ class ExclusiveSlotsManager {
 
   /**
    * Get an item type by name
+   * Lazy-loads item types from definitions.json on first access
    */
   getItemType(typeName: string): ItemType | undefined {
+    // Lazy-load item types if not already loaded
+    if (this.itemTypes.size === 0) {
+      this.initialize();
+    }
     return this.itemTypes.get(typeName);
   }
 }

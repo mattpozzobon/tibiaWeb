@@ -461,6 +461,72 @@ export class AccountDatabaseGrouped {
     );
   }
 
+  public removeFriendFromBothPlayers(player1Name: string, player2Name: string, callback: (error: Error | null) => void): void {
+    // Remove player2 from player1's friends list
+    this.db.get(
+      `SELECT friends FROM characters WHERE name = ?`,
+      [player1Name],
+      (err, row) => {
+        if (err) return callback(err);
+        if (!row) return callback(new Error('Player 1 not found'));
+
+        // @ts-ignore
+        const friendsData = this.parseJSON(row.friends, { friends: [], requests: [] });
+        
+        // Ensure friends array exists
+        if (!friendsData.friends) {
+          friendsData.friends = [];
+        }
+        
+        // @ts-ignore
+        const index = friendsData.friends.indexOf(player2Name);
+        if (index !== -1) {
+          // @ts-ignore
+          friendsData.friends.splice(index, 1);
+        }
+
+        this.db.run(
+          `UPDATE characters SET friends = ? WHERE name = ?`,
+          [JSON.stringify(friendsData), player1Name],
+          (err) => {
+            if (err) return callback(err);
+
+            // Remove player1 from player2's friends list
+            this.db.get(
+              `SELECT friends FROM characters WHERE name = ?`,
+              [player2Name],
+              (err, row) => {
+                if (err) return callback(err);
+                if (!row) return callback(new Error('Player 2 not found'));
+
+                // @ts-ignore
+                const friendsData2 = this.parseJSON(row.friends, { friends: [], requests: [] });
+                
+                // Ensure friends array exists
+                if (!friendsData2.friends) {
+                  friendsData2.friends = [];
+                }
+                
+                // @ts-ignore
+                const index2 = friendsData2.friends.indexOf(player1Name);
+                if (index2 !== -1) {
+                  // @ts-ignore
+                  friendsData2.friends.splice(index2, 1);
+                }
+
+                this.db.run(
+                  `UPDATE characters SET friends = ? WHERE name = ?`,
+                  [JSON.stringify(friendsData2), player2Name],
+                  callback
+                );
+              }
+            );
+          }
+        );
+      }
+    );
+  }
+
   close(): void {
     if (!this.db) {
       return; 
