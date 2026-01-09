@@ -72,6 +72,80 @@ export class CommandHandler {
         getGameServer().world.creatureHandler.teleportCreature(player, position);
         break;
 
+      case "/t":
+        if (!args[1]) {
+          player.sendCancelMessage("Usage: /t x,y,z (e.g., /t 12,20,7)");
+          break;
+        }
+        const coords = args[1].split(",");
+        if (coords.length !== 3) {
+          player.sendCancelMessage("Invalid format. Use: /t x,y,z (e.g., /t 12,20,7)");
+          break;
+        }
+        const x = Number(coords[0].trim());
+        const y = Number(coords[1].trim());
+        const z = Number(coords[2].trim());
+        if (isNaN(x) || isNaN(y) || isNaN(z)) {
+          player.sendCancelMessage("Invalid coordinates. All values must be numbers.");
+          break;
+        }
+        const teleportPos = new Position(x, y, z);
+        const teleportSuccess = getGameServer().world.creatureHandler.teleportCreature(player, teleportPos);
+        if (!teleportSuccess) {
+          player.sendCancelMessage("Cannot teleport to that position. Tile may not exist.");
+        }
+        break;
+
+      case "/a":
+        if (!args[1]) {
+          player.sendCancelMessage("Usage: /a <number> (e.g., /a 2 to move 2 squares forward)");
+          break;
+        }
+        const distance = Number(args[1]);
+        if (isNaN(distance) || distance < 1) {
+          player.sendCancelMessage("Invalid distance. Must be a positive number.");
+          break;
+        }
+        const direction = player.getProperty(CONST.PROPERTIES.DIRECTION);
+        const currentPos = player.getPosition();
+        const oneStep = currentPos.getPositionFromDirection(direction);
+        if (!oneStep) {
+          player.sendCancelMessage("Invalid direction.");
+          break;
+        }
+        // Calculate offset (one step position - current position)
+        const offsetX = oneStep.x - currentPos.x;
+        const offsetY = oneStep.y - currentPos.y;
+        // Multiply offset by distance and add to current position
+        const targetPos = new Position(
+          currentPos.x + (offsetX * distance),
+          currentPos.y + (offsetY * distance),
+          currentPos.z
+        );
+        const moveSuccess = getGameServer().world.creatureHandler.teleportCreature(player, targetPos);
+        if (!moveSuccess) {
+          player.sendCancelMessage("Cannot move to that position. Tile may not exist.");
+        }
+        break;
+
+      case "/up":
+        const currentPosUp = player.getPosition();
+        const upPos = currentPosUp.up();
+        const upSuccess = getGameServer().world.creatureHandler.teleportCreature(player, upPos);
+        if (!upSuccess) {
+          player.sendCancelMessage("Cannot move up. Floor may not exist.");
+        }
+        break;
+
+      case "/down":
+        const currentPosDown = player.getPosition();
+        const downPos = currentPosDown.down();
+        const downSuccess = getGameServer().world.creatureHandler.teleportCreature(player, downPos);
+        if (!downSuccess) {
+          player.sendCancelMessage("Cannot move down. Floor may not exist.");
+        }
+        break;
+
       case "/broadcast":
         getGameServer().world.broadcastPacket(new ServerMessagePacket(args.slice(1).join(" ")));
         break;
