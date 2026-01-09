@@ -122,8 +122,8 @@ export const CONFIG = {
       KICK_SECONDS: 60,
     },
     CHUNK: {
-      WIDTH: 18,
-      HEIGHT: 7,
+      WIDTH: 19,
+      HEIGHT: 8,
       DEPTH: 8,
     },
     CLOCK: {
