@@ -26,7 +26,7 @@ export const opcodes: Opcodes = {
     CONTAINER_CLOSE: { code: 17, length: 5 },
     CONTAINER_ITEM_USE: { code: 20, length: 6 },
     PLAYER_TURN: { code: 22, length: 2 },
-    MOVE_ITEM_ALL: { code: 23, length: 18 },
+    ITEM_TEXT_WRITE: { code: 23, length: 255 },
     CAST_SPELL: { code: 24, length: 3 },
     JOIN_CHANNEL: { code: 25, length: 2 },
     SEND_PRIVATE_MESSAGE: { code: 26, length: 255 },

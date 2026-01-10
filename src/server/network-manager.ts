@@ -146,7 +146,9 @@ export class NetworkManager {
       [CONST.PROTOCOL.CLIENT.CHANNEL_LEAVE]:            (gs, p) => getGameServer().world.channelManager.leaveChannel(gs.player!, p.readUInt8()),
   
       [CONST.PROTOCOL.CLIENT.CHANNEL_JOIN]:             (gs, p) => getGameServer().world.channelManager.joinChannel(gs.player!, p.readUInt8()),
-  
+
+      [CONST.PROTOCOL.CLIENT.ITEM_TEXT_WRITE]:          (gs, p) => this.packetHandler.handleItemTextWrite(gs.player!, p.readItemTextWrite(gs.player!)),
+
     };
   
     const handler = handlers[opcode];

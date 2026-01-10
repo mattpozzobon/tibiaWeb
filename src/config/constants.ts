@@ -45,6 +45,7 @@ export const CONST = {
       CLIENT_USE_TILE: 20,
       TARGET_CANCEL: 21,
       USE_BELT_POTION: 22,
+      ITEM_TEXT_WRITE: 23,
     },
     SERVER: {
       LATENCY: 0,

@@ -116,6 +116,20 @@ export class PacketReader extends Packet {
     };
   }
 
+  readItemTextWrite(player: IPlayer): { which: any; index: number; text: string } {
+    /*
+     * Reads a packet for writing text to an item (like blank paper, letter)
+     * Structure: position/index (same as PositionAndIndex) + text content (UInt16 length string)
+     */
+    const positionAndIndex = this.readPositionAndIndex(player);
+    const text = this.readString16(); // Use UInt16 length for longer text content
+    return {
+      which: positionAndIndex.which,
+      index: positionAndIndex.index,
+      text: text,
+    };
+  }
+
   readItemUseWith(player: any): {
     fromWhere: any;
     fromIndex: number;

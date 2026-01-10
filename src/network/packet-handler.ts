@@ -121,5 +121,53 @@ export class PacketHandler {
     }
   }
 
+  handleItemTextWrite(player: IPlayer, packet: { which: any; index: number; text: string }): void {
+    /*
+     * Function PacketHandler.handleItemTextWrite
+     * Handles writing text to a writeable item (like blank paper, letter)
+     */
+    if (!packet.which) return;
+
+    let item: any;
+    if (packet.which.constructor.name === "Tile") {
+      item = packet.which.peekIndex(packet.index);
+    } else if (packet.which.constructor.name === "Equipment" || packet.which.constructor.name === "DepotContainer" || packet.which.isContainer()) {
+      item = packet.which.peekIndex(packet.index);
+    }
+
+    if (!item) return;
+
+    // Check if item is writeable
+    if (!item.isWriteable()) {
+      player.sendCancelMessage("You cannot write on this item.");
+      return;
+    }
+
+    // Validate text length - check item's maxTextLen attribute, or use default
+    const maxTextLen = item.getAttribute("maxTextLen");
+    const maxLength = maxTextLen && maxTextLen > 0 ? maxTextLen : 2000;
+    if (packet.text.length > maxLength) {
+      player.sendCancelMessage(`The text is too long. Maximum length is ${maxLength} characters.`);
+      return;
+    }
+
+    // Check if item should transform after writing (e.g., blank paper -> letter)
+    const writeOnceItemId = item.getAttribute("writeOnceItemId");
+    if (writeOnceItemId) {
+      // Transform item (e.g., blank paper becomes letter when written on)
+      const newItem = getGameServer().database.createThing(writeOnceItemId);
+      if (newItem) {
+        newItem.setContent(packet.text);
+        // Replace the old item with the transformed one
+        packet.which.removeIndex(packet.index, 1);
+        packet.which.addThing(newItem, packet.index);
+        return;
+      }
+    }
+
+    // Set the content on the item (for items that don't transform)
+    item.setContent(packet.text);
+  }
+
 
 }
