@@ -15,7 +15,7 @@ class DepotContainer {
   public static readonly MAIL_CONTAINER_ID: number = 14404;
   public static readonly DEPOT_CONTAINER_ID: number = 2594;
   private static readonly DEFAULT_DEPOT_SIZE: number = 100;
-  private static readonly MAIL_CONTAINER_SIZE: number = 5;
+  public static readonly MAIL_CONTAINER_SIZE: number = 5;
 
   constructor(cid: number, depotItems: any[], inboxItems: any[]) {
     /*
@@ -23,6 +23,9 @@ class DepotContainer {
      * Container for the player depot that contains 2 sub-containers: Mail and Depot
      * - Slot 0: Mail container (contains mail/inbox items, cannot be moved)
      * - Slot 1: Depot container (contains depot items, cannot be moved)
+     * 
+     * NOTE: inboxItems are not loaded here - they're loaded in Inbox constructor
+     * and the container is synced from Inbox.__items queue (single source of truth)
      */
 
     // Depot container has exactly 2 slots for the Mail and Depot sub-containers
@@ -37,7 +40,7 @@ class DepotContainer {
     (this.mailContainer as any).__depotParent = this; // Store reference for getTopParent()
     this.container.addThing(this.mailContainer, DepotContainer.MAIL_SLOT_INDEX);
     this.mailContainer.setParent(null); // System container, no parent weight tracking needed
-    this.__addMailItems(inboxItems);
+    // Don't load mail items here - Inbox will handle loading and syncing container
 
     // Create Depot container (backpack ID 1988)
     const depotSize = Math.max(DepotContainer.DEFAULT_DEPOT_SIZE, depotItems.length);
@@ -61,22 +64,29 @@ class DepotContainer {
     return this.position === null;
   }
 
-  toJSON(): { mail: any[], depot: any[] } {
+  toJSON(inbox?: any): { mail: any[], depot: any[] } {
     /*
      * Function DepotContainer.toJSON
      * Returns serialized mail and depot items for database storage
+     * 
+     * NOTE: Mail items come from inbox.__items queue (single source of truth)
+     * Container slots are just a view of the first 5 items in the queue
+     * 
+     * @param inbox - Inbox instance to get all mail items from __items queue
      */
     const mailItems: any[] = [];
     const depotItems: any[] = [];
 
-    if (this.mailContainer) {
-      this.mailContainer.container.slots.forEach((item: any) => {
-        if (item !== null) {
-          mailItems.push(item.toJSON());
-        }
-      });
+    // Get all mail items from inbox queue (single source of truth)
+    // The queue contains all items - container only displays first 5
+    if (inbox && inbox.toJSON) {
+      const inboxItems = inbox.toJSON();
+      if (Array.isArray(inboxItems)) {
+        mailItems.push(...inboxItems);
+      }
     }
 
+    // Serialize depot items
     if (this.depotContainer) {
       this.depotContainer.container.slots.forEach((item: any) => {
         if (item !== null) {

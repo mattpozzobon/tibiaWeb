@@ -31,15 +31,29 @@ class ContainerManager {
     this.equipment = new Equipment(CONST.CONTAINER.EQUIPMENT, player, containers.equipment);
     this.keyring = new Keyring(CONST.CONTAINER.KEYRING, player, containers.keyring);
     this.inbox = new Inbox(player, inboxItems);
+    
+    // Now that everything is initialized, sync the mail container with the inbox queue
+    // Pass 'this' as parameter since player.containerManager might not be set yet
+    // This ensures items loaded from database are displayed in the mail container
+    if (this.inbox && this.depot) {
+      this.inbox.syncContainer(this);
+    }
   }
 
   toJSON(): object {
-    const depotJSON = this.depot.toJSON();
+    /*
+     * Class ContainerManager.toJSON
+     * Serializes all containers for database storage
+     * 
+     * NOTE: Inbox.__items is the single source of truth for mail items (queue)
+     * No need to sync - just save the queue directly
+     */
+    const depotJSON = this.depot.toJSON(this.inbox);
     return {
       depot: depotJSON.depot,
       equipment: this.equipment,
       keyring: this.keyring,
-      inbox: depotJSON.mail,
+      inbox: depotJSON.mail, // This comes from inbox.toJSON() which returns __items queue
     };
   }
 
@@ -263,6 +277,10 @@ class ContainerManager {
         this.__player.sendCancelMessage("You cannot open any more containers.");
         return;
       }
+
+      // Before opening, sync container to ensure first 5 items from queue are visible
+      // This ensures all available mail items (up to 5) are visible when the container is opened
+      this.inbox.syncContainer();
 
       this.__openedContainers.set(mailContainer.container.guid, mailContainer);
       this.__player.openContainer(mailContainer.id, "Mail", mailContainer.container, mailContainer);

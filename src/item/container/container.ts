@@ -256,7 +256,36 @@ class Container extends Item implements IContainer{
       }
     }
 
+    // If this is the mail container, notify inbox to handle removal (unless we're skipping the hook during sync)
+    if (!(this as any).__skipRemovalHook && (this.id === DepotContainer.MAIL_CONTAINER_ID || (this.hasUniqueId() && this.uid === 0x10000000))) {
+      this.__handleMailContainerItemRemoved(thing);
+    }
+
     return thing;
+  }
+
+  private __handleMailContainerItemRemoved(removedItem: IItem): void {
+    /*
+     * Function Container.__handleMailContainerItemRemoved
+     * Called when an item is removed from the mail container (via UI drag/drop)
+     * Removes the item from inbox queue and refills container from queue
+     */
+    // Try to get player from container spectators (players viewing this container)
+    // When mail container is opened, players are added as spectators
+    const spectators = Array.from(this.container.spectators);
+    
+    for (const spectator of spectators) {
+      if (spectator && spectator.containerManager && spectator.containerManager.inbox) {
+        // Found a player with inbox
+        const inbox = spectator.containerManager.inbox;
+        
+        // Remove the item from queue using removeItemFromQueue (which handles property-based matching)
+        if (inbox.removeItemFromQueue) {
+          inbox.removeItemFromQueue(removedItem);
+        }
+        break; // Only need to call once
+      }
+    }
   }
 
   deleteThing(thing: IItem): number {
@@ -280,9 +309,24 @@ class Container extends Item implements IContainer{
       return false;
     }
 
-    const maximum = this.getMaximumAddCount(null, thing, index);
-    if (maximum === 0 || maximum < thing.count) {
-      return false;
+    // Allow items to be added to Mail container during sync operations
+    // (when __skipRemovalHook flag is set, we're syncing from queue)
+    const isMailContainer = this.id === DepotContainer.MAIL_CONTAINER_ID || (this.hasUniqueId() && this.uid === 0x10000000);
+    const isSyncing = (this as any).__skipRemovalHook === true;
+    
+    if (isSyncing && isMailContainer) {
+      // During sync, allow adding to mail container if slot is empty
+      const currentItem = this.container.peekIndex(index);
+      if (currentItem !== null) {
+        return false; // Slot is not empty, can't add here
+      }
+      // Slot is empty, proceed with adding (skip getMaximumAddCount check)
+    } else {
+      // Normal validation: check getMaximumAddCount for all other cases
+      const maximum = this.getMaximumAddCount(null, thing, index);
+      if (maximum === 0 || maximum < thing.count) {
+        return false;
+      }
     }
 
     this.container.addThing(thing, index);
