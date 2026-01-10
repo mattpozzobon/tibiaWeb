@@ -41,8 +41,20 @@ class Thing extends ThingEmitter implements IThing{
     if (this.uid) {
       thing.setUniqueId(this.uid);
     }
-    if (this.isContainer() && thing.isContainer() && this.size === thing.size) {
-      thing.container.copyContents(this.container);
+    // Copy content if source has content
+    if (this.content !== undefined && this.content !== null) {
+      if (typeof thing.setContent === 'function') {
+        thing.setContent(this.content);
+      } else if ((thing as any).content !== undefined) {
+        (thing as any).content = this.content;
+      }
+    }
+    if (this.isContainer() && thing.isContainer()) {
+      // Clone items when copying container contents to prevent items from being lost
+      // when the source container is deleted (important for mail/parcel system)
+      // Note: We don't check size equality - we copy items to matching indices,
+      // and if destination is smaller, we only copy what fits
+      thing.container.copyContents(this.container, true);
     }
   }
 

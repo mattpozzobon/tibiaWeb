@@ -10,7 +10,7 @@ export interface IBaseContainer {
     addSpectator(player: any): void;
     removeSpectator(player: any): void;
     isFull(): boolean;
-    copyContents(container: IBaseContainer): void;
+    copyContents(container: IBaseContainer, cloneItems?: boolean): void;
     isValidIndex(index: number): boolean;
     getSlots(): Array<any>;
     peekIndex(slotIndex: number): IItem | null;

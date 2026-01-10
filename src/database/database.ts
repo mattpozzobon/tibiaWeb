@@ -23,7 +23,7 @@ import { ConditionModule } from "interfaces/base";
 import OTBMParser from "../parser/otbm-parser";
 
 // Type definitions
-type ThingData = { id: number; count?: number; actionId?: number; duration?: number; content?: any };
+type ThingData = { id: number; count?: number; actionId?: number; duration?: number; content?: any; items?: any[] };
 type HouseDefinition = { position: Position; item: ThingData };
 
 
@@ -111,12 +111,16 @@ export default class Database implements IDatabase {
     fs.writeFileSync(getDataFile("houses", "definitions.json"), allHouses);
   }
 
-  parseThing(item: ThingData): Thing | null {
+  parseThing(item: ThingData | any): Thing | null {
+    /*
+     * Function Database.parseThing
+     * Parses a serialized item back into a Thing instance
+     * Handles nested containers (parcels with items inside)
+     */
     const thing = this.createThing(item.id);
     if (!thing) return null;
 
-    console.log('item', item);
-    if (item.count) thing.setCount(item.count);
+    if (item.count !== undefined) thing.setCount(item.count);
     if (item.actionId) thing.setActionId(item.actionId);
     if (item.duration) {
       thing.setDuration(item.duration);
@@ -124,7 +128,23 @@ export default class Database implements IDatabase {
         thing.scheduleDecay();
       }
     }
-    if (item.content) thing.setContent(item.content);
+    if (item.content !== undefined && item.content !== null) {
+      thing.setContent(item.content);
+    }
+
+    // If it's a container with nested items (e.g., parcel with items inside), parse them
+    if (item.items && Array.isArray(item.items) && thing.isContainer && thing.isContainer()) {
+      const container = thing as any;
+      item.items.forEach((nestedItem: any, index: number) => {
+        if (nestedItem !== null) {
+          const parsedItem = this.parseThing(nestedItem);
+          if (parsedItem !== null && container.addThing) {
+            // Use Container.addThing() which sets parent correctly
+            container.addThing(parsedItem, index);
+          }
+        }
+      });
+    }
 
     return thing;
   }

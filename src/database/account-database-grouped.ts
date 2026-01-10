@@ -322,12 +322,17 @@ export class AccountDatabaseGrouped {
 
   // Friend request management methods
   public getCharacterByName(name: string, callback: (error: Error | null, character: CharacterData | null) => void): void {
+    /*
+     * Function AccountDatabaseGrouped.getCharacterByName
+     * Retrieves a character by name (case-insensitive comparison)
+     * Uses COLLATE NOCASE for case-insensitive matching
+     */
     this.db.get(
       `SELECT 
         id, uid, name, sex, role, last_visit,
         position, temple_position, properties, outfit, skills,
         containers, friends, spellbook
-      FROM characters WHERE name = ?`,
+      FROM characters WHERE name = ? COLLATE NOCASE`,
       [name],
       (err, row) => {
         if (err) return callback(err, null);

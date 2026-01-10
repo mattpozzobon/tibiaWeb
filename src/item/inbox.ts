@@ -35,25 +35,32 @@ class Inbox {
     this.__player.sendCancelMessage("You just received mail.");
   }
 
+  /**
+   * Static helper method to serialize a single item
+   * Used by both online and offline mail handling to ensure 100% consistency
+   * All items should have toJSON() method (Item, Container, Readable, etc.)
+   */
+  static serializeItem(item: any): any {
+    if (item && typeof item.toJSON === 'function') {
+      // Use the item's toJSON() method which properly handles:
+      // - Containers (parcels) with nested items recursively
+      // - Readable items (letters, labels) with content
+      // - All item properties (id, count, actionId, duration, content)
+      return item.toJSON();
+    }
+    // Minimal fallback: basic serialization if toJSON doesn't exist (shouldn't happen)
+    return { id: item?.id || 0 };
+  }
+
   toJSON(): any[] {
     /*
      * Class Inbox.toJSON
      * Serializes the inbox queue (single source of truth)
      * Returns array of serialized items from __items
+     * Uses the same serialization logic as offline players (Inbox.serializeItem)
+     * This ensures both online and offline mail use identical serialization
      */
-    return this.__items.map(item => {
-      if (item && typeof (item as any).toJSON === 'function') {
-        return (item as any).toJSON();
-      }
-      // Fallback: manually serialize if toJSON doesn't exist
-      const itemAny = item as any;
-      const result: any = { id: item.id };
-      if (itemAny.count !== undefined) result.count = itemAny.count;
-      if (itemAny.actionId !== undefined) result.actionId = itemAny.actionId;
-      if (itemAny.duration !== undefined) result.duration = itemAny.duration;
-      if (itemAny.content !== undefined) result.content = itemAny.content;
-      return result;
-    });
+    return this.__items.map(item => Inbox.serializeItem(item));
   }
 
   pop(position: any): void {

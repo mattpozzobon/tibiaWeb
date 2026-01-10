@@ -508,11 +508,62 @@ class Container extends Item implements IContainer{
 
   toJSON(): object {
     this.cleanup();
+    // Serialize all items inside the container recursively
+    const items = this.container.getSlots().map((item: any) => {
+      if (item === null) return null;
+      // Recursively serialize items (including nested containers)
+      if (typeof item.toJSON === 'function') {
+        return item.toJSON();
+      }
+      // Fallback: basic serialization (shouldn't happen for normal items, but handle gracefully)
+      const result: any = { id: item.id };
+      if (item.count !== undefined) result.count = item.count;
+      if (item.actionId !== undefined) result.actionId = item.actionId;
+      if (item.duration !== undefined) result.duration = item.duration;
+      
+      // Include content if it exists (for letters, labels, signs, etc.)
+      if (item.content !== undefined && item.content !== null) {
+        result.content = item.content;
+      } else if (typeof item.getContent === 'function') {
+        const content = item.getContent();
+        if (content !== null && content !== undefined && content !== '') {
+          result.content = content;
+        }
+      }
+      
+      // If it's a nested container, recursively serialize its items
+      if (item.container && item.container.getSlots) {
+        result.items = item.container.getSlots().map((subItem: any) => {
+          if (subItem === null) return null;
+          if (typeof subItem.toJSON === 'function') return subItem.toJSON();
+          
+          // Fallback serialization for nested items
+          const nestedResult: any = { id: subItem.id };
+          if (subItem.count !== undefined) nestedResult.count = subItem.count;
+          if (subItem.actionId !== undefined) nestedResult.actionId = subItem.actionId;
+          if (subItem.duration !== undefined) nestedResult.duration = subItem.duration;
+          
+          // Include content for nested items (labels inside parcels, etc.)
+          if (subItem.content !== undefined && subItem.content !== null) {
+            nestedResult.content = subItem.content;
+          } else if (typeof subItem.getContent === 'function') {
+            const nestedContent = subItem.getContent();
+            if (nestedContent !== null && nestedContent !== undefined && nestedContent !== '') {
+              nestedResult.content = nestedContent;
+            }
+          }
+          
+          return nestedResult;
+        });
+      }
+      return result;
+    });
+    
     return {
       id: this.id,
       actionId: this.actionId,
       duration: this.duration,
-      items: this.container.getSlots(),
+      items: items,
     };
   }
 

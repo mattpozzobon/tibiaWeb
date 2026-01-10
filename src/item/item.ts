@@ -147,12 +147,19 @@ class Item extends Thing implements IItem{
      */
     this.cleanup();
 
-    return {
+    const result: any = {
       id: this.id,
       count: this.count,
       actionId: this.actionId,
       duration: this.duration,
     };
+    
+    // Include content if it exists (for items that can have content like letters, signs, etc.)
+    if (this.content !== undefined && this.content !== null) {
+      result.content = this.content;
+    }
+    
+    return result;
   }
 }
 

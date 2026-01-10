@@ -31,15 +31,23 @@ class Readable extends Item {
   toJSON(): Record<string, unknown> {
     /*
      * Function Readable.toJSON
-     * Serializes a readable item
+     * Serializes a readable item including all properties
      */
     this.cleanup();
 
-    return {
+    const result: any = {
       id: this.id,
+      count: this.count,
       actionId: this.actionId,
-      content: this.content,
+      duration: this.duration,
     };
+    
+    // Include content if it exists (this is the key property for readable items)
+    if (this.content !== undefined && this.content !== null) {
+      result.content = this.content;
+    }
+    
+    return result;
   }
 }
 

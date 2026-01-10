@@ -1,5 +1,6 @@
 import { IItem, IThing, IContainer } from "interfaces/IThing";
 import Readable from "../item/readable";
+import Inbox from "../item/inbox";
 import { CONST, getGameServer } from "../helper/appContext";
 import { IPlayer } from "interfaces/IPlayer";
 
@@ -103,18 +104,70 @@ export class MailboxHandler {
 
   private __addItemsOffline(owner: string, thing: IThing, callback: (error: boolean) => void): void {
     /*
-     * Writes a letter to a player that is offline by doing an atomic update
+     * Adds mail to a player that is offline by updating their character data in the database
+     * Serializes the item and adds it to the character's inbox array (queue)
+     * Database query uses case-insensitive matching (COLLATE NOCASE)
      */
-    getGameServer().server.accountManager.atomicUpdate(owner, (error: Error | null, json: any) => {
-      if (error) {
-        return callback(true); // Pass `true` to indicate an error occurred.
-      }
+    const accountDatabase = getGameServer().accountDatabase;
     
-      if (json && json.inbox) {
-        json.inbox.push(thing); // Push the thing to the inbox if `json` is valid.
+    // Get character by name (query is case-insensitive via COLLATE NOCASE)
+    accountDatabase.getCharacterByName(owner, (error: Error | null, character: any) => {
+      if (error || !character) {
+        return callback(true); // Character not found or error occurred
       }
+      
+      // Process mail for found character
+      this.__processOfflineMail(character, thing, callback, accountDatabase);
+    });
+  }
+  
+  private __processOfflineMail(character: any, thing: IThing, callback: (error: boolean) => void, accountDatabase: any): void {
+    /*
+     * Helper method to process adding mail to offline player's inbox
+     * Uses Inbox.serializeItem() - the exact same serialization method as online players
+     * This ensures 100% consistency: offline mail is serialized identically to online mail
+     * When online player logs out, Inbox.toJSON() uses Inbox.serializeItem() for each item
+     * When offline player receives mail, we use Inbox.serializeItem() directly
+     */
+    // Parse containers JSON (it's stored as a string in the database)
+    let containers: any;
+    try {
+      containers = typeof character.containers === 'string' 
+        ? JSON.parse(character.containers) 
+        : character.containers;
+    } catch (parseError) {
+      // If parsing fails, initialize empty containers
+      containers = { depot: [], equipment: [], inbox: [], keyring: [] };
+    }
     
-      callback(false); // Indicate success by passing `false`.
+    // Ensure inbox array exists
+    if (!Array.isArray(containers.inbox)) {
+      containers.inbox = [];
+    }
+    
+    // Serialize the item using the same method as online players
+    // Uses Inbox.serializeItem() which is the same logic used by Inbox.toJSON()
+    // This ensures 100% consistency between online and offline mail handling
+    const itemJSON = Inbox.serializeItem(thing);
+    
+    // Add serialized item to inbox queue (same format as when player logs out)
+    // This matches exactly what Inbox.toJSON() produces for online players
+    containers.inbox.push(itemJSON);
+    
+    // Convert character data to legacy format for updateCharacterData
+    const characterData = accountDatabase.characterDataToLegacyFormat(character);
+    
+    // Update containers in character data with modified inbox
+    characterData.containers = containers;
+    
+    // Update character in database
+    accountDatabase.updateCharacterData(character.id, characterData, (updateError: Error | null) => {
+      if (updateError) {
+        console.error(`Failed to update character inbox for ${character.name}:`, updateError);
+        return callback(true); // Error occurred during update
+      }
+      
+      callback(false); // Success
     });
   }
 

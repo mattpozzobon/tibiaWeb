@@ -62,14 +62,46 @@ class BaseContainer implements IBaseContainer{
     return !this.slots.includes(null);
   }
 
-  copyContents(container: BaseContainer): void {
+  copyContents(container: BaseContainer, cloneItems: boolean = false): void {
     /*
      * Function BaseContainer.copyContents
      * Copies over the contents from one container to another
+     * @param container - Source container to copy FROM
+     * @param cloneItems - If true, creates new instances of items (deep copy) instead of copying references
+     *                     This prevents items from being lost when the source container is deleted
+     * 
+     * Copies items from source container slots to matching indices in this (destination) container.
+     * Only copies to valid indices - if destination is smaller, items beyond its size are skipped.
      */
     container.slots.forEach((thing, index) => {
-      if (thing !== null) {
-        this.__setItem(thing, index);
+      if (thing !== null && this.isValidIndex(index)) {
+        if (cloneItems) {
+          // Serialize and re-parse to create new instances (deep copy)
+          // This ensures items aren't lost when the source container is deleted
+          try {
+            const { getGameServer } = require("../helper/appContext");
+            const serialized = typeof thing.toJSON === 'function' ? thing.toJSON() : null;
+            if (serialized) {
+              const clonedItem = getGameServer().database.parseThing(serialized);
+              if (clonedItem !== null) {
+                this.__setItem(clonedItem, index);
+              } else {
+                // Fallback: copy reference if cloning fails
+                this.__setItem(thing, index);
+              }
+            } else {
+              // Fallback: copy reference if serialization fails
+              this.__setItem(thing, index);
+            }
+          } catch (error) {
+            console.error(`[BaseContainer.copyContents] Error cloning item at index ${index}:`, error);
+            // Fallback: copy reference if cloning fails
+            this.__setItem(thing, index);
+          }
+        } else {
+          // Original behavior: copy reference (for backwards compatibility)
+          this.__setItem(thing, index);
+        }
       }
     });
   }
