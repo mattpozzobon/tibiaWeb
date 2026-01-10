@@ -379,7 +379,10 @@ class Thing extends ThingEmitter implements IThing{
   }
 
   getContent(): any {
-    return `\n ${this.content}`;
+    if (this.content === undefined || this.content === null) {
+      return "";
+    }
+    return `${this.content}`;
   }
 
   isBlockPathfind(): boolean {
@@ -391,7 +394,7 @@ class Thing extends ThingEmitter implements IThing{
   }
 
   isDistanceReadable(): boolean {
-    return this.hasFlag(TileFlag.prototype.flags.FLAG_ALLOWDISTREAD);
+    return this.getPrototype().isDistanceReadable();
   }
 
   isTrashholder(): boolean {
@@ -436,6 +439,14 @@ class Thing extends ThingEmitter implements IThing{
      * Returns true if the thing is readable
      */
     return this.getPrototype().isReadable();
+  }
+
+  isWriteable(): boolean {
+    /*
+     * Function Thing.isWriteable
+     * Returns true if the thing is writeable
+     */
+    return this.getAttribute("writeable") === true;
   }
   
   isDistanceWeapon(): boolean {

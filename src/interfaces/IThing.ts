@@ -69,6 +69,7 @@ export interface IThing extends IThingEmitter{
   isDecaying(): boolean;
   isPickupable(): boolean;
   isReadable(): boolean;
+  isWriteable(): boolean;
   isDistanceWeapon(): boolean;
   isDepot(): boolean;
   isContainer(): this is IContainer;

@@ -122,8 +122,8 @@ class UseHandler {
       return;
     }
 
-    // Readable
-    if (item.isReadable()) {
+    // Readable (but not distance-readable - those only show content when looked at, not when used)
+    if (item.isReadable() && !item.isDistanceReadable()) {
       if (item.isHangable() && !this.__player.canUseHangable(item)) {
         this.__player.sendCancelMessage("You have to move to the other side.");
         return;

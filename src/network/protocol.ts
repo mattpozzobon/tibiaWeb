@@ -371,7 +371,10 @@ export class CreatureInformationPacket extends PacketWriter {
 
 export class ItemInformationPacket extends PacketWriter {
   constructor(thing: IThing, includeDetails: boolean, player: IPlayer) {
-    const distance = PacketWriter.encodeString(thing.hasContent() ? thing.getContent() : null);
+    // Only send content for distance-readable items (like signs), not for regular readable items (like letters/books)
+    // Regular readable items should only show content when opened with ReadTextPacket
+    // For distance-readable items, always send content (getContent() handles empty/undefined content)
+    const distance = PacketWriter.encodeString(thing.isDistanceReadable() ? thing.getContent() : null);
     const article = PacketWriter.encodeString(thing.getArticle());
     const name = PacketWriter.encodeString(thing.getName());
     const description = PacketWriter.encodeString(includeDetails ? thing.getDescription() : null);
@@ -402,10 +405,13 @@ export class ReadTextPacket extends PacketWriter {
   constructor(item: any) {
     const content = PacketWriter.encodeString(item.getContent());
     const name = PacketWriter.encodeString(item.getName());
+    const readable = item.isReadable();
+    const writeable = item.isWriteable();
 
-    super(CONST.PROTOCOL.SERVER.ITEM_TEXT, getEncodedLength(content) + getEncodedLength(name) + 1);
+    super(CONST.PROTOCOL.SERVER.ITEM_TEXT, getEncodedLength(content) + getEncodedLength(name) + 2);
 
-    this.writeBoolean(false);
+    this.writeBoolean(readable);
+    this.writeBoolean(writeable);
     this.writeBuffer(content);
     this.writeBuffer(name);
   }

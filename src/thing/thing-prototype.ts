@@ -101,8 +101,13 @@ class ThingPrototype extends EventEmitter implements IThingPrototype{
     /*
      * Function Thing.isReadable
      * Returns true if the thing is readable (book)
+     * Checks both "type": "readable" and "readable": true properties
      */
-    return this.__isType("readable");
+    if (this.__isType("readable")) {
+      return true;
+    }
+    // Also check for "readable": true property (for items like stamped letter - ID 2598)
+    return this.properties && this.properties.readable === true;
   }
 
   isTeleporter(): boolean {
