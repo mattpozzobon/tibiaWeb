@@ -7,6 +7,7 @@ import { CONFIG, CONST, getGameServer } from "../helper/appContext";
 import { IThingPrototype } from "interfaces/IThing-prototype";
 import { IPosition } from "interfaces/IPosition";
 import ITile from "interfaces/ITile";
+import { IPlayer } from "interfaces/IPlayer";
 import BaseContainer from "../item/base-container";
 
 class Thing extends ThingEmitter implements IThing{
@@ -186,14 +187,37 @@ class Thing extends ThingEmitter implements IThing{
     return this.getAttribute("article");
   }
 
-  getPosition(): IPosition {
-    return this.getTopParent().position;
+  getPosition(): any {
+    const topParent = this.getTopParent();
+    if (!topParent) return null;
+    
+    // If we ARE the top parent (this === topParent), return our position directly to avoid recursion
+    // This happens when getPosition() is called on a Tile, Player, or DepotContainer directly
+    if (topParent === this) {
+      return (this as any).position || null;
+    }
+    
+    // DepotContainer has its own getPosition() method - call it directly
+    if (topParent.constructor.name === "DepotContainer" && typeof topParent.getPosition === 'function') {
+      return topParent.getPosition();
+    }
+    
+    // For all other top parents (Tile, Player, etc.), access position property directly
+    // Don't call getPosition() to avoid infinite recursion (Tile/Player.getPosition() calls getTopParent() again)
+    return (topParent as any).position || null;
   }
 
   getTopParent(): any {
+    /*
+     * Function Thing.getTopParent
+     * Returns the top-level parent of this thing
+     * Walks up the parent chain until a top parent (DepotContainer, Tile, or Player) is found
+     */
     let current: any = this;
     while (!this.isTopParent(current)) {
-      current = current.getParent();
+      const parent = current.getParent();
+      if (!parent) break;
+      current = parent;
     }
     return current;
   }

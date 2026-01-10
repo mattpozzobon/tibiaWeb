@@ -379,7 +379,9 @@ export class ItemInformationPacket extends PacketWriter {
     const name = PacketWriter.encodeString(thing.getName());
     const description = PacketWriter.encodeString(includeDetails ? thing.getDescription() : null);
 
-    const hasPosition = player.isGod() && thing.getPosition();
+    // Get position safely - mail containers may not have a world position
+    const position = thing.getPosition ? thing.getPosition() : null;
+    const hasPosition = player.isGod() && position && position.x !== undefined;
     const positionLength = hasPosition ? 6 : 0; // 6 bytes for position (x, y, z as UInt16 each)
     const length = getEncodedLength(distance) + getEncodedLength(article) + getEncodedLength(name) + getEncodedLength(description);
 
@@ -396,8 +398,8 @@ export class ItemInformationPacket extends PacketWriter {
     this.writeBuffer(description);
     this.writeUInt8(thing.count);
 
-    if(hasPosition)
-      this.writePosition(thing.getPosition());
+    if(hasPosition && position)
+      this.writePosition(position);
   }
 }
 

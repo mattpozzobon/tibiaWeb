@@ -100,11 +100,6 @@ class UseHandler {
       item.toggle(this.__player);
     }
 
-    if (item.isMailbox()) {
-      this.__player.containerManager.inbox.pop(item.getPosition());
-      return;
-    }
-
     // If the item clicked is a container: toggle it (allow Mail/Depot containers even with unique IDs)
     if (item.isContainer() || item.isDepot()) {
       this.__player.containerManager.toggleContainer(item);

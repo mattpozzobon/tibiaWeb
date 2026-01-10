@@ -36,7 +36,7 @@ export interface IThing extends IThingEmitter{
   setContent(content: any): void;
   getShootType(): any;
   getArticle(): string | null;
-  getPosition(): IPosition;
+  getPosition(): any;
   getTopParent(): any;
   getAttribute(attribute: string): any;
   getName(player?: any): string;

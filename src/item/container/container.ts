@@ -377,7 +377,13 @@ class Container extends Item implements IContainer{
   }
 
   getPosition(): any {
-    return this.getTopParent().position;
+    const topParent = this.getTopParent();
+    if (!topParent) return null;
+    // For DepotContainer, use its getPosition() method which handles null position
+    if (typeof topParent.getPosition === 'function') {
+      return topParent.getPosition();
+    }
+    return topParent.position || null;
   }
 
   exceedsMaximumChildCount(): boolean {
@@ -571,12 +577,8 @@ class Container extends Item implements IContainer{
     /*
      * Function Container.getTopParent
      * Returns the top-level parent of the container
+     * Walks up the parent chain until a top parent (DepotContainer, Tile, or Player) is found
      */
-    // Check if this container is inside a DepotContainer (special case)
-    if ((this as any).__depotParent) {
-      return (this as any).__depotParent;
-    }
-    
     let current: any = this;
     while (!this.isTopParent(current)) {
       current = current.getParent();

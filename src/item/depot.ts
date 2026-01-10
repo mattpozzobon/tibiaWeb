@@ -18,37 +18,19 @@ class DepotContainer {
   public static readonly MAIL_CONTAINER_SIZE: number = 5;
 
   constructor(cid: number, depotItems: any[], inboxItems: any[]) {
-    /*
-     * Class DepotContainer
-     * Container for the player depot that contains 2 sub-containers: Mail and Depot
-     * - Slot 0: Mail container (contains mail/inbox items, cannot be moved)
-     * - Slot 1: Depot container (contains depot items, cannot be moved)
-     * 
-     * NOTE: inboxItems are not loaded here - they're loaded in Inbox constructor
-     * and the container is synced from Inbox.__items queue (single source of truth)
-     */
-
-    // Depot container has exactly 2 slots for the Mail and Depot sub-containers
-    this.container = new BaseContainer(cid, 2);
-
-    // The parent of the depot container is updated based on what particular depot box is being opened
+    this.container = new BaseContainer(cid, 2);  // The parent of the depot container is updated based on what particular depot box is being opened
     this.position = null;
 
-    // Create Mail container (ID 14404) with fixed size of 5 slots
     this.mailContainer = new Container(DepotContainer.MAIL_CONTAINER_ID, DepotContainer.MAIL_CONTAINER_SIZE);
-    this.mailContainer.setUniqueId(0x10000000); // Unique ID to prevent movement
-    (this.mailContainer as any).__depotParent = this; // Store reference for getTopParent()
+    this.mailContainer.setUniqueId(0x10000000); 
     this.container.addThing(this.mailContainer, DepotContainer.MAIL_SLOT_INDEX);
-    this.mailContainer.setParent(null); // System container, no parent weight tracking needed
-    // Don't load mail items here - Inbox will handle loading and syncing container
-
-    // Create Depot container (backpack ID 1988)
+    this.mailContainer.setParent(this as any); 
+ 
     const depotSize = Math.max(DepotContainer.DEFAULT_DEPOT_SIZE, depotItems.length);
     this.depotContainer = new Container(DepotContainer.DEPOT_CONTAINER_ID, depotSize);
-    this.depotContainer.setUniqueId(0x10000001); // Unique ID to prevent movement
-    (this.depotContainer as any).__depotParent = this; // Store reference for getTopParent()
+    this.depotContainer.setUniqueId(0x10000001); 
     this.container.addThing(this.depotContainer, DepotContainer.DEPOT_SLOT_INDEX);
-    this.depotContainer.setParent(null); // System container, no parent weight tracking needed
+    this.depotContainer.setParent(this as any);
     this.__addDepotItems(depotItems);
   }
 
