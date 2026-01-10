@@ -124,11 +124,16 @@ class DepotContainer {
     /*
      * Function DepotContainer.removeIndex
      * Cannot remove the Mail or Depot containers - they are fixed and have unique IDs
+     * Items in depot are stored in the inner depotContainer, not directly in DepotContainer
+     * So this should only be called for the Mail/Depot containers themselves, which we prevent
      */
     const thing = this.container.peekIndex(index);
     if (thing && thing.hasUniqueId && thing.hasUniqueId()) {
+      // Prevent removing the Mail or Depot containers (they have unique IDs)
       return null;
     }
+    // DepotContainer only contains Mail and Depot containers, no regular items
+    // Regular items go into depotContainer, so this path shouldn't be reached
     return null;
   }
 

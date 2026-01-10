@@ -214,9 +214,11 @@ class Container extends Item implements IContainer{
   }
 
   checkPlayersAdjacency(): void {
-    this.container.spectators.forEach((player) =>
-      player.containerManager.checkContainer(this)
-    );
+    this.container.spectators.forEach((player) => {
+      if (player && player.containerManager) {
+        player.containerManager.checkContainer(this);
+      }
+    });
 
     this.container.getSlots().forEach((IItem) => {
       if (IItem instanceof Container) {

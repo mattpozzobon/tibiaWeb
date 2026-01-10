@@ -334,15 +334,46 @@ export class ItemMoveHandler {
     let existthing: any = null;
     if (toWhere instanceof Tile) existthing = toWhere.getTopItem();
 
-    toWhere.addThing(movedItem, actualToIndex);
+    // Check if toWhere is DepotContainer - redirect to inner depot container
+    let finalToWhere: Equipment | IContainer | ITile = toWhere;
+    let finalToIndex: number = actualToIndex;
+    if (toWhere.constructor.name === "DepotContainer") {
+      const depotContainer = (toWhere as any).getDepotContainer();
+      if (depotContainer) {
+        finalToWhere = depotContainer;
+        finalToIndex = depotContainer.getNumberItems(); // Add to end of depot container
+      }
+    }
 
-    if (toWhere instanceof Tile) {
-      if (existthing === null) toWhere.emit("add", player, movedItem);
+    // For containers and equipment, addThing returns boolean; for tiles, it returns void
+    if (finalToWhere instanceof Tile) {
+      finalToWhere.addThing(movedItem, finalToIndex);
+    } else {
+      const addResult = (finalToWhere as Equipment | IContainer).addThing(movedItem, finalToIndex);
+      if (!addResult) {
+        // If addThing failed, try to restore the item to source to prevent loss
+        if (fromWhere instanceof Tile) {
+          fromWhere.addThing(movedItem, actualFromIndex);
+        } else {
+          (fromWhere as Equipment | IContainer).addThing(movedItem, actualFromIndex);
+        }
+        return false;
+      }
+    }
+
+    if (finalToWhere instanceof Tile) {
+      if (existthing === null) finalToWhere.emit("add", player, movedItem);
       else existthing.emit("add", player, movedItem);
     }
 
-    if (movedItem.constructor.name === "Container" && fromWhere.getTopParent() !== toWhere.getTopParent()) {
-      (movedItem as IContainer).checkPlayersAdjacency();
+    // Check adjacency after parent is set (addThing sets the parent)
+    if (movedItem.constructor.name === "Container") {
+      const fromParent = fromWhere.getTopParent();
+      const toParent = finalToWhere.getTopParent();
+      if (fromParent !== toParent) {
+        // Parent should be set by now (addThing calls setParent)
+        (movedItem as IContainer).checkPlayersAdjacency();
+      }
     }
 
     movedItem.emit("move", player, toWhere, movedItem);

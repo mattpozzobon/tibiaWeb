@@ -102,13 +102,19 @@ class ContainerManager {
      */
     const parentThing = container.getTopParent();
 
+    if (!parentThing) {
+      // If parent is null, container might be in transit - close it to be safe
+      this.closeContainer(container);
+      return;
+    }
+
     if (parentThing === this.__player) {
       return;
     }
 
     if (parentThing === this.depot && this.depot.isClosed()) {
       this.closeContainer(container);
-    } else if (!this.__player.isBesidesThing(parentThing)) {
+    } else if (parentThing.getPosition && !this.__player.isBesidesThing(parentThing)) {
       this.closeContainer(container);
     }
   }
