@@ -7,6 +7,7 @@ import Inbox from "./inbox";
 import Keyring from "../game-object/item/keyring";
 import { CONST } from "../helper/appContext";
 import { IContainer } from "interfaces/IThing";
+import Container from "./container/container";
 
 class ContainerManager {
   private __player: IPlayer;
@@ -22,18 +23,23 @@ class ContainerManager {
 
     this.__openedContainers = new Map<number, any>();
 
-    this.depot = new DepotContainer(CONST.CONTAINER.DEPOT, containers.depot);
+    const depotData = containers.depot || {};
+    const depotItems = Array.isArray(depotData) ? depotData : (depotData.depot || []);
+    const inboxItems = containers.inbox || [];
+
+    this.depot = new DepotContainer(CONST.CONTAINER.DEPOT, depotItems, inboxItems);
     this.equipment = new Equipment(CONST.CONTAINER.EQUIPMENT, player, containers.equipment);
     this.keyring = new Keyring(CONST.CONTAINER.KEYRING, player, containers.keyring);
-    this.inbox = new Inbox(player, containers.inbox);
+    this.inbox = new Inbox(player, inboxItems);
   }
 
   toJSON(): object {
+    const depotJSON = this.depot.toJSON();
     return {
-      depot: this.depot,
+      depot: depotJSON.depot,
       equipment: this.equipment,
       keyring: this.keyring,
-      inbox: this.inbox,
+      inbox: depotJSON.mail,
     };
   }
 
@@ -54,13 +60,30 @@ class ContainerManager {
     }
   }
 
-  toggleContainer(container: IContainer): void {
+  toggleContainer(container: IContainer | any): void {
+    if (!container) {
+      console.log("[ContainerManager.toggleContainer] No container provided");
+      return;
+    }
+
+    if (container.isDepot()) {
+      console.log("[ContainerManager.toggleContainer] Depot detected, isOpen:", this.__openedContainers.has(CONST.CONTAINER.DEPOT));
+      if (this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {
+        this.closeContainer(this.depot);
+      } else {
+        this.__openContainer(container);
+      }
+      return;
+    }
+
+    if (!container.container || container.container.guid === undefined) {
+      return;
+    }
+
     if (this.__openedContainers.has(container.container.guid)) {
       this.closeContainer(container);
-    } else if (container.isDepot() && this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {
-      this.closeContainer(this.depot);
     } else {
-      this.__openContainer(container);
+      this.__openContainer(container as Container);
     }
   }
 
@@ -99,23 +122,53 @@ class ContainerManager {
   }
 
   closeContainer(container: any): void {
-    /*
-     * Function ContainerManager.closeContainer
-     * Closes a container and writes it to disk
-     */
+    if (!container) {
+      return;
+    }
+
+    // Handle closing the main depot container
+    if (container === this.depot || (container.container && container.container.guid === this.depot.container.guid)) {
+      if (!this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {
+        return;
+      }
+      this.__openedContainers.delete(CONST.CONTAINER.DEPOT);
+      this.depot.openAtPosition(null);
+      this.__player.closeContainer(this.depot.container);
+      return;
+    }
+
+    // Handle closing Mail or Depot sub-containers
+    const mailContainer = this.depot.getMailContainer();
+    const depotContainer = this.depot.getDepotContainer();
+    
+    if (mailContainer && container.container && container.container.guid === mailContainer.container.guid) {
+      if (!this.__openedContainers.has(mailContainer.container.guid)) {
+        return;
+      }
+      this.__openedContainers.delete(mailContainer.container.guid);
+      this.__player.closeContainer(mailContainer.container);
+      return;
+    }
+
+    if (depotContainer && container.container && container.container.guid === depotContainer.container.guid) {
+      if (!this.__openedContainers.has(depotContainer.container.guid)) {
+        return;
+      }
+      this.__openedContainers.delete(depotContainer.container.guid);
+      this.__player.closeContainer(depotContainer.container);
+      return;
+    }
+
+    if (!container.container || container.container.guid === undefined) {
+      return;
+    }
 
     if (!this.__openedContainers.has(container.container.guid)) {
       return;
     }
 
     this.__openedContainers.delete(container.container.guid);
-
-    if (container === this.depot) {
-      this.depot.openAtPosition(null);
-      this.__player.closeContainer(this.depot.container);
-    } else {
-      this.__player.closeContainer(container.container);
-    }
+    this.__player.closeContainer(container.container);
   }
 
   private __getContainer(cid: number): any | null {
@@ -140,11 +193,98 @@ class ContainerManager {
     }
   }
 
-  private __openContainer(container: any): void {
-    /*
-     * Function ContainerManager.__openContainer
-     * Writes packet to open a container
-     */
+  private __openContainer(container: Container | any): void {
+    if (!container) {
+      return;
+    }
+
+    if (container.isDepot()) {
+      console.log("[ContainerManager.__openContainer] Opening depot", {
+        depotIsClosed: this.depot.isClosed(),
+        containerId: container.id,
+        depotPosition: container.getPosition(),
+        openedContainers: this.__openedContainers.size,
+        depotContainerGuid: this.depot.container.guid
+      });
+
+      if (this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {
+        console.log("[ContainerManager.__openContainer] Depot already open");
+        return;
+      }
+
+      if (this.__openedContainers.size >= this.MAXIMUM_OPENED_CONTAINERS) {
+        console.log("[ContainerManager.__openContainer] Too many containers open");
+        this.__player.sendCancelMessage("You cannot open any more containers.");
+        return;
+      }
+
+      if (!this.depot.isClosed()) {
+        console.log("[ContainerManager.__openContainer] Depot not closed");
+        this.__player.sendCancelMessage("You already have another depot opened.");
+        return;
+      }
+
+      this.__openedContainers.set(CONST.CONTAINER.DEPOT, this.depot);
+      this.depot.openAtPosition(container.getPosition());
+      console.log("[ContainerManager.__openContainer] Calling player.openContainer", {
+        id: container.id,
+        name: "Depot",
+        baseContainerGuid: this.depot.container.guid,
+        containerSize: this.depot.container.size
+      });
+      this.__player.openContainer(container.id, "Depot", this.depot.container, this.depot);
+      return;
+    }
+
+    // Check if this is the Mail container (ID 14404 or unique ID 0x10000000)
+    const isMailContainer = container.id === DepotContainer.MAIL_CONTAINER_ID || (container.hasUniqueId && container.hasUniqueId() && container.uid === 0x10000000);
+    // Check if this is the Depot container (DEPOT_CONTAINER_ID or unique ID 0x10000001)  
+    const isDepotContainer = container.id === DepotContainer.DEPOT_CONTAINER_ID || (container.hasUniqueId && container.hasUniqueId() && container.uid === 0x10000001);
+
+    if (isMailContainer) {
+      // Open the Mail container (which contains inbox items)
+      const mailContainer = this.depot.getMailContainer();
+      if (!mailContainer) {
+        return;
+      }
+
+      if (this.__openedContainers.has(mailContainer.container.guid)) {
+        this.closeContainer(mailContainer);
+        return;
+      }
+
+      if (this.__openedContainers.size >= this.MAXIMUM_OPENED_CONTAINERS) {
+        this.__player.sendCancelMessage("You cannot open any more containers.");
+        return;
+      }
+
+      this.__openedContainers.set(mailContainer.container.guid, mailContainer);
+      this.__player.openContainer(mailContainer.id, "Mail", mailContainer.container, mailContainer);
+      return;
+    }
+
+    if (isDepotContainer) {
+      // Open the Depot container (which contains depot items)
+      const depotContainer = this.depot.getDepotContainer();
+      if (!depotContainer) {
+        return;
+      }
+
+      if (this.__openedContainers.has(depotContainer.container.guid)) {
+        this.closeContainer(depotContainer);
+        return;
+      }
+
+      if (this.__openedContainers.size >= this.MAXIMUM_OPENED_CONTAINERS) {
+        this.__player.sendCancelMessage("You cannot open any more containers.");
+        return;
+      }
+
+      this.__openedContainers.set(depotContainer.container.guid, depotContainer);
+      this.__player.openContainer(depotContainer.id, "Depot", depotContainer.container, depotContainer);
+      return;
+    }
+
     if (this.__openedContainers.has(container.id)) {
       return;
     }
@@ -154,19 +294,12 @@ class ContainerManager {
       return;
     }
 
-    if (container.isDepot() && !this.depot.isClosed()) {
-      this.__player.sendCancelMessage("You already have another depot opened.");
+    if (!container.container || container.container.guid === undefined) {
       return;
     }
 
-    if (!container.isDepot()) {
-      this.__openedContainers.set(container.container.guid, container);
-      this.__player.openContainer(container.id, container.getName(), container.container, container);
-    } else {
-      this.__openedContainers.set(CONST.CONTAINER.DEPOT, this.depot);
-      this.depot.openAtPosition(container.getPosition());
-      this.__player.openContainer(container.id, "Depot", this.depot.container);
-    }
+    this.__openedContainers.set(container.container.guid, container);
+    this.__player.openContainer(container.id, container.getName(), container.container, container);
   }
 }
 

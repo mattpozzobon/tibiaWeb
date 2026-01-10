@@ -105,13 +105,14 @@ class UseHandler {
       return;
     }
 
-    if (item.hasUniqueId()) {
+    // If the item clicked is a container: toggle it (allow Mail/Depot containers even with unique IDs)
+    if (item.isContainer() || item.isDepot()) {
+      this.__player.containerManager.toggleContainer(item);
       return;
     }
 
-    // If the item clicked is a container: toggle it
-    if (item.isContainer() || item.isDepot()) {
-      this.__player.containerManager.toggleContainer(item);
+    // Check for unique ID items that are not containers (prevent interaction)
+    if (item.hasUniqueId()) {
       return;
     }
 

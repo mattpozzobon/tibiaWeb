@@ -7,6 +7,7 @@ import { ContainerAddPacket } from "../network/protocol";
 import { getGameServer } from "../helper/appContext";
 import { MailboxHandler } from "./mailbox-handler";
 import ItemStack from "../item/item-stack";
+import DepotContainer from "../item/depot";
 
 export class ItemMoveHandler {
   private static mailboxHandler: MailboxHandler = new MailboxHandler();
@@ -38,6 +39,16 @@ export class ItemMoveHandler {
 
     if (fromWhere instanceof Tile && !player.position.besides(fromWhere.position)) { player.sendCancelMessage("You are not close enough."); return; }
     if (toWhere instanceof Tile && !player.position.inLineOfSight(toWhere.position)) { player.sendCancelMessage("You cannot throw this item here."); return; }
+
+    // Check if trying to move items into the Mail container (prevented)
+    if (this.isContainer(toWhere)) {
+      const container = toWhere as IContainer;
+      const isMailContainer = container.id === DepotContainer.MAIL_CONTAINER_ID || (container.hasUniqueId && container.hasUniqueId() && container.uid === 0x10000000);
+      if (isMailContainer) {
+        player.sendCancelMessage("You cannot move items into the mail container.");
+        return;
+      }
+    }
 
     const actualFromIndex = this.getIndexForRead(fromWhere, fromIndex);
     const fromItem = fromWhere.peekIndex(actualFromIndex) as IItem | null;

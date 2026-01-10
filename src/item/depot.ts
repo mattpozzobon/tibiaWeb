@@ -3,26 +3,50 @@
 import { getGameServer } from "../helper/appContext";
 import BaseContainer from "./base-container";
 import Item from "./item";
-
+import Container from "./container/container";
 
 class DepotContainer {
   public container: BaseContainer;
   public position: any | null;
+  private mailContainer: Container;
+  private depotContainer: Container;
+  private static readonly MAIL_SLOT_INDEX: number = 0;
+  private static readonly DEPOT_SLOT_INDEX: number = 1;
+  public static readonly MAIL_CONTAINER_ID: number = 14404;
+  public static readonly DEPOT_CONTAINER_ID: number = 2594;
+  private static readonly DEFAULT_DEPOT_SIZE: number = 100;
+  private static readonly MAIL_CONTAINER_SIZE: number = 5;
 
-  constructor(cid: number, things: any[]) {
+  constructor(cid: number, depotItems: any[], inboxItems: any[]) {
     /*
      * Class DepotContainer
-     * Container for the player depot that can contain items. Each player has an individual depot stored at player.depot
+     * Container for the player depot that contains 2 sub-containers: Mail and Depot
+     * - Slot 0: Mail container (contains mail/inbox items, cannot be moved)
+     * - Slot 1: Depot container (contains depot items, cannot be moved)
      */
 
-    // Should include a base container to handle the items
-    this.container = new BaseContainer(cid, things.length);
+    // Depot container has exactly 2 slots for the Mail and Depot sub-containers
+    this.container = new BaseContainer(cid, 2);
 
     // The parent of the depot container is updated based on what particular depot box is being opened
     this.position = null;
 
-    // Add the depot items
-    this.__addDepotItems(things);
+    // Create Mail container (ID 14404) with fixed size of 5 slots
+    this.mailContainer = new Container(DepotContainer.MAIL_CONTAINER_ID, DepotContainer.MAIL_CONTAINER_SIZE);
+    this.mailContainer.setUniqueId(0x10000000); // Unique ID to prevent movement
+    (this.mailContainer as any).__depotParent = this; // Store reference for getTopParent()
+    this.container.addThing(this.mailContainer, DepotContainer.MAIL_SLOT_INDEX);
+    this.mailContainer.setParent(null); // System container, no parent weight tracking needed
+    this.__addMailItems(inboxItems);
+
+    // Create Depot container (backpack ID 1988)
+    const depotSize = Math.max(DepotContainer.DEFAULT_DEPOT_SIZE, depotItems.length);
+    this.depotContainer = new Container(DepotContainer.DEPOT_CONTAINER_ID, depotSize);
+    this.depotContainer.setUniqueId(0x10000001); // Unique ID to prevent movement
+    (this.depotContainer as any).__depotParent = this; // Store reference for getTopParent()
+    this.container.addThing(this.depotContainer, DepotContainer.DEPOT_SLOT_INDEX);
+    this.depotContainer.setParent(null); // System container, no parent weight tracking needed
+    this.__addDepotItems(depotItems);
   }
 
   getTopParent(): this {
@@ -37,12 +61,31 @@ class DepotContainer {
     return this.position === null;
   }
 
-  toJSON(): any[] {
+  toJSON(): { mail: any[], depot: any[] } {
     /*
      * Function DepotContainer.toJSON
-     * Implements the toJSON API to serialize the depot when the player is saved
+     * Returns serialized mail and depot items for database storage
      */
-    return this.container.slots;
+    const mailItems: any[] = [];
+    const depotItems: any[] = [];
+
+    if (this.mailContainer) {
+      this.mailContainer.container.slots.forEach((item: any) => {
+        if (item !== null) {
+          mailItems.push(item.toJSON());
+        }
+      });
+    }
+
+    if (this.depotContainer) {
+      this.depotContainer.container.slots.forEach((item: any) => {
+        if (item !== null) {
+          depotItems.push(item.toJSON());
+        }
+      });
+    }
+
+    return { mail: mailItems, depot: depotItems };
   }
 
   getPosition(): any | null {
@@ -64,26 +107,8 @@ class DepotContainer {
   getMaximumAddCount(player: any, item: Item, index: number): number {
     /*
      * Function DepotContainer.getMaximumAddCount
-     * Implements the API that returns the maximum addable count of a thing at a particular slot
+     * Depot only has 2 slots (Mail and Depot containers), cannot add items directly
      */
-
-    if (!this.container.isValidIndex(index)) {
-      return 0;
-    }
-
-    const thing = this.container.peekIndex(index);
-
-    if (thing === null) {
-      return Item.MAXIMUM_STACK_COUNT;
-    }
-
-    if (thing.id === item.id && thing.isStackable()) {
-      if (this.container.isFull()) {
-        return Item.MAXIMUM_STACK_COUNT - thing.count;
-      }
-      return Item.MAXIMUM_STACK_COUNT;
-    }
-
     return 0;
   }
 
@@ -98,24 +123,27 @@ class DepotContainer {
   removeIndex(index: number, amount: number): any {
     /*
      * Function DepotContainer.removeIndex
-     * Removes an item count from the requested index
+     * Cannot remove the Mail or Depot containers - they are fixed and have unique IDs
      */
-    const thing = this.container.removeIndex(index, amount);
-    thing.setParent(null);
-    return thing;
+    const thing = this.container.peekIndex(index);
+    if (thing && thing.hasUniqueId && thing.hasUniqueId()) {
+      return null;
+    }
+    return null;
   }
 
   deleteThing(thing: any): number {
     /*
      * Function DepotContainer.deleteThing
-     * Removes an item from the container by its reference
+     * Cannot delete the Mail or Depot containers - they are fixed
      */
+    if (thing && thing.hasUniqueId && thing.hasUniqueId()) {
+      return -1;
+    }
     const index = this.container.deleteThing(thing);
-
     if (index === -1) {
       return -1;
     }
-
     thing.setParent(null);
     return index;
   }
@@ -123,50 +151,115 @@ class DepotContainer {
   addThing(thing: any, index: number): boolean {
     /*
      * Function DepotContainer.addThing
-     * Function to add an item to the container
+     * Cannot add items directly to depot - use addToDepot or addToMail instead
      */
-    if (!thing.isPickupable() && thing.id !== 2594 && thing.id !== 2593) {
-      return false;
-    }
-
-    this.container.addThing(thing, index);
-    thing.setParent(this);
-    return true;
+    return false;
   }
 
   addFirstEmpty(thing: any): void {
     /*
      * Function DepotContainer.addFirstEmpty
-     * Adds a thing to the first available empty slot
+     * Adds a thing to the depot container (slot 1)
      */
-    thing.setParent(this);
-    this.container.addFirstEmpty(thing);
+    if (this.depotContainer) {
+      this.depotContainer.addFirstEmpty(thing);
+    }
   }
 
   canAddFirstEmpty(thing: any): boolean {
     /*
      * Function DepotContainer.canAddFirstEmpty
-     * Determines if a thing can be added to the first available empty slot
+     * Checks if a thing can be added to the depot container
      */
-    if (!thing.isPickupable()) {
+    if (!thing || !thing.isPickupable()) {
       return false;
     }
 
-    if (this.container.isFull()) {
-      return false;
+    if (this.depotContainer && !this.depotContainer.container.isFull()) {
+      return true;
     }
 
-    return true;
+    return false;
   }
 
-  private __addDepotItems(things: any[]): void {
+  addToMail(thing: any): void {
+    /*
+     * Function DepotContainer.addToMail
+     * Adds an item to the mail container
+     */
+    if (this.mailContainer) {
+      this.mailContainer.addFirstEmpty(thing);
+    }
+  }
+
+  addToDepot(thing: any): void {
+    /*
+     * Function DepotContainer.addToDepot
+     * Adds an item to the depot container
+     */
+    if (this.depotContainer) {
+      this.depotContainer.addFirstEmpty(thing);
+    }
+  }
+
+  getMailContainer(): Container {
+    return this.mailContainer;
+  }
+
+  getDepotContainer(): Container {
+    return this.depotContainer;
+  }
+
+  getSlots(): Array<any> {
+    /*
+     * Function DepotContainer.getSlots
+     * Returns all slots in the depot container
+     */
+    return this.container.getSlots();
+  }
+
+  hasExclusiveSlots(): boolean {
+    /*
+     * Function DepotContainer.hasExclusiveSlots
+     * Depots don't have exclusive slots, always returns false
+     */
+    return false;
+  }
+
+  getAllSlotTypesForPacket(): number[] {
+    /*
+     * Function DepotContainer.getAllSlotTypesForPacket
+     * Returns slot types for the 2 slots (Mail and Depot containers) - all normal slots = 0
+     */
+    return [0, 0];
+  }
+
+  private __addMailItems(items: any[]): void {
+    /*
+     * Function DepotContainer.__addMailItems
+     * Adds mail items to the mail container
+     */
+    items.forEach((item) => {
+      if (item !== null) {
+        const thing = getGameServer().database.parseThing(item);
+        if (thing && this.mailContainer) {
+          this.mailContainer.addFirstEmpty(thing);
+        }
+      }
+    });
+  }
+
+  private __addDepotItems(items: any[]): void {
     /*
      * Function DepotContainer.__addDepotItems
-     * Adds equipment in serialized form from the database
+     * Adds depot items to the depot container
      */
-    things.forEach((thing, index) => {
-      if (thing !== null) {
-        this.addThing(getGameServer().database.parseThing(thing), index);
+    items.forEach((item) => {
+      if (item !== null) {
+        const thing = getGameServer().database.parseThing(item);
+        if (thing && this.depotContainer) {
+          this.depotContainer.addFirstEmpty(thing);
+        }
       }
     });
   }

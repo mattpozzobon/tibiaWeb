@@ -5,6 +5,7 @@ import { IContainer, IItem, IThing } from "interfaces/IThing";
 import { IPlayer } from "interfaces/IPlayer";
 import Item from "../item";
 import exclusiveSlotsManager from "../../utils/exclusive-slots";
+import DepotContainer from "../depot";
 
 class Container extends Item implements IContainer{
   private __childWeight: number = 0;
@@ -344,6 +345,11 @@ class Container extends Item implements IContainer{
   ): number {
     if (!this.container.isValidIndex(index)) return 0;
 
+    // Prevent items from being added to Mail container (unique ID 0x10000000 or ID 14404)
+    if (this.id === DepotContainer.MAIL_CONTAINER_ID || (this.hasUniqueId() && this.uid === 0x10000000)) {
+      return 0;
+    }
+
     // Check slot restrictions
     const baseSize = this.__getBaseSize();
     
@@ -419,10 +425,13 @@ class Container extends Item implements IContainer{
   }
 
   private __updateParentWeightRecursion(weight: number): void {
-    let current: IContainer = this;
+    let current: any = this;
     while (!this.isTopParent(current)) {
-      current.__updateWeight(weight);
+      if (current && typeof current.__updateWeight === "function") {
+        current.__updateWeight(weight);
+      }
       current = current.getParent();
+      if (!current) break;
     }
   }
 
@@ -466,9 +475,15 @@ class Container extends Item implements IContainer{
      * Function Container.getTopParent
      * Returns the top-level parent of the container
      */
+    // Check if this container is inside a DepotContainer (special case)
+    if ((this as any).__depotParent) {
+      return (this as any).__depotParent;
+    }
+    
     let current: any = this;
     while (!this.isTopParent(current)) {
       current = current.getParent();
+      if (!current) break;
     }
     return current;
   }
