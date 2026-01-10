@@ -15,22 +15,38 @@ export class ItemMoveHandler {
   private static isContainer(where: any): where is IContainer { return where?.constructor?.name === "Container"; }
   private static isTile(where: any): where is Tile { return where instanceof Tile || where?.constructor?.name === "Tile"; }
 
+  private static getIndexForRead(where: Equipment | IContainer | ITile, index: number): number { return where instanceof Tile ? ItemStack.TOP_INDEX : index; }
+  private static getIndexForWrite(where: Equipment | IContainer | ITile, index: number): number { return where instanceof Tile ? ItemStack.TOP_INDEX : index; }
+
+  private static isMovableItem(item: IItem): boolean { return item.isMoveable() && !item.hasUniqueId(); }
+  private static getWholeItemCount(item: IItem): number { return item.isStackable() ? item.count : 1; }
+
+  private static clampMoveCount(where: Equipment | IContainer | ITile, item: IItem, requested: number): number {
+    const available = item.getCount() > 0 ? item.getCount() : item.isStackable() ? item.count : 1;
+    const clampedToSource = where instanceof Tile ? Math.min(requested, available) : requested;
+    return item.isStackable() ? clampedToSource : Math.max(1, clampedToSource);
+  }
+
+  private static getRemovalCount(fromWhere: Equipment | IContainer | ITile, toWhere: Equipment | IContainer | ITile, itemAtSource: IItem | null, count: number): number {
+    const isTileToTile = fromWhere instanceof Tile && toWhere instanceof Tile && fromWhere !== toWhere;
+    if (isTileToTile) return itemAtSource && itemAtSource.isStackable() ? count : 1;
+    return itemAtSource && !itemAtSource.isStackable() ? 1 : count;
+  }
+
   public static validateAndMoveItem(player: IPlayer, fromWhere: Equipment | IContainer | ITile, fromIndex: number, toWhere: Equipment | IContainer | ITile, toIndex: number, count: number): void {
     if (!fromWhere || !toWhere) return;
 
     if (fromWhere instanceof Tile && !player.position.besides(fromWhere.position)) { player.sendCancelMessage("You are not close enough."); return; }
     if (toWhere instanceof Tile && !player.position.inLineOfSight(toWhere.position)) { player.sendCancelMessage("You cannot throw this item here."); return; }
 
-    const actualFromIndex = fromWhere instanceof Tile ? ItemStack.TOP_INDEX : fromIndex;
+    const actualFromIndex = this.getIndexForRead(fromWhere, fromIndex);
     const fromItem = fromWhere.peekIndex(actualFromIndex) as IItem | null;
     if (!fromItem) return;
 
-    const effectiveFromCount = fromItem.getCount() > 0 ? fromItem.getCount() : fromItem.isStackable() ? fromItem.count : 1;
-    const actualCount = fromWhere instanceof Tile ? Math.min(count, effectiveFromCount) : count;
-    const finalCount = fromItem.isStackable() ? actualCount : Math.max(1, actualCount);
+    const finalCount = this.clampMoveCount(fromWhere, fromItem, count);
     if (finalCount === 0) return;
 
-    if (!fromItem.isMoveable() || fromItem.hasUniqueId()) { player.sendCancelMessage("You cannot move this item."); return; }
+    if (!this.isMovableItem(fromItem)) { player.sendCancelMessage("You cannot move this item."); return; }
 
     if (toWhere instanceof Tile) {
       if (toWhere.hasItems() && toWhere.itemStack!.isMailbox() && this.mailboxHandler.canMailItem(fromItem)) { this.mailboxHandler.sendThing(fromWhere, toWhere, player, fromItem); return; }
@@ -41,7 +57,8 @@ export class ItemMoveHandler {
       if (toWhere2.isTrashholder()) {
         getGameServer().world.sendMagicEffect(toWhere2.position, toWhere2.getTrashEffect());
         fromItem.cleanup();
-        fromWhere.removeIndex(actualFromIndex, finalCount);
+        const trashRemoveCount = this.getRemovalCount(fromWhere, toWhere, fromItem, finalCount);
+        fromWhere.removeIndex(this.getIndexForWrite(fromWhere, fromIndex), trashRemoveCount);
         return;
       }
 
@@ -53,42 +70,25 @@ export class ItemMoveHandler {
       if (fromWhere.constructor.name === "DepotContainer" || toWhere.getTopParent() !== fromWhere.getTopParent()) { player.sendCancelMessage("Your capacity is insufficient to carry this item."); return; }
     }
 
-    let actualToIndex = toWhere instanceof Tile ? ItemStack.TOP_INDEX : toIndex;
+    let actualToIndex = this.getIndexForRead(toWhere, toIndex);
 
-    const redirect = this.redirectIntoTargetContainerIfNeeded(player, toWhere, actualToIndex, fromItem);
-    if (redirect) {
-      toWhere = redirect.toWhere;
-      actualToIndex = redirect.toIndex;
-    }
+    const redirect = this.redirectIntoTargetContainerIfNeeded(player, fromItem, toWhere, actualToIndex);
+    if (redirect) { toWhere = redirect.toWhere; actualToIndex = redirect.toIndex; }
 
-    const existingItem = toWhere.peekIndex(actualToIndex) as IItem | null;
-
-    const isSameContainer = this.isSameContainer(fromWhere, toWhere);
-    const isMergeScenario = existingItem !== null && fromItem.id === existingItem.id && fromItem.isStackable() && existingItem.isStackable();
-    if (isMergeScenario && actualFromIndex === actualToIndex && isSameContainer) return;
-
-    const isTileToTile = fromWhere instanceof Tile && toWhere instanceof Tile && fromWhere !== toWhere;
+    if (fromWhere === toWhere && actualFromIndex === actualToIndex) return;
 
     if (this.isEquipment(toWhere)) {
-      const existing = (toWhere as Equipment).peekIndex(actualToIndex) as IItem | null;
-      if (existing !== null && actualFromIndex !== actualToIndex) {
+      const existingEquip = (toWhere as Equipment).peekIndex(actualToIndex) as IItem | null;
+      if (existingEquip !== null && actualFromIndex !== actualToIndex) {
         const replaced = this.executeEquipReplace(player, fromWhere, actualFromIndex, toWhere as Equipment, actualToIndex, finalCount);
         if (replaced) return;
       }
     }
 
-    const canAttemptSwap =
-      !isTileToTile &&
-      existingItem !== null &&
-      fromItem.id !== existingItem.id &&
-      existingItem.isMoveable() &&
-      !existingItem.hasUniqueId() &&
-      fromItem.isMoveable() &&
-      !fromItem.hasUniqueId() &&
-      this.isContainer(fromWhere) &&
-      this.isContainer(toWhere);
+    const existingItem = toWhere.peekIndex(actualToIndex) as IItem | null;
+    const isTileToTile = fromWhere instanceof Tile && toWhere instanceof Tile && fromWhere !== toWhere;
 
-    if (canAttemptSwap && !isMergeScenario) {
+    if (this.shouldAttemptContainerSwap(fromWhere, toWhere, isTileToTile, actualFromIndex, actualToIndex, fromItem, existingItem)) {
       if (this.moveItem(player, fromWhere, actualFromIndex, toWhere, actualToIndex, finalCount)) return;
     }
 
@@ -98,9 +98,7 @@ export class ItemMoveHandler {
     let realCount = Math.min(finalCount, maxCount);
     if (realCount === 0) return;
 
-    if (isTileToTile) {
-      realCount = fromItem.isStackable() ? realCount : 1;
-    }
+    if (isTileToTile) realCount = fromItem.isStackable() ? realCount : 1;
 
     this.moveItem(player, fromWhere, actualFromIndex, toWhere, actualToIndex, realCount);
   }
@@ -108,12 +106,12 @@ export class ItemMoveHandler {
   public static moveItem(player: IPlayer, fromWhere: Equipment | IContainer | ITile, fromIndex: number, toWhere: Equipment | IContainer | ITile, toIndex: number, count: number): boolean {
     if (count === 0) return false;
 
-    const isTileToTile = fromWhere instanceof Tile && toWhere instanceof Tile && fromWhere !== toWhere;
-
     if (this.isEquipment(toWhere)) {
       const existing = (toWhere as Equipment).peekIndex(toIndex) as IItem | null;
       if (existing !== null && fromIndex !== toIndex) return this.executeEquipReplace(player, fromWhere, fromIndex, toWhere as Equipment, toIndex, count);
     }
+
+    const isTileToTile = fromWhere instanceof Tile && toWhere instanceof Tile && fromWhere !== toWhere;
 
     if (!isTileToTile && this.isContainer(fromWhere) && this.isContainer(toWhere)) {
       const existingItem = toWhere.peekIndex(toIndex) as IItem | null;
@@ -123,10 +121,8 @@ export class ItemMoveHandler {
         existingItem !== null &&
         movedItem !== null &&
         existingItem.id !== movedItem.id &&
-        existingItem.isMoveable() &&
-        !existingItem.hasUniqueId() &&
-        movedItem.isMoveable() &&
-        !movedItem.hasUniqueId()
+        this.isMovableItem(existingItem) &&
+        this.isMovableItem(movedItem)
       ) {
         return this.executeSwap(player, fromWhere, fromIndex, toWhere, toIndex, count, existingItem, movedItem);
       }
@@ -135,52 +131,52 @@ export class ItemMoveHandler {
     return this.executeStandardMove(player, fromWhere, fromIndex, toWhere, toIndex, count);
   }
 
-  public static isSameContainer(fromWhere: Equipment | IContainer | ITile, toWhere: Equipment | IContainer | ITile): boolean {
-    if (fromWhere === toWhere) return true;
+  private static shouldAttemptContainerSwap(fromWhere: Equipment | IContainer | ITile, toWhere: Equipment | IContainer | ITile, isTileToTile: boolean, fromIndex: number, toIndex: number, fromItem: IItem, existingItem: IItem | null): boolean {
+    if (isTileToTile) return false;
+    if (!this.isContainer(fromWhere) || !this.isContainer(toWhere)) return false;
+    if (!existingItem) return false;
+    if (existingItem.id === fromItem.id) return false;
+    if (!this.isMovableItem(existingItem) || !this.isMovableItem(fromItem)) return false;
 
-    if (fromWhere.constructor.name === "Container" && toWhere.constructor.name === "Container") {
-      return (fromWhere as IContainer).container.guid === (toWhere as IContainer).container.guid;
-    }
+    const sameGuid = (fromWhere as IContainer).container.guid === (toWhere as IContainer).container.guid;
+    if (sameGuid && fromIndex === toIndex) return false;
 
-    if (fromWhere.constructor.name === "Equipment" && toWhere.constructor.name === "Equipment") {
-      return fromWhere === toWhere;
-    }
-
-    return false;
+    return true;
   }
 
-  private static redirectIntoTargetContainerIfNeeded(player: IPlayer, toWhere: Equipment | IContainer | ITile, toIndex: number, movingItem: IItem): { toWhere: IContainer; toIndex: number } | null {
+  private static redirectIntoTargetContainerIfNeeded(player: IPlayer, movingItem: IItem, toWhere: Equipment | IContainer | ITile, toIndex: number): { toWhere: IContainer; toIndex: number } | null {
     if (this.isTile(toWhere)) return null;
 
     const target = toWhere.peekIndex(toIndex) as any;
     if (!target) return null;
+    if (movingItem === target) return null;
 
-    if (typeof target.isContainer === "function" && target.isContainer()) {
-      const inner = target as unknown as IContainer;
-      const innerIndex = this.findFirstValidIndexInContainer(player, inner, movingItem);
-      if (innerIndex === null) return null;
-      return { toWhere: inner, toIndex: innerIndex };
+    const targetIsContainerItem =
+      (typeof target.isContainer === "function" && target.isContainer()) ||
+      target?.constructor?.name === "Container";
+
+    if (!targetIsContainerItem) return null;
+
+    if (typeof target.__includesSelf === "function" && target.__includesSelf(movingItem)) return null;
+
+    if (typeof movingItem.isContainer === "function" && movingItem.isContainer()) {
+      const mi: any = movingItem as any;
+      if (typeof mi.__includesSelf === "function" && mi.__includesSelf(target)) return null;
     }
 
-    if (target?.constructor?.name === "Container") {
-      const inner = target as unknown as IContainer;
-      const innerIndex = this.findFirstValidIndexInContainer(player, inner, movingItem);
-      if (innerIndex === null) return null;
-      return { toWhere: inner, toIndex: innerIndex };
-    }
+    const inner = target as unknown as IContainer;
+    const innerIndex = this.findFirstValidIndexInContainer(player, inner, movingItem);
+    if (innerIndex === null) return null;
 
-    return null;
+    return { toWhere: inner, toIndex: innerIndex };
   }
 
   private static findFirstValidIndexInContainer(player: IPlayer, container: IContainer, movingItem: IItem): number | null {
-    const c: any = container?.container;
-    if (!c || typeof c.isValidIndex !== "function") return null;
-
-    const MAX_SCAN = 1024;
+    const base: any = container?.container;
+    if (!base || typeof base.isValidIndex !== "function") return null;
 
     if (movingItem.isStackable()) {
-      for (let i = 0; i < MAX_SCAN; i++) {
-        if (!c.isValidIndex(i)) break;
+      for (let i = 0; base.isValidIndex(i); i++) {
         const t = container.peekIndex(i) as IItem | null;
         if (t && t.id === movingItem.id && t.isStackable()) {
           if (container.getMaximumAddCount(player, movingItem, i) > 0) return i;
@@ -188,8 +184,7 @@ export class ItemMoveHandler {
       }
     }
 
-    for (let i = 0; i < MAX_SCAN; i++) {
-      if (!c.isValidIndex(i)) break;
+    for (let i = 0; base.isValidIndex(i); i++) {
       if (container.getMaximumAddCount(player, movingItem, i) > 0) return i;
     }
 
@@ -204,6 +199,7 @@ export class ItemMoveHandler {
     const toC = toWhere as IContainer;
 
     const sameGuid = fromC.container.guid === toC.container.guid;
+
     if (sameGuid) {
       const base = fromC.container as any;
 
@@ -243,8 +239,11 @@ export class ItemMoveHandler {
       return true;
     }
 
-    const removedMovedItem = fromWhere.removeIndex(fromIndex, count) as IItem | null;
-    const removedSwappedItem = toWhere.removeIndex(toIndex, existingItem.count) as IItem | null;
+    const movedRemoveCount = movedItem.isStackable() ? count : 1;
+    const existingRemoveCount = this.getWholeItemCount(existingItem);
+
+    const removedMovedItem = fromWhere.removeIndex(fromIndex, movedRemoveCount) as IItem | null;
+    const removedSwappedItem = toWhere.removeIndex(toIndex, existingRemoveCount) as IItem | null;
 
     if (!removedMovedItem || !removedSwappedItem) {
       if (removedMovedItem) fromWhere.addThing(removedMovedItem, fromIndex);
@@ -275,16 +274,13 @@ export class ItemMoveHandler {
     const equippedItem = toEquipment.peekIndex(toIndex) as IItem | null;
 
     if (!movedItem || !equippedItem) return false;
-
-    if (!movedItem.isMoveable() || movedItem.hasUniqueId()) return false;
-    if (!equippedItem.isMoveable() || equippedItem.hasUniqueId()) return false;
-
+    if (!this.isMovableItem(movedItem) || !this.isMovableItem(equippedItem)) return false;
     if (movedItem.isStackable() && count !== movedItem.count) return false;
 
     const returnIndex = fromWhere instanceof Tile ? ItemStack.TOP_INDEX : fromIndex;
 
     const movedRemovalCount = movedItem.isStackable() ? count : 1;
-    const equippedRemovalCount = equippedItem.isStackable() ? equippedItem.count : 1;
+    const equippedRemovalCount = this.getWholeItemCount(equippedItem);
 
     const removedEquipped = toEquipment.removeIndex(toIndex, equippedRemovalCount) as IItem | null;
     if (!removedEquipped) return false;
@@ -315,23 +311,14 @@ export class ItemMoveHandler {
   private static executeStandardMove(player: IPlayer, fromWhere: Equipment | IContainer | ITile, fromIndex: number, toWhere: Equipment | IContainer | ITile, toIndex: number, count: number): boolean {
     if (count === 0) return false;
 
-    const actualFromIndex = fromWhere instanceof Tile ? ItemStack.TOP_INDEX : fromIndex;
-
+    const actualFromIndex = this.getIndexForWrite(fromWhere, fromIndex);
     const itemAtSource = fromWhere.peekIndex(actualFromIndex) as IItem | null;
 
-    const isTileToTile = fromWhere instanceof Tile && toWhere instanceof Tile && fromWhere !== toWhere;
-
-    let removalCount = count;
-    if (isTileToTile) {
-      removalCount = itemAtSource && itemAtSource.isStackable() ? count : 1;
-    } else {
-      removalCount = itemAtSource && !itemAtSource.isStackable() ? 1 : count;
-    }
-
+    const removalCount = this.getRemovalCount(fromWhere, toWhere, itemAtSource, count);
     const movedItem = fromWhere.removeIndex(actualFromIndex, removalCount) as IItem | null;
     if (!movedItem) return false;
 
-    const actualToIndex = toWhere instanceof Tile ? ItemStack.TOP_INDEX : toIndex;
+    const actualToIndex = this.getIndexForWrite(toWhere, toIndex);
 
     let existthing: any = null;
     if (toWhere instanceof Tile) existthing = toWhere.getTopItem();
