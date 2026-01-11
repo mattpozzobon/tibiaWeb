@@ -1,5 +1,4 @@
 "use strict";
-import Teleporter from "./teleporter";
 import Creature from "../creature/creature";
 import { CONST } from "../helper/appContext";
 import { IItem } from "interfaces/IThing";
@@ -106,7 +105,9 @@ class ItemStack {
 
   getTeleporterDestination(): any {
     for (const item of this.__items) {
-      if (item instanceof Teleporter) {
+      // Check if item is a teleporter by checking if it has getDestination method
+      // This avoids circular dependency with Teleporter import
+      if (item && typeof item.getDestination === "function") {
         return item.getDestination();
       }
     }

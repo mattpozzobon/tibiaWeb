@@ -1,3 +1,5 @@
+"use strict";
+
 import { IPosition } from "../interfaces/IPosition";
 import Item from "./item";
 

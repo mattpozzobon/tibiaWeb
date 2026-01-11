@@ -5,6 +5,8 @@ import BaseContainer from "./base-container";
 import Item from "./item";
 import { CONST, getGameServer, getSpriteIdForItem } from "../helper/appContext";
 import { IPlayer } from "interfaces/IPlayer";
+import { IContainer } from "interfaces/IThing";
+import { getContainerFromIContainer } from "../game/items/container-helpers";
 
 
 class Equipment {
@@ -602,11 +604,11 @@ class Equipment {
      * Function Equipment.__updateBeltAddonsFromContainer
      * Updates belt addons based on existing potions in the container when equipped
      */
-    if (!beltContainer || typeof (beltContainer as any).isContainer !== "function" || !(beltContainer as any).isContainer()) {
+    if (!beltContainer || typeof beltContainer.isContainer !== "function" || !beltContainer.isContainer()) {
       return;
     }
 
-    const container = (beltContainer as any).container as BaseContainer;
+    const container = getContainerFromIContainer(beltContainer);
     if (!container) return;
 
     // Check existing potions in the belt
@@ -690,7 +692,7 @@ class Equipment {
       return null;
     }
 
-    const container = (beltItem as any).container as BaseContainer;
+    const container = getContainerFromIContainer(beltItem);
     if (!container) {
       return null;
     }

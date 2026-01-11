@@ -9,6 +9,8 @@ import { IPosition } from "interfaces/IPosition";
 import ITile from "interfaces/ITile";
 import { IPlayer } from "interfaces/IPlayer";
 import BaseContainer from "../item/base-container";
+import { resolveHolder } from "../game/items/item-holder-resolver";
+import Equipment from "../item/equipment";
 
 class Thing extends ThingEmitter implements IThing{
   id: number;
@@ -322,7 +324,7 @@ class Thing extends ThingEmitter implements IThing{
       console.log('Error in Rotate');
   }
 
-  removeCount(count: number, parent?: any, index?: number): void {
+  removeCount(count: number): void {
     if (!this.prototypeCache.isStackable()) {
       this.remove();
       return;
@@ -334,30 +336,63 @@ class Thing extends ThingEmitter implements IThing{
       return;
     }
 
-    // If parent is a container (has container property), find the item's index and use removeIndex
-    if ((itemParent as any).container) {
-      const container = (itemParent as any).container;
-      // Find the item's index in the container slots array (should work now since parent stays set)
-      const index = container.slots.indexOf(this);
-      if (index !== -1) {
-        (itemParent as any).removeIndex(index, count);
+    // Resolve parent to IItemHolder and find item index
+    try {
+      const holder = resolveHolder(itemParent as ITile | IContainer | Equipment);
+      let index: number | null = null;
+
+      // Find the item's index efficiently based on holder type
+      if (holder.kind === "tile") {
+        // For tiles, use itemStack.getItems() directly for efficient lookup
+        const tile = itemParent as any;
+        const items = tile.itemStack?.getItems();
+        if (items) {
+          index = items.indexOf(this);
+        }
+      } else if (holder.kind === "container") {
+        // For containers, use container.slots directly
+        const container = itemParent as any;
+        const slots = container.container?.slots;
+        if (slots) {
+          index = slots.indexOf(this);
+        }
+      } else if (holder.kind === "equipment") {
+        // For equipment, use container.slots directly
+        const equipment = itemParent as any;
+        const slots = equipment.container?.slots;
+        if (slots) {
+          index = slots.indexOf(this);
+        }
+      }
+
+      // If we found the index, use holder to remove the item
+      if (index !== null && index >= 0) {
+        holder.removeItemAt(index, count);
         return;
       }
-    } else if ((itemParent as any).removeIndex && (itemParent as any).itemStack) {
-      // For tiles: find index in itemStack and use removeIndex
-      const items = (itemParent as any).itemStack.getItems();
-      const index = items.findIndex((item: any) => item === this || (item && item.id === this.id));
-      if (index !== -1) {
-        (itemParent as any).removeIndex(index, count);
-        return;
+
+      // Fallback: search through slots if direct index lookup failed
+      for (let i = 0; i < holder.capacity(); i++) {
+        const item = holder.getItem(i);
+        if (item === (this as any)) {
+          holder.removeItemAt(i, count);
+          return;
+        }
       }
-    } else if ((itemParent as any).deleteThing) {
-      // Fallback: try deleteThing (but it may not support count properly)
-      (itemParent as any).deleteThing(this, count);
-    } else {
-      // Last resort: remove the entire item
-      this.remove();
+    } catch (error) {
+      // If resolveHolder fails (e.g., parent is not a supported type), fall back to old logic
+      if ((itemParent as any).removeIndex && (itemParent as any).itemStack) {
+        const items = (itemParent as any).itemStack.getItems();
+        const index = items.findIndex((item: any) => item === this || (item && item.id === this.id));
+        if (index !== -1) {
+          (itemParent as any).removeIndex(index, count);
+          return;
+        }
+      }
     }
+    
+    // Last resort: remove the entire item
+    this.remove();
   }
 
   private __scheduleDecay(duration: number): void {

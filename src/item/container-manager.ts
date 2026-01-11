@@ -8,6 +8,7 @@ import Keyring from "../game-object/item/keyring";
 import { CONST } from "../helper/appContext";
 import { IContainer } from "interfaces/IThing";
 import Container from "./container/container";
+import { getContainerFromIContainer } from "../game/items/container-helpers";
 
 class ContainerManager {
   private __player: IPlayer;
@@ -90,14 +91,15 @@ class ContainerManager {
       return;
     }
 
-    if (!container.container || container.container.guid === undefined) {
+    const baseContainer = getContainerFromIContainer(container);
+    if (!baseContainer || baseContainer.guid === undefined) {
       return;
     }
 
-    if (this.__openedContainers.has(container.container.guid)) {
+    if (this.__openedContainers.has(baseContainer.guid)) {
       this.closeContainer(container);
     } else {
-      this.__openContainer(container as Container);
+      this.__openContainer(container as any);
     }
   }
 
@@ -147,13 +149,15 @@ class ContainerManager {
     }
 
     // Handle closing the main depot container
-    if (container === this.depot || (container.container && container.container.guid === this.depot.container.guid)) {
+    const containerBase = getContainerFromIContainer(container);
+    const depotBase = this.depot.container;
+    if (container === this.depot || (containerBase && containerBase.guid === depotBase.guid)) {
       if (!this.__openedContainers.has(CONST.CONTAINER.DEPOT)) {
         return;
       }
       this.__openedContainers.delete(CONST.CONTAINER.DEPOT);
       this.depot.openAtPosition(null);
-      this.__player.closeContainer(this.depot.container);
+      this.__player.closeContainer(depotBase);
       return;
     }
 
@@ -161,34 +165,40 @@ class ContainerManager {
     const mailContainer = this.depot.getMailContainer();
     const depotContainer = this.depot.getDepotContainer();
     
-    if (mailContainer && container.container && container.container.guid === mailContainer.container.guid) {
-      if (!this.__openedContainers.has(mailContainer.container.guid)) {
+    if (mailContainer && containerBase) {
+      const mailBase = getContainerFromIContainer(mailContainer);
+      if (containerBase.guid === mailBase.guid) {
+        if (!this.__openedContainers.has(mailBase.guid)) {
+          return;
+        }
+        this.__openedContainers.delete(mailBase.guid);
+        this.__player.closeContainer(mailBase);
         return;
       }
-      this.__openedContainers.delete(mailContainer.container.guid);
-      this.__player.closeContainer(mailContainer.container);
-      return;
     }
 
-    if (depotContainer && container.container && container.container.guid === depotContainer.container.guid) {
-      if (!this.__openedContainers.has(depotContainer.container.guid)) {
+    if (depotContainer && containerBase) {
+      const depotSubBase = getContainerFromIContainer(depotContainer);
+      if (containerBase.guid === depotSubBase.guid) {
+        if (!this.__openedContainers.has(depotSubBase.guid)) {
+          return;
+        }
+        this.__openedContainers.delete(depotSubBase.guid);
+        this.__player.closeContainer(depotSubBase);
         return;
       }
-      this.__openedContainers.delete(depotContainer.container.guid);
-      this.__player.closeContainer(depotContainer.container);
+    }
+
+    if (!containerBase || containerBase.guid === undefined) {
       return;
     }
 
-    if (!container.container || container.container.guid === undefined) {
+    if (!this.__openedContainers.has(containerBase.guid)) {
       return;
     }
 
-    if (!this.__openedContainers.has(container.container.guid)) {
-      return;
-    }
-
-    this.__openedContainers.delete(container.container.guid);
-    this.__player.closeContainer(container.container);
+    this.__openedContainers.delete(containerBase.guid);
+    this.__player.closeContainer(containerBase);
   }
 
   private __getContainer(cid: number): any | null {
@@ -268,7 +278,8 @@ class ContainerManager {
         return;
       }
 
-      if (this.__openedContainers.has(mailContainer.container.guid)) {
+      const mailBase = getContainerFromIContainer(mailContainer);
+      if (this.__openedContainers.has(mailBase.guid)) {
         this.closeContainer(mailContainer);
         return;
       }
@@ -282,8 +293,8 @@ class ContainerManager {
       // This ensures all available mail items (up to 5) are visible when the container is opened
       this.inbox.syncContainer();
 
-      this.__openedContainers.set(mailContainer.container.guid, mailContainer);
-      this.__player.openContainer(mailContainer.id, "Mail", mailContainer.container, mailContainer);
+      this.__openedContainers.set(mailBase.guid, mailContainer);
+      this.__player.openContainer(mailContainer.id, "Mail", mailBase, mailContainer);
       return;
     }
 
@@ -294,7 +305,8 @@ class ContainerManager {
         return;
       }
 
-      if (this.__openedContainers.has(depotContainer.container.guid)) {
+      const depotSubBase = getContainerFromIContainer(depotContainer);
+      if (this.__openedContainers.has(depotSubBase.guid)) {
         this.closeContainer(depotContainer);
         return;
       }
@@ -304,8 +316,8 @@ class ContainerManager {
         return;
       }
 
-      this.__openedContainers.set(depotContainer.container.guid, depotContainer);
-      this.__player.openContainer(depotContainer.id, "Depot", depotContainer.container, depotContainer);
+      this.__openedContainers.set(depotSubBase.guid, depotContainer);
+      this.__player.openContainer(depotContainer.id, "Depot", depotSubBase, depotContainer);
       return;
     }
 
@@ -318,12 +330,13 @@ class ContainerManager {
       return;
     }
 
-    if (!container.container || container.container.guid === undefined) {
+    const containerBase = getContainerFromIContainer(container);
+    if (!containerBase || containerBase.guid === undefined) {
       return;
     }
 
-    this.__openedContainers.set(container.container.guid, container);
-    this.__player.openContainer(container.id, container.getName(), container.container, container);
+    this.__openedContainers.set(containerBase.guid, container);
+    this.__player.openContainer(container.id, container.getName(), containerBase, container);
   }
 }
 
