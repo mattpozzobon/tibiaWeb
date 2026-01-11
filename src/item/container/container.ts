@@ -1,13 +1,13 @@
 import BaseContainer from "../base-container";
 import { ContainerClosePacket, ContainerOpenPacket, BeltPotionQuantitiesPacket } from "../../network/protocol";
 import { CONFIG, CONST, getGameServer } from "../../helper/appContext";
-import { IContainer, IItem, IThing } from "interfaces/IThing";
-import { IPlayer } from "interfaces/IPlayer";
 import Item from "../item";
 import exclusiveSlotsManager from "../../utils/exclusive-slots";
 import DepotContainer from "../depot";
+import Player from "creature/player/player";
+import Thing from "thing/thing";
 
-class Container extends Item implements IContainer{
+class Container extends Item {
   private __childWeight: number = 0;
   public container: BaseContainer;
   public static MAXIMUM_DEPTH: number = 2;
@@ -154,7 +154,7 @@ class Container extends Item implements IContainer{
     return slotIndex >= baseSize && slotIndex < baseSize + this.__containerSizePotions;
   }
 
-  private __isPotion(item: IThing): boolean {
+  private __isPotion(item: Thing): boolean {
     /*
      * Function Container.__isPotion
      * Checks if an item is a potion by checking itemType from definitions
@@ -168,7 +168,7 @@ class Container extends Item implements IContainer{
     return this.getSlots().filter((x) => x !== null).length;
   }
 
-  addFirstEmpty(thing: IThing): boolean {
+  addFirstEmpty(thing: Thing): boolean {
     if (this.frozen) return false;
 
     if (!thing.isPickupable() || this.container.isFull()) {
@@ -220,18 +220,18 @@ class Container extends Item implements IContainer{
       }
     });
 
-    this.container.getSlots().forEach((IItem) => {
-      if (IItem instanceof Container) {
-        IItem.checkPlayersAdjacency();
+    this.container.getSlots().forEach((Item) => {
+      if (Item instanceof Container) {
+        Item.checkPlayersAdjacency();
       }
     });
   }
 
-  peekIndex(index: number): IItem | null {
+  peekIndex(index: number): Item | null {
     return this.container.peekIndex(index);
   }
 
-  removeIndex(index: number, amount: number): IItem | null {
+  removeIndex(index: number, amount: number): Item | null {
     if (this.frozen || !this.container.isValidIndex(index)) {
       return null;
     }
@@ -277,7 +277,7 @@ class Container extends Item implements IContainer{
     return thing;
   }
 
-  private __handleMailContainerItemRemoved(removedItem: IItem): void {
+  private __handleMailContainerItemRemoved(removedItem: Item): void {
     /*
      * Function Container.__handleMailContainerItemRemoved
      * Called when an item is removed from the mail container (via UI drag/drop)
@@ -301,7 +301,7 @@ class Container extends Item implements IContainer{
     }
   }
 
-  deleteThing(thing: IItem): number {
+  deleteThing(thing: Item): number {
     if (this.frozen) return -1;
 
     const index = this.container.deleteThing(thing);
@@ -313,7 +313,7 @@ class Container extends Item implements IContainer{
     return index;
   }
 
-  addThing(thing: IThing, index: number): boolean {
+  addThing(thing: Thing, index: number): boolean {
     if (
       this.frozen ||
       !thing.isPickupable() ||
@@ -374,7 +374,7 @@ class Container extends Item implements IContainer{
     player.write(new ContainerClosePacket(this.container.guid));
   }
 
-  getSlots(): (IItem | null)[] {
+  getSlots(): (Item | null)[] {
     return this.container.getSlots();
   }
 
@@ -404,8 +404,8 @@ class Container extends Item implements IContainer{
   }
 
   getMaximumAddCount(
-    player: IPlayer | null,
-    thing: IThing,
+    player: Player | null,
+    thing: Thing,
     index: number
   ): number {
     if (!this.container.isValidIndex(index)) return 0;
@@ -437,7 +437,7 @@ class Container extends Item implements IContainer{
     }
 
     if (thing.isContainer()) {
-      if (this.__includesSelf(thing) || thing.exceedsMaximumChildCount()) {
+      if (this.__includesSelf(thing as Container) || (thing as Container).exceedsMaximumChildCount()) {
         return 0;
       }
     }
@@ -460,9 +460,9 @@ class Container extends Item implements IContainer{
 
   private __getChildCount(): number {
     let counts: number[] = [];
-    this.container.getSlots().forEach((IItem) => {
-      if (IItem instanceof Container) {
-        counts.push(1 + IItem.__getChildCount());
+    this.container.getSlots().forEach((Item) => {
+      if (Item instanceof Container) {
+        counts.push(1 + Item.__getChildCount());
       }
     });
     return counts.length === 0 ? 1 : Math.max(...counts);
@@ -473,9 +473,9 @@ class Container extends Item implements IContainer{
       player.containerManager.toggleContainer(this)
     );
 
-    this.container.getSlots().forEach((IItem) => {
-      if (IItem instanceof Container) {
-        IItem.closeAllSpectators();
+    this.container.getSlots().forEach((Item) => {
+      if (Item instanceof Container) {
+        Item.closeAllSpectators();
       }
     });
 
@@ -504,8 +504,8 @@ class Container extends Item implements IContainer{
     this.__childWeight += weight;
   }
 
-  private __includesSelf(container: IContainer): boolean {
-    let current: IContainer = this;
+  private __includesSelf(container: Container): boolean {
+    let current: Container = this;
     while (!this.isTopParent(current)) {
       if (current === container) {
         return true;
@@ -769,7 +769,7 @@ class Container extends Item implements IContainer{
     return slotTypeMap[slotName] || 0; // 0 = normal slot
   }
 
-  private __updateBeltOutfit(addedItem: IThing | null): void {
+  private __updateBeltOutfit(addedItem: Thing | null): void {
     /*
      * Function Container.__updateBeltOutfit
      * Updates the belt outfit when potions are added/removed
@@ -853,7 +853,7 @@ class Container extends Item implements IContainer{
     }
   }
 
-  private __findPlayerOwner(): IPlayer | null {
+  private __findPlayerOwner(): Player | null {
     /*
      * Function Container.__findPlayerOwner
      * Finds the player who owns this container by traversing up the parent chain
@@ -861,7 +861,7 @@ class Container extends Item implements IContainer{
     let current = this.getParent();
     while (current) {
       if (current.constructor.name === "Player") {
-        return current as IPlayer;
+        return current as Player;
       }
       current = current.getParent ? current.getParent() : null;
     }

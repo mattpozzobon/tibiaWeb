@@ -1,10 +1,9 @@
 import { getGameServer } from "../../helper/appContext";
 import Corpse from "../../item/container/corpse";
 import LootEntry from "./monster-loot-entry";
-import { ILootHandler } from "../../interfaces/IMonster-loot-handler";
 
 
-class LootHandler implements ILootHandler{
+class LootHandler {
   private loots: LootEntry[];
 
   constructor(loot: any[]) {

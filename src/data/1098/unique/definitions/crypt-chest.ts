@@ -1,8 +1,8 @@
-import { IPlayer } from "interfaces/IPlayer";
-import { IItem } from "interfaces/IThing";
-import ITile from "interfaces/ITile";
+import Player from "creature/player/player";
+import Tile from "thing/tile";
+import Item from "item/item";
 
-export function useTrunk(player: IPlayer, tile: ITile, index: number, item: IItem): boolean {
+export function useTrunk(player: Player, tile: Tile, index: number, item: Item): boolean {
   player.sendCancelMessage("You find treasure!");
 
   return true;

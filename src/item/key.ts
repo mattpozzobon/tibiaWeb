@@ -1,14 +1,14 @@
 import Item from "./item";
 import Tile from "../thing/tile";
 import Door from "./door";
-import { IPlayer } from "interfaces/IPlayer";
+import Player from "creature/player/player";
 
 class Key extends Item {
   constructor(id: number) {
     super(id);
   }
 
-  handleKeyUse(player: IPlayer, tile: Tile): void {
+  handleKeyUse(player: Player, tile: Tile): void {
     // Get the top element
     const door = tile.getTopItem();
 

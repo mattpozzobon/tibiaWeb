@@ -1,9 +1,8 @@
-import { IGameServer } from "interfaces/IGameserver";
 import { PacketWriter } from "./packet-writer";
-import { IIPCPacket } from "interfaces/IIpcpacket";
+import GameServer from "../server/gameserver";
 
 
-export class IPCPacket extends PacketWriter implements IIPCPacket{
+export class IPCPacket extends PacketWriter {
   /*
    * Class IPCPacket
    * Wrapper for a single length-prefixed packet that is sent over the IPC channel
@@ -45,7 +44,7 @@ export class IPCPacket extends PacketWriter implements IIPCPacket{
     return this.serializeBufferSlice();
   }
 
-  writeServerData(gameServer: IGameServer): Buffer {
+  writeServerData(gameServer: GameServer): Buffer {
     /*
      * Writes the requested server data over the channel
      */

@@ -1,10 +1,9 @@
-import { IDamageMap } from "interfaces/IDamage-map";
 import DamageMapEntry from "./damage-map-entry";
 import { EmotePacket } from "../network/protocol";
 import { CONST } from "../helper/appContext";
 
 
-class DamageMap implements IDamageMap{
+class DamageMap {
   private __map: Map<any, DamageMapEntry>;
   private __monster: any;
 

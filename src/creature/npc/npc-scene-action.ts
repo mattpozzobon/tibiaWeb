@@ -31,7 +31,7 @@ const ACTIONS = createEnum(
   "TELEPORT"
 );
 
-export class SceneAction implements ISceneAction {
+export class SceneAction {
   type: string;
   duration: number;
   timeout: number;

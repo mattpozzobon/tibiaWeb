@@ -1,15 +1,14 @@
-import { ICreature } from "interfaces/ICreature";
 import Condition from "./condition";
 import { ToggleConditionPacket } from "../../network/protocol";
 import { CONST, getGameServer } from "../../helper/appContext";
-import { IConditionManager } from "interfaces/ICondition-manager";
-import { IPlayer } from "interfaces/IPlayer";
+import Player from "creature/player/player";
+import Creature from "creature/creature";
 
-export class ConditionManager implements IConditionManager {
-  private __creature: ICreature;
+export class ConditionManager {
+  private __creature: Creature;
   private __conditions: Map<number, Condition>;
 
-  constructor(creature: ICreature) {
+  constructor(creature: Creature) {
     /*
      * Class ConditionManager
      * Container for conditions that are applied to the creature
@@ -53,7 +52,7 @@ export class ConditionManager implements IConditionManager {
 
     if (current && current.isPermanent()) {
       if (this.__creature.isPlayer()) {
-        (this.__creature as IPlayer).sendCancelMessage(
+        (this.__creature as Player).sendCancelMessage(
           "You are under influence of a more powerful condition."
         );
       }

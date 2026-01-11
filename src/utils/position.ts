@@ -1,9 +1,8 @@
-import { IPosition } from "interfaces/IPosition";
 import Geometry from "./geometry";
 import { CONST, getGameServer } from "../helper/appContext";
-import { IGameServer } from "interfaces/IGameserver";
+import GameServer from "server/gameserver";
 
-export class Position implements IPosition{
+export class Position {
   public xy: number;
   public z: number;
 
@@ -28,7 +27,7 @@ export class Position implements IPosition{
     if (this.besides(target)) return true;
     if (this.z !== target.z) return false;
 
-    const gameServer: IGameServer = getGameServer();
+    const gameServer: GameServer = getGameServer();
     for (const position of Geometry.prototype.interpolate(this, target)) {
       const tile = gameServer.world.getTileFromWorldPosition(position);
       if (!tile) continue;

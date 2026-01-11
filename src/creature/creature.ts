@@ -6,10 +6,9 @@ import Outfit from "../game-object/player/outfit";
 import { CreatureForgetPacket, CreatureStatePacket } from "../network/protocol";
 import { CONFIG, CONST, getGameServer } from "../helper/appContext";
 import { getRandomInt } from "../utils/functions";
-import { ICreature } from "../interfaces/ICreature";
 
 
-export default class Creature extends EventEmitter implements ICreature{
+export default class Creature extends EventEmitter {
   position: any | null;
   properties: CreatureProperties;
   conditions: ConditionManager;

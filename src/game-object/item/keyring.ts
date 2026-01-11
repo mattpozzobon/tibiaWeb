@@ -1,20 +1,20 @@
-import { IPlayer } from "interfaces/IPlayer";
 import BaseContainer from "../../item/base-container";
 import Key from "../../item/key";
 import { getGameServer } from "../../helper/appContext";
+import Player from "creature/player/player";
 
 class Keyring {
   private __keys: Set<number> = new Set();
-  private __player: IPlayer;
+  private __player: Player;
   public container: BaseContainer;
 
-  constructor(id: number, IPlayer: IPlayer, keyring: any[]) {
+  constructor(id: number, Player: Player, keyring: any[]) {
     /*
      * Class Keyring
      * Container for just keys that can automatically open doors
      */
 
-    this.__player = IPlayer;
+    this.__player = Player;
     this.container = new BaseContainer(id, 32);
 
     // Serialize keys
@@ -24,7 +24,7 @@ class Keyring {
   getPosition(): any {
     /*
      * Function Keyring.getPosition
-     * Returns the position of the container in the game world (which is with the IPlayer)
+     * Returns the position of the container in the game world (which is with the Player)
      */
     return this.__player.position;
   }
@@ -40,7 +40,7 @@ class Keyring {
   toJSON(): any[] {
     /*
      * Function Equipment.toJSON
-     * Implements the JSON.Stringify interface that is called when the IPlayer is serialized
+     * Implements the JSON.Stringify interface that is called when the Player is serialized
      */
     return this.container.getSlots();
   }
@@ -83,15 +83,15 @@ class Keyring {
     return key;
   }
 
-  getTopParent(): IPlayer {
+  getTopParent(): Player {
     /*
      * Function Keyring.getTopParent
-     * Returns the top level parent of the keyring which is the IPlayer
+     * Returns the top level parent of the keyring which is the Player
      */
     return this.__player;
   }
 
-  getMaximumAddCount(IPlayer: IPlayer, key: Key, index: number): number {
+  getMaximumAddCount(Player: Player, key: Key, index: number): number {
     /*
      * Function Keyring.getMaximumAddCount
      * Logic that implements whether a thing can be added to the keyring
@@ -137,7 +137,7 @@ class Keyring {
   private __updateWeight(weight: number): void {
     /*
      * Function Equipment.__updateWeight
-     * Updates the capacity of the parent IPlayer
+     * Updates the capacity of the parent Player
      */
     this.__player.changeCapacity(-weight);
   }

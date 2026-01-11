@@ -1,8 +1,5 @@
-import { ICreature } from "./ICreature";
-
 export interface ConditionModule {
-    onStart: (creature: ICreature, properties: number) => void;
-    onExpire: (creature: ICreature) => void;
-    onTick?: (creature: ICreature) => void;
+    onStart: (creature: any, properties: number) => void;
+    onExpire: (creature: any) => void;
+    onTick?: (creature: any) => void;
   }
-  

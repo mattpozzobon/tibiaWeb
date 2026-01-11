@@ -1,12 +1,13 @@
 "use strict";
 
-import { IPlayer } from "../../interfaces/IPlayer";
 import GenericLock from "../../utils/generic-lock";
 import { ReadTextPacket, BeltPotionQuantitiesPacket } from "../../network/protocol";
 import { getGameServer, CONST } from "../../helper/appContext";
+import Player from "./player";
+import Item from "item/item";
 
 class UseHandler {
-  private __player: IPlayer;
+  private __player: Player;
   private __useWithLock: GenericLock;
   readonly GLOBAL_USE_COOLDOWN: number = 50;
 
@@ -184,8 +185,8 @@ class UseHandler {
     const matchingPotions: { item: any; slot: number }[] = [];
     
     for (let i = 0; i < beltItem.container.size; i++) {
-      const item = beltItem.peekIndex(i);
-      if (item) {
+      const item = beltItem.container.peekIndex(i) as Item;
+      if (item && item instanceof Item) {
         const prototype = item.getPrototype();
         if (prototype?.properties?.itemType === "potion") {
           const clientId = getGameServer().database.getClientId(item.id);

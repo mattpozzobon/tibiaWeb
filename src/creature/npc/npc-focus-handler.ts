@@ -1,24 +1,21 @@
-import { ITalkStateHandler } from "../../interfaces/INpc-talk-state-handler";
 import { EventEmitter } from "../../event/eventemitter";
 import GenericLock from "../../utils/generic-lock";
 import { TalkStateHandler } from "./npc-talk-state-handler";
 import Player from "../player/player";
-import { IPlayer } from "../../interfaces/IPlayer";
-import IConversationHandler from "../../interfaces/INpc-conversation-handler";
-import { IFocusHandler } from "../../interfaces/INpc-focus-handler";
+import { ConversationHandler } from "./npc-conversation-handler";
 
 
-export class FocusHandler extends EventEmitter implements IFocusHandler{
-  private conversationHandler: IConversationHandler;
-  private __talkStateHandler: ITalkStateHandler;
-  private __conversationFocus: IPlayer | null = null;
+export class FocusHandler extends EventEmitter {
+  private conversationHandler: ConversationHandler;
+  private __talkStateHandler: TalkStateHandler;
+  private __conversationFocus: Player | null = null;
   private __conversationFocusIdleEvent: GenericLock;
   private __conversationFocusMovementEvent: (() => void) | null = null;
   private __conversationFocusLogoutEvent: (() => void) | null = null;
 
   private readonly IDLE_TIMEOUT_FRAMES = 250;
 
-  constructor(conversationHandler: IConversationHandler) {
+  constructor(conversationHandler: ConversationHandler) {
     super();
 
     this.conversationHandler = conversationHandler;
@@ -62,7 +59,7 @@ export class FocusHandler extends EventEmitter implements IFocusHandler{
     this.extendFocus(this.IDLE_TIMEOUT_FRAMES);
   }
 
-  getTalkStateHandler(): ITalkStateHandler {
+  getTalkStateHandler(): TalkStateHandler {
     /*
      * Returns the talk state handler.
      */
@@ -97,7 +94,7 @@ export class FocusHandler extends EventEmitter implements IFocusHandler{
     this.__talkStateHandler.reset();
   }
 
-  getFocus(): IPlayer | null {
+  getFocus(): Player | null {
     /*
      * Returns the current focus of the NPC.
      */

@@ -12,7 +12,6 @@ import EventQueue from "../event/eventqueue";
 import WorldClock from "./worldclock";
 import CreatureHandler from "./world-creature-handler";
 import CombatHandler from "./world-combat-handler";
-import { IPosition } from "interfaces/IPosition";
 
 export class World {
   channelManager: ChannelManager;
@@ -22,7 +21,7 @@ export class World {
   creatureHandler: CreatureHandler;
   combatHandler: CombatHandler;
 
-  constructor(worldSize: IPosition) {
+  constructor(worldSize: Position) {
     /*
      * Class World
      * Container for the entire game world

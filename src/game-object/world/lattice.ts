@@ -1,13 +1,10 @@
 import Pathfinder from "../../pathfinder/pathfinder";
 import Chunk from "../../world/chunk";
 import { Position } from "../../utils/position";
-import { ILattice } from "interfaces/ILattice";
-import { PathfinderTile } from "interfaces/IPathfinder";
-import ITile from "interfaces/ITile";
 import Tile from "../../thing/tile";
 
 
-class Lattice implements ILattice{
+class Lattice {
   width: number;
   height: number;
   depth: number;
@@ -39,7 +36,7 @@ class Lattice implements ILattice{
     this.__chunksNegative = new Map();
   }
 
-  public findPath(creature: any, fromPosition: Position, toPosition: Position, mode: number): PathfinderTile[] {
+  public findPath(creature: any, fromPosition: Position, toPosition: Position, mode: number): Tile[] | null {
     if (!fromPosition || !toPosition || fromPosition.equals(toPosition) || !fromPosition.isSameFloor(toPosition)) {
       return [];
     }
@@ -93,7 +90,7 @@ class Lattice implements ILattice{
     return null;
   }
 
-  public findDestination(creature: any, tile: ITile): any | null {
+  public findDestination(creature: any, tile: Tile): any | null {
     if (!tile) return null;
     if (!tile.hasDestination()) return tile;
     

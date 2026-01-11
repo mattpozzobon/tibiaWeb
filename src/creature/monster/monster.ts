@@ -6,19 +6,15 @@ import { EmotePacket } from "../../network/protocol";
 import DamageMap from "../../damage/damage-map";
 import LootHandler from "./monster-loot-handler";
 import MonsterBehaviour from "./monster-behaviour";
-import { IMonster, IMonsterBehaviour } from "interfaces/IMonster";
-import { IDamageMap } from "interfaces/IDamage-map";
-import { ILootHandler } from "interfaces/IMonster-loot-handler";
-import ICorpse from "interfaces/ICorpse";
 
-class Monster extends Creature implements IMonster{
+class Monster extends Creature {
   public cid: number;
   public corpse: number;
   public fluidType: number;
   public experience: number;
-  public damageMap: IDamageMap;
-  public lootHandler: ILootHandler;
-  public behaviourHandler: IMonsterBehaviour;
+  public damageMap: DamageMap;
+  public lootHandler: LootHandler;
+  public behaviourHandler: MonsterBehaviour;
 
   constructor(cid: number, data: any) {
     super(data.creatureStatistics);
@@ -51,7 +47,7 @@ class Monster extends Creature implements IMonster{
     return false;
   }
 
-  public createCorpse(): ICorpse | null {
+  public createCorpse(): Corpse | null {
     const thing = getGameServer().database.createThing(this.corpse);
 
     this.damageMap.distributeExperience();

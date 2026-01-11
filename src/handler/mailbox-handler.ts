@@ -1,8 +1,10 @@
-import { IItem, IThing, IContainer } from "interfaces/IThing";
 import Readable from "../item/readable";
 import Inbox from "../item/inbox";
 import { CONST, getGameServer } from "../helper/appContext";
-import { IPlayer } from "interfaces/IPlayer";
+import Player from "creature/player/player";
+import Container from "item/container/container";
+import Item from "item/item";
+import Thing from "thing/thing";
 
 
 export class MailboxHandler {
@@ -12,14 +14,14 @@ export class MailboxHandler {
   readonly STAMPED_LETTER = 2598;
   readonly LABEL = 2599;
 
-  canMailItem(thing: IItem): boolean {
+  canMailItem(thing: Item): boolean {
     /*
      * Determines whether something can be mailed or not
      */
     return thing.id === this.UNSTAMPED_PARCEL || thing.id === this.UNSTAMPED_LETTER;
   }
 
-  sendThing(fromWhere: any, toWhere: any, player: IPlayer, thing: IItem): void {
+  sendThing(fromWhere: any, toWhere: any, player: Player, thing: Item): void {
     /*
      * Sub function for sending a parcel or letter when added to the mailbox
      */
@@ -28,12 +30,12 @@ export class MailboxHandler {
         this.__sendLetter(fromWhere, toWhere, player, thing as Readable);
         break;
       case this.UNSTAMPED_PARCEL:
-        this.__sendParcel(fromWhere, toWhere, player, thing as IContainer);
+        this.__sendParcel(fromWhere, toWhere, player, thing as Container);
         break;
     }
   }
 
-  writeParcel(name: string, thing: IThing, callback: (error: boolean) => void): void {
+  writeParcel(name: string, thing: Thing, callback: (error: boolean) => void): void {
     /*
      * Writes a parcel to a player with a particular name (async with I/O)
      */
@@ -55,7 +57,7 @@ export class MailboxHandler {
     }
   }
 
-  private __getLabel(parcel: IThing): IThing | null {
+  private __getLabel(parcel: Thing): Thing | null {
     /*
      * Attempts to find a label inside the parcel
      */
@@ -89,7 +91,7 @@ export class MailboxHandler {
     return "";
   }
 
-  private __mailThing(name: string, thing: IThing, callback: (error: boolean) => void): void {
+  private __mailThing(name: string, thing: Thing, callback: (error: boolean) => void): void {
     /*
      * Writes a letter to a player that is offline by doing an atomic update
      */
@@ -102,7 +104,7 @@ export class MailboxHandler {
     callback(false);
   }
 
-  private __addItemsOffline(owner: string, thing: IThing, callback: (error: boolean) => void): void {
+  private __addItemsOffline(owner: string, thing: Thing, callback: (error: boolean) => void): void {
     /*
      * Adds mail to a player that is offline by updating their character data in the database
      * Serializes the item and adds it to the character's inbox array (queue)
@@ -121,7 +123,7 @@ export class MailboxHandler {
     });
   }
   
-  private __processOfflineMail(character: any, thing: IThing, callback: (error: boolean) => void, accountDatabase: any): void {
+  private __processOfflineMail(character: any, thing: Thing, callback: (error: boolean) => void, accountDatabase: any): void {
     /*
      * Helper method to process adding mail to offline player's inbox
      * Uses Inbox.serializeItem() - the exact same serialization method as online players
@@ -171,7 +173,7 @@ export class MailboxHandler {
     });
   }
 
-  private __sendParcel(fromWhere: any, toWhere: any, player: IPlayer, thing: IContainer): void {
+  private __sendParcel(fromWhere: any, toWhere: any, player: Player, thing: Container): void {
     /*
      * Sub function for sending a parcel when added to the mailbox
      * Label format: #Recipient Name#
@@ -203,7 +205,7 @@ export class MailboxHandler {
     });
   }
 
-  private __sendLetter(fromWhere: any, toWhere: any, player: IPlayer, thing: Readable): void {
+  private __sendLetter(fromWhere: any, toWhere: any, player: Player, thing: Readable): void {
     /*
      * Sub function for sending a letter when added to the mailbox
      * Letter format: #Recipient Name# followed by message content

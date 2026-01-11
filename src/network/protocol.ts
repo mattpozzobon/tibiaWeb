@@ -3,10 +3,10 @@ import { getEncodedLength } from "../utils/functions";
 import { PacketWriter } from "./packet-writer";
 import { Position } from "../utils/position";
 import { CONFIG, CONST, getGameServer } from "../helper/appContext";
-import { IPlayer } from "interfaces/IPlayer";
-import { IThing } from "interfaces/IThing";
 import Creature from "../creature/creature";
 import BaseContainer from "../item/base-container";
+import Player from "creature/player/player";
+import Thing from "thing/thing";
 
 export class CreaturePropertyPacket extends PacketWriter {
   constructor(id: number, property: number, value: number) {
@@ -370,7 +370,7 @@ export class CreatureInformationPacket extends PacketWriter {
 }
 
 export class ItemInformationPacket extends PacketWriter {
-  constructor(thing: IThing, includeDetails: boolean, player: IPlayer) {
+  constructor(thing: Thing, includeDetails: boolean, player: Player) {
     // Only send content for distance-readable items (like signs), not for regular readable items (like letters/books)
     // Regular readable items should only show content when opened with ReadTextPacket
     // For distance-readable items, always send content (getContent() handles empty/undefined content)
@@ -461,7 +461,7 @@ export class NPCTradePacket extends PacketWriter {
 }
 
 export class PlayerStatePacket extends PacketWriter {
-  constructor(player: IPlayer) {
+  constructor(player: Player) {
     const stringEncoded = PacketWriter.encodeString(player.getProperty(CONST.PROPERTIES.NAME));
     super(CONST.PROTOCOL.SERVER.STATE_PLAYER, PacketWriter.MAX_PACKET_SIZE);
 

@@ -1,11 +1,10 @@
 "use strict";
 
-import { IBaseContainer } from "../interfaces/IBase-container";
 import { ContainerAddPacket, ContainerRemovePacket } from "../network/protocol";
-import { IItem } from "interfaces/IThing";
+import Item from "./item";
 
 
-class BaseContainer implements IBaseContainer{
+class BaseContainer {
   public guid: number;
   public size: number;
   public slots: Array<any>;
@@ -204,7 +203,7 @@ class BaseContainer implements IBaseContainer{
     return index;
   }
 
-  private __addStackable(index: number, currentItem: IItem, item: IItem): void {
+  private __addStackable(index: number, currentItem: Item, item: Item): void {
     /*
      * Function BaseContainer.__addStackable
      * Adds a stackable item to another stackable item of the same type
@@ -218,7 +217,7 @@ class BaseContainer implements IBaseContainer{
     }
   }
 
-  private __overflowStack(index: number, currentItem: IItem, overflow: number): void {
+  private __overflowStack(index: number, currentItem: Item, overflow: number): void {
     /*
      * Function BaseContainer.__overflowStack
      * Handles overflow for stackable items

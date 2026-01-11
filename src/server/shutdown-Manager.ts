@@ -1,8 +1,9 @@
 import { CONFIG } from "../config/config";
 import { CONST } from "../helper/appContext";
-import { IGameServer } from "../interfaces/IGameserver";
 import { spawn } from "child_process";
 import * as path from "path";
+import type GameServer from "./gameserver";
+import type Player from "../creature/player/player";
 
 /**
  * Shutdown Manager
@@ -12,7 +13,7 @@ import * as path from "path";
  * - Maintenance mode (logout non-admin players)
  */
 export class ShutdownManager {
-  private gameServer: IGameServer;
+  private gameServer: GameServer;
   private checkInterval: NodeJS.Timeout | null = null;
   private lastCheckDate: string = "";
   private warningTimers: NodeJS.Timeout[] = [];
@@ -20,7 +21,7 @@ export class ShutdownManager {
   private warningsScheduled: boolean = false;
   private shutdownTimeout: NodeJS.Timeout | null = null;
 
-  constructor(gameServer: IGameServer) {
+  constructor(gameServer: GameServer) {
     this.gameServer = gameServer;
     
     // Setup signal handlers for graceful shutdown
@@ -371,7 +372,7 @@ export class ShutdownManager {
     const connectedPlayers = this.gameServer.world.creatureHandler.getConnectedPlayers();
     const savePromises: Promise<void>[] = [];
 
-    connectedPlayers.forEach((player, playerName) => {
+    connectedPlayers.forEach((player: Player, playerName: string) => {
       // Find the gameSocket for this player
       const connectedSockets = this.gameServer.server.websocketServer.socketHandler.getConnectedSockets();
       

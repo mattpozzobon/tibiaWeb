@@ -1,18 +1,18 @@
-import ITile from "../interfaces/ITile";
+import Tile from "../thing/tile";
+import Creature from "../creature/creature";
+import Player from "../creature/player/player";
 import { ChannelDefaultPacket, EmotePacket } from "../network/protocol";
 import { getGameServer } from "../helper/appContext";
-import { ICreature } from "../interfaces/ICreature";
-import { IPlayer } from "../interfaces/IPlayer";
 
 
 class SpeechHandler {
-  private __creature: ICreature;
+  private __creature: Creature;
 
   /**
    * Class SpeechHandler
    * Handler for creature speaking abilities
    */
-  constructor(creature: ICreature) {
+  constructor(creature: Creature) {
     this.__creature = creature;
   }
 
@@ -41,7 +41,7 @@ class SpeechHandler {
     // Get the tile from the creature position
     const pos = this.__creature.getPosition();
     if (pos){
-      const tile: ITile | null = getGameServer().world.getTileFromWorldPosition(pos);
+      const tile: Tile | null = getGameServer().world.getTileFromWorldPosition(pos);
       if (tile) {
         tile.broadcastNeighbours(new ChannelDefaultPacket(this.__creature, message.toLowerCase(), color));
       }
@@ -56,7 +56,7 @@ class SpeechHandler {
     return this.__creature.broadcastFloor(new ChannelDefaultPacket(this.__creature, message, color));
   }
 
-  public privateSay(player: IPlayer, message: string, color: number): void {
+  public privateSay(player: Player, message: string, color: number): void {
     /*
      * Function SpeechHandler.privateSay
      * Writes a message that only a particular player can hear

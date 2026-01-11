@@ -8,10 +8,9 @@ import { Position } from "../../utils/position";
 import Tile from "../../thing/tile";
 import { CONST, getGameServer } from "../../helper/appContext";
 import { randomStringArray } from "../../utils/functions";
-import INPC from "interfaces/INpc";
 
 
-class NPC extends Creature implements INPC{
+class NPC extends Creature {
   /*
    * Class NPC
    * Container for non-playable characters that can be interacted with

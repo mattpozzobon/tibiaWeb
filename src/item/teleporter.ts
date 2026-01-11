@@ -1,10 +1,10 @@
 "use strict";
 
-import { IPosition } from "../interfaces/IPosition";
+import { Position } from "utils/position";
 import Item from "./item";
 
 class Teleporter extends Item {
-  private destination?: IPosition;
+  private destination?: Position;
 
   /*
    * Class Teleporter
@@ -15,7 +15,7 @@ class Teleporter extends Item {
     super(id);
   }
 
-  setDestination(destination: IPosition): void {
+  setDestination(destination: Position): void {
     /*
      * Function Teleporter.setDestination
      * Wrapper for an item that teleports players and items to another location
@@ -23,7 +23,7 @@ class Teleporter extends Item {
     this.destination = destination;
   }
 
-  getDestination(): IPosition | undefined {
+  getDestination(): Position | undefined {
     /*
      * Function Teleporter.getDestination
      * Returns the destination of the teleporter

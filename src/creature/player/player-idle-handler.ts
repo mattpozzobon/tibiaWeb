@@ -2,13 +2,13 @@ import { ServerMessagePacket } from "../../network/protocol";
 
 import { CONFIG } from "../../helper/appContext";
 import GenericLock from "../../utils/generic-lock";
-import { IPlayer } from "../../interfaces/IPlayer";
+import Player from "./player";
 
 export class PlayerIdleHandler {
   private __informLock: GenericLock;
   private __kickLock: GenericLock;
 
-  constructor(private player: IPlayer) {
+  constructor(private player: Player) {
     /*
      * Class PlayerIdleHandler
      * Handles idle behavior of player and informs and kicks them after a set number of seconds

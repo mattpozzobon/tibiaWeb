@@ -1,19 +1,19 @@
-import { IPlayer } from "interfaces/IPlayer";
 import Thing from "../thing/thing";
 import { CONST, getGameServer } from "../helper/appContext";
 import DepotContainer from "./depot";
+import Player from "creature/player/player";
 
 class Inbox {
-  private __player: IPlayer;
+  private __player: Player;
   private __items: Thing[] = []; // Queue: single source of truth for all mail items (first come, first served)
 
-  constructor(IPlayer: IPlayer, inbox: any[]) {
+  constructor(Player: Player, inbox: any[]) {
     /*
      * Class Inbox
      * Queue-based mail system: __items is the single source of truth
      * Mail container displays only the first 5 items from the queue
      */
-    this.__player = IPlayer;
+    this.__player = Player;
 
     // Load all items into the queue
     inbox.forEach((item) => {

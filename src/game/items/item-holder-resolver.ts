@@ -1,16 +1,16 @@
-import { IContainer } from "interfaces/IThing";
-import ITile from "interfaces/ITile";
 import Equipment from "../../item/equipment";
 import DepotContainer from "item/depot";
 import { IItemHolder } from "./item-location";
 import { TileHolder, ContainerHolder, EquipmentHolder, DepotHolder } from "./item-holders";
+import Tile from "thing/tile";
+import Container from "item/container/container";
 
 
 function isObject(x: unknown): x is Record<string, any> {
   return !!x && typeof x === "object";
 }
 
-function isTileLike(where: unknown): where is ITile {
+function isTileLike(where: unknown): where is Tile {
   if (!isObject(where)) return false;
 
   // Your Tile has these, always (methods exist even when itemStack is undefined)
@@ -52,7 +52,7 @@ function isEquipmentLike(where: unknown): where is Equipment {
   );
 }
 
-function isContainerLike(where: unknown): where is IContainer {
+function isContainerLike(where: unknown): where is Container {
   if (!isObject(where)) return false;
 
   return (
@@ -65,11 +65,11 @@ function isContainerLike(where: unknown): where is IContainer {
   );
 }
 
-export function resolveHolder(where: ITile | IContainer | Equipment | DepotContainer): IItemHolder {
+export function resolveHolder(where: Tile | Container | Equipment | DepotContainer): IItemHolder {
   if (isTileLike(where)) return new TileHolder(where);
   if (isDepotLike(where)) return new DepotHolder(where);
   if (isEquipmentLike(where)) return new EquipmentHolder(where as Equipment);
-  if (isContainerLike(where)) return new ContainerHolder(where as IContainer);
+  if (isContainerLike(where)) return new ContainerHolder(where as Container);
 
   const name = (where as any)?.constructor?.name ?? typeof where;
   const keys = isObject(where) ? Object.keys(where).slice(0, 30).join(",") : "";

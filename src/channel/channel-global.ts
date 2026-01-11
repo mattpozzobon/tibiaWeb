@@ -1,21 +1,21 @@
 import Channel from "./channel";
+import Player from "../creature/player/player";
 import { ChannelWritePacket, ChannelJoinPacket /*, ChannelClosePacket */ } from "../network/protocol";
 import { CONST } from "../helper/appContext";
-import { IPlayer } from "../interfaces/IPlayer";
 
 export default class GlobalChannel extends Channel {
-  private __players: Set<IPlayer>;
+  private __players: Set<Player>;
 
   constructor(id: number, name: string) {
     super(id, name);
-    this.__players = new Set<IPlayer>();
+    this.__players = new Set<Player>();
   }
 
-  has(player: IPlayer): boolean {
+  has(player: Player): boolean {
     return this.__players.has(player);
   }
 
-  join(player: IPlayer): void {
+  join(player: Player): void {
     if (this.__players.has(player)) return;
 
     this.__players.add(player);
@@ -27,7 +27,7 @@ export default class GlobalChannel extends Channel {
     // this.broadcastSystem(`${player.getProperty(CONST.PROPERTIES.NAME)} joined ${this.name}`, player);
   }
 
-  leave(player: IPlayer): void {
+  leave(player: Player): void {
     if (!this.__players.has(player)) return;
 
     this.__players.delete(player);
@@ -37,7 +37,7 @@ export default class GlobalChannel extends Channel {
     // this.broadcastSystem(`${player.getProperty(CONST.PROPERTIES.NAME)} left ${this.name}`, player);
   }
 
-  send(player: IPlayer, clientPacket: { message: string }): void {
+  send(player: Player, clientPacket: { message: string }): void {
     console.log('message on global channel:', clientPacket.message);
 
     const packet = new ChannelWritePacket(
@@ -51,5 +51,5 @@ export default class GlobalChannel extends Channel {
   }
 
   // (optional) helper
-  // private broadcastSystem(text: string, except?: IPlayer) { ... }
+  // private broadcastSystem(text: string, except?: Player) { ... }
 }

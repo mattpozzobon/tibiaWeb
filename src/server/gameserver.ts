@@ -3,17 +3,15 @@ import GameLoop from "./gameloop";
 import { CONFIG, CONST } from "../helper/appContext";
 import HTTPServer from "./http-server";
 import { IPCSocket } from "../network/ipcsocket";
-import { IDatabase } from "../interfaces/IDatabase";
-import { IWorld } from "../interfaces/IWorld";
-import { IGameServer } from "../interfaces/IGameserver";
+import { World } from "../world/world";
 import { AccountDatabaseGrouped } from "../database/account-database-grouped";
 import { ServerStatusManager } from "./server-status-manager";
 import { ShutdownManager } from "./shutdown-Manager";
 
-class GameServer implements IGameServer {
-  database: IDatabase;
+class GameServer {
+  database: Database;
   accountDatabase: AccountDatabaseGrouped;
-  world!: IWorld;
+  world!: World;
   gameLoop: GameLoop;
   server: HTTPServer;
   IPCSocket: IPCSocket;

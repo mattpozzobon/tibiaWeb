@@ -9,13 +9,13 @@ import {
 } from "../network/protocol"
 import { CONST, getGameServer, Print } from "./../helper/appContext";
 import PacketBuffer from "../network/packet-buffer";
-import { IPlayer } from "./../interfaces/IPlayer";
+import Player from "creature/player/player";
 
 class GameSocket {
   public socket: WebSocket;
   public account: string;
   public characterId!: number;
-  public player: IPlayer | undefined;
+  public player: Player | undefined;
   public __controller: boolean = false;
   public __address: string;
   public __connected: number;

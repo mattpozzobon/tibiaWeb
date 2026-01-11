@@ -16,20 +16,16 @@ import House, { HouseEntry } from "../game-object/world/house";
 import ActionLoader from "./database-action-loader";
 import NPC from "../creature/npc/npc";
 import { Position } from "../utils/position";
-import { IDatabase } from "interfaces/IDatabase";
-import { IDataValidator } from "interfaces/IValidator";
-import { IActionLoader } from "interfaces/Idatabase-action-loader";
-import { ConditionModule } from "interfaces/base";
 import OTBMParser from "../parser/otbm-parser";
-
+import { ConditionModule } from "../interfaces/base";
 // Type definitions
 type ThingData = { id: number; count?: number; actionId?: number; duration?: number; content?: any; items?: any[] };
 type HouseDefinition = { position: Position; item: ThingData };
 
 
-export default class Database implements IDatabase {
-  public validator: IDataValidator;
-  public actionLoader: IActionLoader;
+export default class Database {
+  public validator: DataValidator;
+  public actionLoader: ActionLoader;
   public worldParser: OTBMParser;
   private houses: Map<number, House> = new Map();
   private items: Record<string, ThingPrototype> = {};

@@ -1,17 +1,17 @@
-import { IPlayer } from "interfaces/IPlayer";
 import Outfit from "../game-object/player/outfit";
 import Packet from "./packet";
 import { Position } from "../utils/position";
 import { getGameServer } from "../helper/appContext";
-import ITile from "interfaces/ITile";
-import { IContainer } from "interfaces/IThing";
 import Equipment from "../item/equipment";
+import Player from "creature/player/player";
+import Container from "item/container/container";
+import Tile from "thing/tile";
 
 
 export interface MoveItemEvent {
-  fromWhere: ITile | IContainer | Equipment; // Replace `any` with the actual type when available
+  fromWhere: Tile | Container | Equipment; // Replace `any` with the actual type when available
   fromIndex: number;
-  toWhere: ITile | IContainer | Equipment; // Replace `any` with the actual type when available
+  toWhere: Tile | Container | Equipment; // Replace `any` with the actual type when available
   toIndex: number;
   count: number;
 }
@@ -82,7 +82,7 @@ export class PacketReader extends Packet {
       count,
     }
 
-    return t;
+    return t as MoveItemEvent;
   } 
 
   readAccountDetails(): { account: string; password: string } {
@@ -116,7 +116,7 @@ export class PacketReader extends Packet {
     };
   }
 
-  readItemTextWrite(player: IPlayer): { which: any; index: number; text: string } {
+  readItemTextWrite(player: Player): { which: any; index: number; text: string } {
     /*
      * Reads a packet for writing text to an item (like blank paper, letter)
      * Structure: position/index (same as PositionAndIndex) + text content (UInt16 length string)
@@ -161,7 +161,7 @@ export class PacketReader extends Packet {
     this.index = offset;
   }
 
-  readPositionAndIndex(player: IPlayer): PositionAndIndex {
+  readPositionAndIndex(player: Player): PositionAndIndex {
     /*
      * Reads a position (tile or container) and an index
      */
@@ -172,7 +172,7 @@ export class PacketReader extends Packet {
   }
 
   
-  readMoveEvent(player: IPlayer): any {
+  readMoveEvent(player: Player): Tile | Container | Equipment | null {
     /*
      * Reads an item movement event (from tile, container, equipment)
      */

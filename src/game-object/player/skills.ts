@@ -1,11 +1,11 @@
-import { IPlayer } from "interfaces/IPlayer";
 import { Skill } from "./skill";
 import { CONST } from "../../helper/appContext";
+import Player from "creature/player/player";
 
 export class Skills {
-  private __player: IPlayer;
+  private __player: Player;
 
-  constructor(player: IPlayer, points: Record<string, number>) {
+  constructor(player: Player, points: Record<string, number>) {
     /*
      * Class Skills
      * Wrapper for the player skills

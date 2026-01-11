@@ -1,7 +1,5 @@
-import { IPlayer } from "interfaces/IPlayer";
-import { IContainer, IItem } from "interfaces/IThing";
-import ITile from "interfaces/ITile";
 import Equipment from "../item/equipment";
+import Item from "../item/item";
 import { ContainerAddPacket } from "../network/protocol";
 import { getGameServer } from "../helper/appContext";
 import { MailboxHandler } from "./mailbox-handler";
@@ -9,19 +7,22 @@ import DepotContainer from "../item/depot";
 import { getContainerFromIContainer } from "../game/items/container-helpers";
 import { IItemHolder } from "../game/items/item-location";
 import { resolveHolder } from "../game/items/item-holder-resolver";
+import Tile from "../thing/tile";
+import Player from "../creature/player/player";
+import Container from "../item/container/container";
 
 export class ItemMoveHandler {
   private static mailboxHandler: MailboxHandler = new MailboxHandler();
 
-  private static isMovableItem(item: IItem): boolean {
+  private static isMovableItem(item: Item): boolean {
     return item.isMoveable() && !item.hasUniqueId();
   }
 
-  private static wholeCount(item: IItem): number {
+  private static wholeCount(item: Item): number {
     return item.isStackable() ? item.count : 1;
   }
 
-  private static clampMoveCount(item: IItem, requested: number): number {
+  private static clampMoveCount(item: Item, requested: number): number {
     const available = item.isStackable() ? item.count : 1;
     const clamped = Math.min(requested, available);
     return item.isStackable() ? clamped : Math.max(1, clamped);
@@ -31,17 +32,17 @@ export class ItemMoveHandler {
     return h.kind === "tile";
   }
 
-  private static getAsTile(h: IItemHolder): ITile | null {
+  private static getAsTile(h: IItemHolder): Tile | null {
     if (!this.isTileHolder(h)) return null;
-    return h.getUnderlying() as ITile;
+    return h.getUnderlying() as Tile;
   }
 
   /** Main entry */
   public static validateAndMoveItem(
-    player: IPlayer,
-    fromWhere: Equipment | IContainer | ITile | DepotContainer,
+    player: Player,
+    fromWhere: Equipment | Container | Tile | DepotContainer,
     fromIndex: number,
-    toWhere: Equipment | IContainer | ITile | DepotContainer,
+    toWhere: Equipment | Container | Tile | DepotContainer,
     toIndex: number,
     count: number
   ): void {
@@ -164,7 +165,7 @@ export class ItemMoveHandler {
 
   /** Core move with universal holders */
   public static moveItem(
-    player: IPlayer,
+    player: Player,
     from: IItemHolder,
     fromIndex: number,
     to: IItemHolder,
@@ -202,8 +203,8 @@ export class ItemMoveHandler {
   }
 
   private static redirectIntoTargetContainerIfNeeded(
-    player: IPlayer,
-    movingItem: IItem,
+    player: Player,
+    movingItem: Item,
     to: IItemHolder,
     toIndex: number
   ): { to: IItemHolder; toIndex: number } | null {
@@ -228,21 +229,21 @@ export class ItemMoveHandler {
       if (typeof mi.__includesSelf === "function" && mi.__includesSelf(target)) return null;
     }
 
-    const innerContainer = target as IContainer;
+    const innerContainer = target as Container;
     const innerIndex = this.findFirstValidIndexInContainer(player, innerContainer, movingItem);
     if (innerIndex === null) return null;
 
     return { to: resolveHolder(innerContainer as any), toIndex: innerIndex };
   }
 
-  private static findFirstValidIndexInContainer(player: IPlayer, container: IContainer, movingItem: IItem): number | null {
+  private static findFirstValidIndexInContainer(player: Player, container: Container, movingItem: Item): number | null {
     const base: any = (container as any)?.container;
     if (!base || typeof base.isValidIndex !== "function") return null;
 
     // prefer merge if stackable
     if (movingItem.isStackable()) {
       for (let i = 0; base.isValidIndex(i); i++) {
-        const t = container.peekIndex(i) as IItem | null;
+        const t = container.peekIndex(i) as Item | null;
         if (t && t.id === movingItem.id && t.isStackable()) {
           if (container.getMaximumAddCount(player, movingItem, i) > 0) return i;
         }
@@ -257,22 +258,22 @@ export class ItemMoveHandler {
   }
 
   private static executeSwap(
-    player: IPlayer,
+    player: Player,
     from: IItemHolder,
     fromIndex: number,
     to: IItemHolder,
     toIndex: number,
     count: number,
-    existingItem: IItem,
-    movedItem: IItem
+    existingItem: Item,
+    movedItem: Item
   ): boolean {
     // preserve your rule: cannot swap partial stacks
     if (movedItem.isStackable() && count !== movedItem.count) return false;
     if (from.kind !== "container" || to.kind !== "container") return false;
 
     // Keep your same-container GUID fast-path
-    const fromC = from.getUnderlying() as IContainer;
-    const toC = to.getUnderlying() as IContainer;
+    const fromC = from.getUnderlying() as Container;
+    const toC = to.getUnderlying() as Container;
 
     const fromContainer = getContainerFromIContainer(fromC);
     const toContainer = getContainerFromIContainer(toC);
@@ -348,7 +349,7 @@ export class ItemMoveHandler {
   }
 
   private static executeEquipReplace(
-    player: IPlayer,
+    player: Player,
     from: IItemHolder,
     fromIndex: number,
     to: IItemHolder,
@@ -407,7 +408,7 @@ export class ItemMoveHandler {
   }
 
   private static executeStandardMove(
-    player: IPlayer,
+    player: Player,
     from: IItemHolder,
     fromIndex: number,
     to: IItemHolder,
@@ -466,7 +467,7 @@ export class ItemMoveHandler {
       const fromParent = from.getTopParent();
       const toParent = finalTo.getTopParent();
       if (fromParent !== toParent) {
-        (removed as any as IContainer).checkPlayersAdjacency?.();
+        (removed as any as Container).checkPlayersAdjacency?.();
       }
     }
 

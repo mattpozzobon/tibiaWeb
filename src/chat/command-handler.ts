@@ -1,11 +1,10 @@
-import { IPosition } from "../interfaces/IPosition";
 import { ServerMessagePacket } from "../network/protocol";
 import { CONST, getGameServer } from "../helper/appContext"; // Helper to get the game server
 import { Position } from "../utils/position";
-import { IPlayer } from "../interfaces/IPlayer";
+import Player from "creature/player/player";
 
 export class CommandHandler {
-  private WAYPOINTS: Record<string, IPosition>;
+  private WAYPOINTS: Record<string, Position>;
 
   constructor() {
     /*
@@ -38,7 +37,7 @@ export class CommandHandler {
     };
   }
 
-  handleCommandWaypoint(player: IPlayer, waypoint: string): void {
+  handleCommandWaypoint(player: Player, waypoint: string): void {
     /*
      * Executes the waypoint command
      */
@@ -50,7 +49,7 @@ export class CommandHandler {
     getGameServer().world.creatureHandler.teleportCreature(player, this.WAYPOINTS[waypoint]);
   }
 
-  handle(player: IPlayer, message: string): void {
+  handle(player: Player, message: string): void {
     /*
      * Handles commands sent by the player
      */
@@ -225,7 +224,7 @@ export class CommandHandler {
     return v > 0 ? v : def;
   }
 
-  private handleCommandSetTime(player: IPlayer, timeStr?: string): void {
+  private handleCommandSetTime(player: Player, timeStr?: string): void {
     if (!timeStr) {
       player.sendCancelMessage("Usage: /time HH:MM (24h)");
       return;

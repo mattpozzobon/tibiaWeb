@@ -4,13 +4,13 @@ import { CreatureInformationPacket, ItemInformationPacket } from "./protocol";
 import Monster from "../creature/monster/monster";
 import { ClientMessage, MoveItemEvent, PositionAndIndex } from "./packet-reader";
 import { ItemMoveHandler } from "../handler/item-move-handler";
-import { IPlayer } from "interfaces/IPlayer";
+import Player from "creature/player/player";
 
 export class PacketHandler {
   constructor() {
   }
 
-  handleTileUse(player: IPlayer, tile: Tile): any {
+  handleTileUse(player: Player, tile: Tile): any {
     /*
      * Function PacketHandler.handleTileUse
      * Handles the tile use event
@@ -48,7 +48,7 @@ export class PacketHandler {
     getGameServer().world.eventQueue.addEvent(() => creature.push(position), 20);
   }
 
-  moveItem(player: IPlayer, packet: MoveItemEvent): void {
+  moveItem(player: Player, packet: MoveItemEvent): void {
     /*
      * Function PacketHandler.moveItem
      * Delegates item movement to ItemMoveHandler
@@ -57,7 +57,7 @@ export class PacketHandler {
     ItemMoveHandler.validateAndMoveItem(player, fromWhere, fromIndex, toWhere, toIndex, count);
   }
 
-  handleItemLook(player: IPlayer, packet: PositionAndIndex): void {
+  handleItemLook(player: Player, packet: PositionAndIndex): void {
     /*
      * Function PacketHandler.handleItemLook
      * Handles a look event at an item or creature or tile
@@ -78,7 +78,7 @@ export class PacketHandler {
     return player.write(new ItemInformationPacket(thing, true, player));
   }
 
-  handleContainerClose(player: IPlayer, containerId: number): void {
+  handleContainerClose(player: Player, containerId: number): void {
     /*
      * Function PacketHandler.handleContainerClose
      * Handles an incoming request to close a container
@@ -89,7 +89,7 @@ export class PacketHandler {
     }
   }
 
-  handleTargetCreature(player: IPlayer, id: number): void {
+  handleTargetCreature(player: Player, id: number): void {
     /*
      * Function PacketHandler.handleTargetCreature
      * Handles an incoming creature target packet
@@ -110,7 +110,7 @@ export class PacketHandler {
     }
   }
 
-  handlePlayerSay(player: IPlayer, packet: ClientMessage): void {
+  handlePlayerSay(player: Player, packet: ClientMessage): void {
     /*
      * Function PacketHandler.handlePlayerSay
      * When player says a message handle it
@@ -121,7 +121,7 @@ export class PacketHandler {
     }
   }
 
-  handleItemTextWrite(player: IPlayer, packet: { which: any; index: number; text: string }): void {
+  handleItemTextWrite(player: Player, packet: { which: any; index: number; text: string }): void {
     /*
      * Function PacketHandler.handleItemTextWrite
      * Handles writing text to a writeable item (like blank paper, letter)

@@ -1,17 +1,16 @@
 "use strict";
 
-import { IPlayer } from "interfaces/IPlayer";
 import DepotContainer from "./depot";
 import Equipment from "./equipment";
 import Inbox from "./inbox";
 import Keyring from "../game-object/item/keyring";
 import { CONST } from "../helper/appContext";
-import { IContainer } from "interfaces/IThing";
 import Container from "./container/container";
 import { getContainerFromIContainer } from "../game/items/container-helpers";
+import Player from "creature/player/player";
 
 class ContainerManager {
-  private __player: IPlayer;
+  private __player: Player;
   private __openedContainers: Map<number, any>;
   readonly depot: DepotContainer;
   readonly equipment: Equipment;
@@ -19,7 +18,7 @@ class ContainerManager {
   readonly inbox: Inbox;
   readonly MAXIMUM_OPENED_CONTAINERS: number = 5;
 
-  constructor(player: IPlayer, containers: any) {
+  constructor(player: Player, containers: any) {
     this.__player = player;
 
     this.__openedContainers = new Map<number, any>();
@@ -75,7 +74,7 @@ class ContainerManager {
     }
   }
 
-  toggleContainer(container: IContainer | any): void {
+  toggleContainer(container: Container | any): void {
     if (!container) {
       console.log("[ContainerManager.toggleContainer] No container provided");
       return;

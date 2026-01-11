@@ -1,6 +1,6 @@
 import { SpellAddPacket, SpellCastPacket } from "../../network/protocol";
 import { CONFIG, getGameServer } from "../../helper/appContext";
-import { IPlayer } from "../../interfaces/IPlayer";
+import Player from "../../creature/player/player";
 
 interface Cooldown {
   sid: number;
@@ -8,7 +8,7 @@ interface Cooldown {
 }
 
 export class Spellbook {
-  private player: IPlayer;
+  private player: Player;
   private __spellCooldowns: Map<number, any>;
   private __cooldowns: Cooldown[];
   private __availableSpells: Set<number>;
@@ -16,7 +16,7 @@ export class Spellbook {
   public readonly GLOBAL_COOLDOWN = 0xffff;
   public readonly GLOBAL_COOLDOWN_DURATION = 20;
 
-  constructor(player: IPlayer, data: { cooldowns: Cooldown[]; availableSpells: number[] }) {
+  constructor(player: Player, data: { cooldowns: Cooldown[]; availableSpells: number[] }) {
     /*
      * Class Spellbook
      * Container for all spells that a player has and handles casting / cooldowns

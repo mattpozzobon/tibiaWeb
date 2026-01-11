@@ -1,18 +1,13 @@
 "use strict";
 
-import { IContainer, IThing } from "../interfaces/IThing";
 import { TileFlag } from "../utils/bitflag";
 import ThingEmitter from "./thing-emitter";
 import { CONFIG, CONST, getGameServer } from "../helper/appContext";
-import { IThingPrototype } from "interfaces/IThing-prototype";
-import { IPosition } from "interfaces/IPosition";
-import ITile from "interfaces/ITile";
-import { IPlayer } from "interfaces/IPlayer";
 import BaseContainer from "../item/base-container";
 import { resolveHolder } from "../game/items/item-holder-resolver";
 import Equipment from "../item/equipment";
 
-class Thing extends ThingEmitter implements IThing{
+class Thing extends ThingEmitter {
   id: number;
   uid?: number;
   frozen?: boolean;
@@ -23,9 +18,9 @@ class Thing extends ThingEmitter implements IThing{
   content?: any;
   container?: any;
   size?: any;
-  private parent?: ITile | BaseContainer | null;
+  private parent?: any | BaseContainer | null;
   scheduledDecayEvent?: any;
-  private prototypeCache: IThingPrototype;
+  private prototypeCache: any;
 
   constructor(id: number) {
     /*
@@ -37,7 +32,7 @@ class Thing extends ThingEmitter implements IThing{
     this.prototypeCache = getGameServer().database.getThingPrototype(this.id);
   }
 
-  copyProperties(thing: IThing): void {
+  copyProperties(thing: any): void {
     if (!thing.duration) {
       thing.setDuration(this.getRemainingDuration());
     }
@@ -61,17 +56,17 @@ class Thing extends ThingEmitter implements IThing{
     }
   }
 
-  createFungibleThing(count: number): IThing | undefined{
+  createFungibleThing(count: number): any | undefined{
     const test = getGameServer().database.createThing(this.id);
     if (test) return test.setCount(count);
   }
 
-  setCount(count: number): IThing {
+  setCount(count: number): any {
     this.count = Math.max(0, Math.min(count, CONFIG.WORLD.MAXIMUM_STACK_COUNT));
     return this;
   }
 
-  getPrototype(): IThingPrototype {
+  getPrototype(): any {
     if (!this.prototypeCache) {
       return getGameServer().database.getThingPrototype(this.id);
     }
@@ -140,7 +135,7 @@ class Thing extends ThingEmitter implements IThing{
     this.duration = duration;
   }
 
-  setParent(parent: ITile | BaseContainer | null): void {
+  setParent(parent: any | BaseContainer | null): void {
     this.parent = parent;
   }
 
@@ -295,7 +290,7 @@ class Thing extends ThingEmitter implements IThing{
     return this.parent!.deleteThing(this, 0);
   }
 
-  replace(thing: IThing): IThing {
+  replace(thing: any): any {
     this.copyProperties(thing);
     this.parent?.addThing(thing, this.remove());
     this.cleanup();
@@ -338,7 +333,7 @@ class Thing extends ThingEmitter implements IThing{
 
     // Resolve parent to IItemHolder and find item index
     try {
-      const holder = resolveHolder(itemParent as ITile | IContainer | Equipment);
+      const holder = resolveHolder(itemParent as any | any | Equipment);
       let index: number | null = null;
 
       // Find the item's index efficiently based on holder type
@@ -566,7 +561,7 @@ class Thing extends ThingEmitter implements IThing{
     return this.getPrototype().isDepot();
   }
   
-  isContainer(): this is IContainer {
+  isContainer(): this is any {
     /*
      * Function Thing.isContainer
      * Returns true if the thing is a container and narrows the type to Container

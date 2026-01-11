@@ -1,6 +1,5 @@
 "use strict";
 
-import { IThingPrototype } from "interfaces/IThing-prototype";
 import {  OTBBitFlag, TileFlag } from "../utils/bitflag";
 import { EventEmitter } from "../event/eventemitter";
 
@@ -11,7 +10,7 @@ interface ThingPrototypeData {
   properties: Record<string, any>;
 }
 
-class ThingPrototype extends EventEmitter implements IThingPrototype{
+class ThingPrototype extends EventEmitter {
   id: number;
   flags: InstanceType<typeof TileFlag>;
   group: number;

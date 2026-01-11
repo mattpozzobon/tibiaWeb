@@ -12,6 +12,9 @@
       "*": ["*"] // Example alias for the src directory
     }
   },
+  "ts-node": {
+    "require": ["tsconfig-paths/register"]
+  },
   "include": ["src/**/*",  "src/**/*.d.ts", "global.d.ts"], // Include all files in the `src` directory
   "exclude": ["node_modules"] // Exclude `node_modules` from compilation
 

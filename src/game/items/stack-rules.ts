@@ -1,4 +1,3 @@
-import { IItem } from "../../interfaces/IThing";
 import { CONFIG } from "../../helper/appContext";
 
 /**
@@ -12,7 +11,7 @@ export const MAX_STACK_COUNT = CONFIG.WORLD?.MAXIMUM_STACK_COUNT || 100;
  * @param b - Second item
  * @returns true if items can be stacked
  */
-export function canStack(a: IItem, b: IItem): boolean {
+export function canStack(a: Item, b: Item): boolean {
   if (!a.isStackable() || !b.isStackable()) {
     return false;
   }
@@ -28,7 +27,7 @@ export function canStack(a: IItem, b: IItem): boolean {
  * @param source - The source stack to merge
  * @returns Object with merged count and remainder (null if fully merged)
  */
-export function calculateMerge(target: IItem, source: IItem): { merged: number; remainder: number } {
+export function calculateMerge(target: Item, source: Item): { merged: number; remainder: number } {
   if (!canStack(target, source)) {
     return { merged: 0, remainder: source.count };
   }
@@ -46,7 +45,7 @@ export function calculateMerge(target: IItem, source: IItem): { merged: number; 
  * @param count - The count to split off
  * @returns Object with the split item and remaining count, or null if invalid
  */
-export function calculateSplit(item: IItem, count: number): { split: number; remaining: number } | null {
+export function calculateSplit(item: Item, count: number): { split: number; remaining: number } | null {
   if (!item.isStackable()) {
     return null;
   }

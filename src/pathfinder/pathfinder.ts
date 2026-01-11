@@ -1,11 +1,12 @@
 import PathfinderNode from "./pathfinder-node";
 import BinaryHeap from "../utils/binary-heap";
 import { CONST, getGameServer } from "../helper/appContext";
-import IPathfinder, { PathfinderTile } from "interfaces/IPathfinder";
-import IPathfinderNode from "interfaces/IPathfinder-node";
+import Tile from "../thing/tile";
+
+type PathfinderTile = Tile;
 
 
-class Pathfinder implements IPathfinder{
+class Pathfinder {
   private __enabledTiles: PathfinderTile[];
   private __iterations: number;
   private __requests: number;
@@ -61,9 +62,10 @@ class Pathfinder implements IPathfinder{
 
       const currentTile = openHeap.pop() as PathfinderTile;
       const currentNode = currentTile.pathfinderNode;
+      if (!currentNode) continue;
 
       if (mode === Pathfinder.ADJACENT) {
-        if (to.neighbours.includes(currentTile)) {
+        if (to.neighbours?.includes(currentTile)) {
           return this.pathTo(currentTile);
         }
       } else if (mode === Pathfinder.EXACT) {
@@ -74,6 +76,7 @@ class Pathfinder implements IPathfinder{
 
       currentNode.setClosed();
 
+      if (!currentTile.neighbours) continue;
       currentTile.neighbours.forEach((neighbourTile: PathfinderTile) => {
         if (neighbourTile === currentTile) return;
 
@@ -82,6 +85,7 @@ class Pathfinder implements IPathfinder{
         }
 
         const neighbourNode = neighbourTile.pathfinderNode;
+        if (!neighbourNode) return;
 
         if (neighbourNode.isClosed()) return;
 
@@ -106,13 +110,13 @@ class Pathfinder implements IPathfinder{
         );
 
         const gScore =
-          currentNode.getCost() + neighbourTile.getWeight(currentTile);
+          currentNode.getCost() + neighbourTile.getTileWeight(currentTile);
         const isVisited = neighbourNode.isVisited();
 
         if (isVisited && gScore >= neighbourNode.getCost()) return;
 
         neighbourNode.setVisited();
-        neighbourNode.setParent(currentTile.pathfinderNode);
+        neighbourNode.setParent(currentTile.pathfinderNode || null);
         neighbourNode.setCost(gScore);
         neighbourNode.setScore(gScore + neighbourNode.getHeuristic());
 
@@ -152,7 +156,7 @@ class Pathfinder implements IPathfinder{
     };
   }
 
-  private findTileByNode(node: IPathfinderNode): PathfinderTile | null {
+  private findTileByNode(node: PathfinderNode): PathfinderTile | null {
     /*
      * Finds the PathfinderTile associated with a given PathfinderNode.
      */
@@ -174,6 +178,7 @@ class Pathfinder implements IPathfinder{
         CONST.EFFECT.MAGIC.SOUND_BLUE
       );
   
+      if (!tile.pathfinderNode) break;
       const parentNode = tile.pathfinderNode.getParent();
       if (!parentNode) {
         break; // Stop when no parent exists

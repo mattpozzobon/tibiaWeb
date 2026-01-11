@@ -1,5 +1,5 @@
-import { IPosition } from "interfaces/IPosition";
 import { CONST } from "../helper/appContext";
+import { Position } from "./position";
 
 export class Geometry {
   /*
@@ -7,30 +7,30 @@ export class Geometry {
    * Wrapper for some geometrical functions
    */
 
-  getSquare(IPosition: IPosition, size: number): IPosition[] {
+  getSquare(Position: Position, size: number): Position[] {
     /*
      * Function Geometry.getSquare
-     * Returns an array of IPositions with size R around a given IPosition
+     * Returns an array of IPositions with size R around a given Position
      */
 
-    const IPositions: IPosition[] = [];
+    const IPositions: Position[] = [];
 
     for (let x = -size; x <= size; x++) {
       for (let y = -size; y <= size; y++) {
-        IPositions.push(IPosition.addVector(x, y, 0));
+        IPositions.push(Position.addVector(x, y, 0));
       }
     }
 
     return IPositions;
   }
 
-  getRadius(IPosition: IPosition, radius: number): IPosition[] {
+  getRadius(Position: Position, radius: number): Position[] {
     /*
      * Function Geometry.getRadius
-     * Returns an array of IPositions with radius R around a given IPosition
+     * Returns an array of IPositions with radius R around a given Position
      */
 
-    const IPositions: IPosition[] = [];
+    const IPositions: Position[] = [];
 
     for (let x = -radius; x <= radius; x++) {
       for (let y = -radius; y <= radius; y++) {
@@ -39,14 +39,14 @@ export class Geometry {
           continue;
         }
 
-        IPositions.push(IPosition.addVector(x, y, 0));
+        IPositions.push(Position.addVector(x, y, 0));
       }
     }
 
     return IPositions;
   }
 
-  getAngleBetween(one: IPosition, two: IPosition): number {
+  getAngleBetween(one: Position, two: Position): number {
     /*
      * Function Geometry.getAngleBetween
      * Returns the facing direction between two IPositions
@@ -65,7 +65,7 @@ export class Geometry {
     }
   }
 
-  rotate2D(IPosition: IPosition, direction: number, x: number, y: number): IPosition {
+  rotate2D(Position: Position, direction: number, x: number, y: number): Position {
     /*
      * Function Geometry.rotate2D
      * Rotates a vector in 2-dimensions (90 deg. increments)
@@ -73,19 +73,19 @@ export class Geometry {
 
     switch (direction) {
       case CONST.DIRECTION.NORTH:
-        return IPosition.addVector(x, y, 0);
+        return Position.addVector(x, y, 0);
       case CONST.DIRECTION.EAST:
-        return IPosition.addVector(-y, -x, 0);
+        return Position.addVector(-y, -x, 0);
       case CONST.DIRECTION.SOUTH:
-        return IPosition.addVector(x, -y, 0);
+        return Position.addVector(x, -y, 0);
       case CONST.DIRECTION.WEST:
-        return IPosition.addVector(y, -x, 0);
+        return Position.addVector(y, -x, 0);
       default:
-        return IPosition;
+        return Position;
     }
   }
 
-  interpolate(source: IPosition, target: IPosition): IPosition[] {
+  interpolate(source: Position, target: Position): Position[] {
     /*
      * Function Geometry.interpolate
      * Interpolates all tiles between the source and target
@@ -94,7 +94,7 @@ export class Geometry {
     const xLerp = target.x - source.x;
     const yLerp = target.y - source.y;
     const steps = Math.max(Math.abs(xLerp), Math.abs(yLerp)) + 1;
-    const IPositions: IPosition[] = [];
+    const IPositions: Position[] = [];
 
     for (let i = 0; i < steps; i++) {
       const fraction = i / (steps - 1);

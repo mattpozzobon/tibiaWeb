@@ -5,10 +5,10 @@ import Player from "../player/player";
 import { Position } from "../../utils/position";
 import Tile from "../../thing/tile";
 import { CONFIG, CONST, getGameServer } from "../../helper/appContext";
-import { IMonster, IMonsterBehaviour } from "../../interfaces/IMonster";
+import Monster from "./monster";
 
-class MonsterBehaviour implements IMonsterBehaviour{
-  monster: IMonster;
+class MonsterBehaviour {
+  monster: Monster;
   public actions: Actions;
   private __target: Player | null = null;
   private ignoreCharacters: boolean;
@@ -25,7 +25,7 @@ class MonsterBehaviour implements IMonsterBehaviour{
   public static readonly RANGED = 4;
   public static readonly FLEEING = 5;
 
-  constructor(monster: IMonster, behaviour: { openDoors: boolean; type: number; sayings?: { texts: string[]; slowness: number } }) {
+  constructor(monster: Monster, behaviour: { openDoors: boolean; type: number; sayings?: { texts: string[]; slowness: number } }) {
     this.monster = monster;
     this.actions = new Actions();
     this.ignoreCharacters = false;

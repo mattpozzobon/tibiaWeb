@@ -1,12 +1,11 @@
 "use strict";
 
-import { IActionHandler } from "../../interfaces/IPlayer-action-handler";
 import Actions from "../../action/actions";
 import TargetHandler from "../../handler/target-handler";
 import { CONST, getGameServer } from "../../helper/appContext";
 
 
-class ActionHandler implements IActionHandler{
+class ActionHandler {
   private __player: any;
   actions: Actions;
   targetHandler: TargetHandler;

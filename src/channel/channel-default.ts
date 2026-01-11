@@ -1,7 +1,7 @@
-import { IPlayer } from "../interfaces/IPlayer";
 import Channel from "./channel";
 import CommandHandler from "../chat/command-handler";
 import { CONST, getGameServer } from "../helper/appContext";
+import Player from "../creature/player/player";
 
 
 export class DefaultChannel extends Channel {
@@ -18,7 +18,7 @@ export class DefaultChannel extends Channel {
     this.commandHandler = new CommandHandler();
   }
 
-  send(player: IPlayer, packet: { message: string; loudness: number }): void {
+  send(player: Player, packet: { message: string; loudness: number }): void {
     /*
      * Sends a message to all players near this player in the game world
      */
@@ -53,7 +53,7 @@ export class DefaultChannel extends Channel {
     this.__NPCListen(player, message.toLowerCase());
   }
 
-  private __NPCListen(player: IPlayer, message: string): void {
+  private __NPCListen(player: Player, message: string): void {
     /*
      * Handler called when a player says a message and NPCs are nearby
      */

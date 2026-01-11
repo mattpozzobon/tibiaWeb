@@ -1,22 +1,19 @@
-import INPC from "../../interfaces/INpc";
 import { EventEmitter } from "../../event/eventemitter";
 import { FocusHandler } from "./npc-focus-handler";
 import TradeHandler from "./npc-trade-handler";
 import Player from "../player/player";
 import { getDataFile } from "../../helper/appContext";
-import IConversationHandler, { ConversationConfig } from "../../interfaces/INpc-conversation-handler";
-import { IFocusHandler } from "../../interfaces/INpc-focus-handler";
-import { IPlayer } from "../../interfaces/IPlayer";
+import NPC from "./npc";
 
 
-export class ConversationHandler extends EventEmitter implements IConversationHandler {
-  private npc: INPC;
+export class ConversationHandler extends EventEmitter {
+  private npc: NPC;
   private __seenCreatures: WeakSet<Player>;
-  private conversation: ConversationConfig;
+  private conversation: any;  // TODO: fix this type ConversationConfig type
   private tradeHandler: TradeHandler;
-  private __focusHandler: IFocusHandler;
+  private __focusHandler: FocusHandler;
 
-  constructor(npc: INPC, conversation: Partial<ConversationConfig>) {
+  constructor(npc: NPC, conversation: Partial<any>) {
     super();
 
     this.npc = npc;
@@ -65,7 +62,7 @@ export class ConversationHandler extends EventEmitter implements IConversationHa
    }
   }
 
-  getFocus(): IPlayer | null {
+  getFocus(): Player | null {
     return this.__focusHandler.getFocus();
   }
 
@@ -95,7 +92,7 @@ export class ConversationHandler extends EventEmitter implements IConversationHa
     return this.getSayings().texts.length > 0;
   }
 
-  getSayings(): ConversationConfig["sayings"] {
+  getSayings(): any {
     return this.conversation.sayings;
   }
 
@@ -139,7 +136,7 @@ export class ConversationHandler extends EventEmitter implements IConversationHa
     return this.getFocusHandler().getTalkStateHandler();
   }
 
-  getFocusHandler(): IFocusHandler {
+  getFocusHandler(): FocusHandler {
     return this.__focusHandler;
   }
 

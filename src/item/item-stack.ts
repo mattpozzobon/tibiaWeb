@@ -1,7 +1,7 @@
 "use strict";
 import Creature from "../creature/creature";
 import { CONST } from "../helper/appContext";
-import { IItem } from "interfaces/IThing";
+import Item from "./item";
 
 class ItemStack {
   private __items: any[] = [];
@@ -129,11 +129,11 @@ class ItemStack {
     return this.__items.length === 0;
   }
 
-  getTopItem(): IItem | null {
+  getTopItem(): Item | null {
     return this.isEmpty() ? null : this.__items[this.__items.length - 1];
   }
 
-  peekIndex(index: number): IItem | null {
+  peekIndex(index: number): Item | null {
     if (!this.isValidIndex(index)) {
       return null;
     }

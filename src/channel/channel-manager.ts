@@ -1,12 +1,11 @@
-import { IDefaultChannel, IPlayer } from "../interfaces/IPlayer";
 import DefaultChannel from "./channel-default";
 import GlobalChannel from "./channel-global";
 import { ChannelPrivatePacket } from "../network/protocol";
 import { CONST, getGameServer } from "../helper/appContext";
-import { IGlobalChannel } from "../interfaces/IChannel-global";
+import Player from "creature/player/player";
 
 export class ChannelManager {
-  private __channels: Map<number, IDefaultChannel | IGlobalChannel>;
+  private __channels: Map<number, DefaultChannel | GlobalChannel>;
 
   constructor() {
     this.__channels = new Map();
@@ -16,11 +15,11 @@ export class ChannelManager {
     this.__channels.set(CONST.CHANNEL.HELP, new GlobalChannel(CONST.CHANNEL.HELP, "Help"));
   }
 
-  getChannel(cid: number): IDefaultChannel | IGlobalChannel | null {
+  getChannel(cid: number): DefaultChannel | GlobalChannel | null {
     return this.__channels.get(cid) || null;
   }
 
-  leaveChannel(player: IPlayer, cid: number): void {
+  leaveChannel(player: Player, cid: number): void {
     const channel = this.getChannel(cid);
     if (!channel) return player.sendCancelMessage("This channel does not exist.");
 
@@ -32,7 +31,7 @@ export class ChannelManager {
     }
   }
 
-  joinChannel(player: IPlayer, id: number): void {
+  joinChannel(player: Player, id: number): void {
     const channel = this.getChannel(id);
     if (!channel) return player.sendCancelMessage("This channel does not exist.");
 
@@ -45,7 +44,7 @@ export class ChannelManager {
     }
   }
 
-  handleSendPrivateMessage(player: IPlayer, packet: { name: string; message: string }): void {
+  handleSendPrivateMessage(player: Player, packet: { name: string; message: string }): void {
     if (packet.name === player.getProperty(CONST.PROPERTIES.NAME)) {
       player.sendCancelMessage("You cannot send messages to yourself.");
       return;

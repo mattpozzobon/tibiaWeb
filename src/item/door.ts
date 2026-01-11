@@ -1,12 +1,10 @@
 "use strict";
-import { IDoor } from "interfaces/IDoor";
+import Player from "creature/player/player";
 import { getGameServer } from "../helper/appContext";
-import { IThing } from "interfaces/IThing";
-import { IPlayer } from "interfaces/IPlayer";
 import Item from "./item";
-import { ICreature } from "interfaces/ICreature";
+import Thing from "thing/thing";
 
-class Door extends Item implements IDoor {
+class Door extends Item {
   constructor(id: number) {
     super(id);
   }
@@ -37,7 +35,7 @@ class Door extends Item implements IDoor {
     this.__change(-1);
   }
 
-  handleEnterUnwantedDoor(player: IPlayer): void {
+  handleEnterUnwantedDoor(player: Player): void {
     /*
      * Function Door.handleEnterExpertiseDoor
      * Handling of unwanted doors
@@ -65,7 +63,7 @@ class Door extends Item implements IDoor {
     getGameServer().world.creatureHandler.moveCreature(player, tile.position);
   }
 
-  handleEnterExpertiseDoor(player: IPlayer): void {
+  handleEnterExpertiseDoor(player: Player): void {
     /*
      * Function Door.handleEnterExpertiseDoor
      * Handling of expertise doors
@@ -173,7 +171,7 @@ class Door extends Item implements IDoor {
     return !this.isBlockSolid();
   }
 
-  private __change(direction: number): IThing | null {
+  private __change(direction: number): Thing | null {
     const thing = getGameServer().database.createThing(this.id + direction);
     if (thing) {
       if (this.actionId) {

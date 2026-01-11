@@ -2,6 +2,7 @@ import path from "path";
 import { CONFIG as baseConfig } from "../config/config";
 import { CONST } from "../config/constants";
 import items from "../config/itemToSprite.json";
+import GameServer from "server/gameserver";
 
 /* ----------------------------------------------------
    Helpers
@@ -138,16 +139,15 @@ export const requireModule = (...args: string[]): any => {
    GameServer instance registry
 ---------------------------------------------------- */
 
-import { IGameServer } from "interfaces/IGameserver";
 
-let gameServerInstance: IGameServer | null = null;
+let gameServerInstance: GameServer | null = null;
 
-export const initializeGameServer = (server: IGameServer): IGameServer => {
+export const initializeGameServer = (server: GameServer): GameServer => {
   if (!gameServerInstance) gameServerInstance = server;
   return gameServerInstance;
 };
 
-export const getGameServer = (): IGameServer => {
+export const getGameServer = (): GameServer => {
   if (!gameServerInstance) throw new Error("GameServer not initialized");
   return gameServerInstance;
 };

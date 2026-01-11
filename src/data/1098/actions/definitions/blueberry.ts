@@ -1,14 +1,14 @@
 import { getGameServer } from "../../../../helper/appContext";
-import { IPlayer } from "../../../../interfaces/IPlayer";
-import { IItem } from "../../../../interfaces/IThing";
-import ITile from "../../../../interfaces/ITile";
+import Player from "creature/player/player";
+import Tile from "thing/tile";
+import Item from "item/item";
 
 export interface BlueberryBushAction {
-  execute(player: IPlayer, tile: ITile, index: number, item: IItem): void;
+  execute(player: Player, tile: Tile, index: number, item: Item): void;
 }
 
-export class BlueberryBush implements BlueberryBushAction {
-  execute(player: IPlayer, tile: ITile, index: number, item: IItem): void {
+export class BlueberryBush {
+  execute(player: Player, tile: Tile, index: number, item: Item): void {
     /*
      * Function blueberryBush
      * Picks blueberries from a blueberry bush

@@ -1,12 +1,11 @@
 "use strict";
 
-import { IItem } from "interfaces/IThing";
 import { BitFlag, OTBBitFlag } from "../utils/bitflag";
 import Thing from "../thing/thing";
 import { getGameServer } from "../helper/appContext";
 
 
-class Item extends Thing implements IItem{
+class Item extends Thing {
   static MAXIMUM_STACK_COUNT: number = 100;
 
   constructor(id: number) {

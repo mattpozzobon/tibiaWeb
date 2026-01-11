@@ -12,36 +12,24 @@ import { Position } from "../../utils/position";
 import { CancelMessagePacket, ContainerClosePacket, ContainerOpenPacket, CreaturePropertyPacket, CreatureStatePacket, EmotePacket } from "../../network/protocol";
 
 import { CONST, getGameServer } from "../../helper/appContext";
-import { IChannelManager, IPlayer } from "../../interfaces/IPlayer";
-import { IActionHandler } from "../../interfaces/IPlayer-action-handler";
-import { IPlayerMovementHandler } from "../../interfaces/IPlayer-movement-handler";
-import { IPlayerIdleHandler } from "../../interfaces/IPlayer-idle-handler";
-import { IUseHandler } from "../../interfaces/IPlayer-use-handler";
-import { ICombatLock } from "../../interfaces/IPlayer-combat-lock";
-import { ISpellbook } from "../../interfaces/ISpellbook";
-import { IContainerManager } from "../../interfaces/IContainer-manager";
-import { IFriendlist } from "../../interfaces/IFriendlist";
-import { ISkills } from "../../interfaces/ISkils";
-import { IPosition } from "../../interfaces/IPosition";
-import { ISocketHandler } from "../../interfaces/IPlayer-socket-handler";
 import { Spellbook } from "../../game-object/player/spellbook";
 import { Skills } from "../../game-object/player/skills";
 import Corpse from "item/container/corpse";
 
 
-export default class Player extends Creature implements IPlayer{
-  public templePosition: IPosition;
-  public skills: ISkills;
-  public socketHandler: ISocketHandler;
-  public friendlist: IFriendlist;
-  public containerManager: IContainerManager;
-  public spellbook: ISpellbook;
-  public idleHandler: IPlayerIdleHandler;
-  public movementHandler: IPlayerMovementHandler;
-  public channelManager: IChannelManager;
-  public actionHandler: IActionHandler;
-  public combatLock: ICombatLock;
-  public useHandler: IUseHandler;
+export default class Player extends Creature {
+  public templePosition: Position;
+  public skills: Skills;
+  public socketHandler: SocketHandler;
+  public friendlist: Friendlist;
+  public containerManager: ContainerManager;
+  public spellbook: Spellbook;
+  public idleHandler: PlayerIdleHandler;
+  public movementHandler: PlayerMovementHandler;
+  public channelManager: ChannelManager;
+  public actionHandler: ActionHandler;
+  public combatLock: CombatLock;
+  public useHandler: UseHandler;
   public lastVisit: number;
   public attackMode: number;
 

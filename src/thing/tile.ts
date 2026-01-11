@@ -1,19 +1,17 @@
-import ITile from "interfaces/ITile";
 import { BitFlag, OTBBitFlag, TileFlag } from "../utils/bitflag";
 
 import ItemStack from "../item/item-stack";
 import PathfinderNode from "../pathfinder/pathfinder-node";
 import { TilePacket, ItemAddPacket, ItemRemovePacket } from "../network/protocol";
 import { getGameServer, CONST, CONFIG } from "../helper/appContext";
-import { IItem, IThing } from "interfaces/IThing";
 import Thing from "../thing/thing";
-import { IDoor } from "interfaces/IDoor";
+import Door from "item/door";
 
-class Tile extends Thing implements ITile{
+class Tile extends Thing {
   position: any;
   itemStack?: ItemStack;
   creatures?: Set<any>;
-  neighbours?: ITile[];
+  neighbours?: Tile[];
   tilezoneFlags?: InstanceType<typeof TileFlag>;;
   pathfinderNode?: PathfinderNode;
 
@@ -30,7 +28,7 @@ class Tile extends Thing implements ITile{
     this.neighbours?.forEach((tile) => tile.writePlayers(packet));
   }
 
-  distanceManhattan(other: ITile): number {
+  distanceManhattan(other: Tile): number {
     return this.position.manhattanDistance(other.position);
   }
 
@@ -54,12 +52,12 @@ class Tile extends Thing implements ITile{
     this.creatures.add(creature);
   }
 
-  eliminateItem(thing: IThing): void {
+  eliminateItem(thing: Thing): void {
     getGameServer().world.sendMagicEffect(this.position, CONST.EFFECT.MAGIC.POFF);
     thing.cleanup();
   }
 
-  addThing(thing: IThing, index: number): void {
+  addThing(thing: Thing, index: number): void {
     if(!this.hasOwnProperty("itemStack")) {
       this.itemStack = new ItemStack();
     }
@@ -79,7 +77,7 @@ class Tile extends Thing implements ITile{
     if (this.itemStack.hasMagicDoor()) return;
 
     if (thing.isMagicDoor()) {
-      const door = thing as IDoor;
+      const door = thing as Door;
       if (door.isOpened()) {
         this.once("exit", door.close.bind(door));
       }
@@ -99,7 +97,7 @@ class Tile extends Thing implements ITile{
     this.broadcast(new ItemAddPacket(this.position, thing, index));
   }
 
-  addTopThing(thing: IThing): void {
+  addTopThing(thing: Thing): void {
     this.addThing(thing, ItemStack.TOP_INDEX);
   }
 
@@ -125,7 +123,7 @@ class Tile extends Thing implements ITile{
     this.broadcast(new TilePacket(this.position, id));
   }
 
-  getItems(): IThing[] {
+  getItems(): Thing[] {
     return this.itemStack?.getItems() ?? [];
   }
 
@@ -133,7 +131,7 @@ class Tile extends Thing implements ITile{
     return this.pathfinderNode?.getScore() ?? 0;
   }
 
-  getTileWeight(current: IThing): number {
+  getTileWeight(current: Thing): number {
     if(this.getPosition().isDiagonal(current.getPosition())) {
       return 3 * this.getFriction();
     }
@@ -174,7 +172,7 @@ class Tile extends Thing implements ITile{
     return this.hasFlag(OTBBitFlag.prototype.flags.FLAG_BLOCK_SOLID);
   }
 
-  deleteIndex(index: number): IThing | null {
+  deleteIndex(index: number): Thing | null {
     const thing = this.peekIndex(index);
     if (thing === null) {
       return null;
@@ -200,7 +198,7 @@ class Tile extends Thing implements ITile{
     return index;
   }
   
-  removeIndex(index: number, amount: number): IThing | null {
+  removeIndex(index: number, amount: number): Thing | null {
     const thing = this.peekIndex(index);
   
     if (thing === null) {
@@ -215,7 +213,7 @@ class Tile extends Thing implements ITile{
     return this.__deleteThingStackableItem(index, thing, amount);
   }
   
-  __deleteThingStackableItem(index: number, currentItem: IThing, count: number): IThing | null {
+  __deleteThingStackableItem(index: number, currentItem: Thing, count: number): Thing | null {
     if (count > currentItem.count) {
       return null;
     }
@@ -228,7 +226,7 @@ class Tile extends Thing implements ITile{
     return this.__handleSplitStack(index, currentItem, count);
   }
   
-  __handleSplitStack(index: number, currentItem: IThing, count: number): IThing | null{
+  __handleSplitStack(index: number, currentItem: Thing, count: number): Thing | null{
     this.__replaceFungibleItem(index, currentItem, currentItem.count - count);
     const item = currentItem.createFungibleThing(count);
     if (item)
@@ -236,7 +234,7 @@ class Tile extends Thing implements ITile{
     return null
   }
   
-  __addStackable(index: number, currentItem: IThing, thing: IThing): void {
+  __addStackable(index: number, currentItem: Thing, thing: Thing): void {
     const overflow = currentItem.count + thing.count - CONFIG.WORLD.MAXIMUM_STACK_COUNT;
   
     if (overflow > 0) {
@@ -246,14 +244,14 @@ class Tile extends Thing implements ITile{
     }
   }
   
-  __splitStack(index: number, currentItem: IThing, overflow: number): void {
+  __splitStack(index: number, currentItem: Thing, overflow: number): void {
     this.__replaceFungibleItem(index, currentItem, CONFIG.WORLD.MAXIMUM_STACK_COUNT);
     const item = currentItem.createFungibleThing(overflow)
     if (item)
       this.addTopThing(item);
   }
   
-  __replaceFungibleItem(index: number, thing: IThing, count: number): void {
+  __replaceFungibleItem(index: number, thing: Thing, count: number): void {
     this.__deleteThing(thing, index);
 
     const item = thing.createFungibleThing(count)
@@ -265,7 +263,7 @@ class Tile extends Thing implements ITile{
     return this.itemStack?.isBlockProjectile() ?? false;
   }
   
-  __deleteThing(thing: IThing, index: number): void {
+  __deleteThing(thing: Thing, index: number): void {
     if (!this.hasItems()) {
       return;
     }
@@ -295,11 +293,11 @@ class Tile extends Thing implements ITile{
     return false;
   }
   
-  getTopItem(): IThing | null {
+  getTopItem(): Thing | null {
     return this.hasItems() ? this.itemStack!.getTopItem() : null;
   }
   
-  getMaximumAddCount(player: any, item: IThing, index: number): number {
+    getMaximumAddCount(player: any, item: Thing, index: number): number {
     if (!this.hasItems()) {
       return CONFIG.WORLD.MAXIMUM_STACK_COUNT;
     }
@@ -349,7 +347,7 @@ class Tile extends Thing implements ITile{
     return this.creatures.values().next().value;
   } 
 
-  peekIndex(index: number): IItem | null {
+  peekIndex(index: number): Thing | null {
     /*
      * Function Tile.peekIndex
      * Peeks at the item at the specified index
@@ -490,7 +488,7 @@ class Tile extends Thing implements ITile{
     return this.hasItems() && this.itemStack!.isTrashholder();
   }
   
-  deleteThingStackableItem(index: number, currentItem: IThing, count: number): IThing | null {
+  deleteThingStackableItem(index: number, currentItem: Thing, count: number): Thing | null {
     /*
      * Function Tile.deleteThingStackableItem
      * Removes a stackable item based on count
@@ -507,7 +505,7 @@ class Tile extends Thing implements ITile{
     return this.handleSplitStack(index, currentItem, count);
   }
   
-  handleSplitStack(index: number, currentItem: IThing, count: number): IThing | null{
+  handleSplitStack(index: number, currentItem: Thing, count: number): Thing | null{
     /*
      * Function Tile.handleSplitStack
      * Handles splitting a stack of items
@@ -519,7 +517,7 @@ class Tile extends Thing implements ITile{
     return null
   }
   
-  splitStack(index: number, currentItem: IThing, overflow: number): void {
+  splitStack(index: number, currentItem: Thing, overflow: number): void {
     /*
      * Function Tile.splitStack
      * Splits stackable items when overflow occurs
@@ -530,7 +528,7 @@ class Tile extends Thing implements ITile{
       this.addTopThing(item);
   }
   
-  replaceFungibleItem(index: number, thing: IThing, count: number): void {
+  replaceFungibleItem(index: number, thing: Thing, count: number): void {
     /*
      * Function Tile.replaceFungibleItem
      * Replaces stackable items with a modified count

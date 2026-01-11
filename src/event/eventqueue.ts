@@ -1,12 +1,11 @@
 "use strict";
 
-import { IEventQueue } from "interfaces/IEventqueue";
 import BinaryHeap from "../utils/binary-heap";
 import Event from "./event";
 import { CONFIG, getGameServer } from "../helper/appContext";
 
 
-class EventQueue implements IEventQueue{
+class EventQueue {
   public heap: BinaryHeap<Event>;
   private __handledCounter: number;
 

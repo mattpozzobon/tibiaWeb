@@ -1,17 +1,17 @@
 import { CONST, getGameServer } from "../../../../helper/appContext";
-import { IPlayer } from "../../../../interfaces/IPlayer";
-import { IPosition } from "../../../../interfaces/IPosition";
-import { IItem } from "../../../../interfaces/IThing";
-import ITile from "../../../../interfaces/ITile";
+import Player from "creature/player/player";
+import Tile from "thing/tile";
+import Item from "item/item";
+import { Position } from "utils/position";
 
-export function useTrunk(player: IPlayer, tile: ITile, index: number, item: IItem): boolean {
+export function useTrunk(player: Player, tile: Tile, index: number, item: Item): boolean {
   // Only allowed when not moving
   if (player.isMoving()) {
     return true;
   }
 
   // Teleport the player
-  const destination: IPosition = tile.position.down();
+  const destination: Position = tile.position.down();
   getGameServer().world.creatureHandler.teleportCreature(player, destination);
 
   // TODO:
