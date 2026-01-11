@@ -650,10 +650,39 @@ class Equipment {
     console.log('Belt addons reset to 0 on unequip');
   }
 
+  /**
+   * Helper function to select the best potion from a list based on player level
+   * Returns the potion with the highest usable level requirement
+   */
+  private __selectBestPotion(potions: IThing[], playerLevel: number): { item: IThing; clientId: number; level: number } | null {
+    if (!potions || potions.length === 0) return null;
+
+    let bestPotion: { item: IThing; clientId: number; level: number } | null = null;
+    let bestLevel = -1;
+
+    for (const potion of potions) {
+      const prototype = potion.getPrototype();
+      const potionLevel = prototype?.properties?.level ?? 0; // Default to level 0 if not specified
+      
+      // Only consider potions the player can use (player level >= potion level requirement)
+      if (playerLevel >= potionLevel) {
+        // Prefer potions with higher level requirements
+        if (potionLevel > bestLevel) {
+          const clientId = getGameServer().database.getClientId(potion.id);
+          bestPotion = { item: potion, clientId, level: potionLevel };
+          bestLevel = potionLevel;
+        }
+      }
+    }
+
+    return bestPotion;
+  }
+
   getBeltPotionQuantities(): { healthPotionId: number; healthQuantity: number; manaPotionId: number; manaQuantity: number; energyPotionId: number; energyQuantity: number } | null {
     /*
      * Function Equipment.getBeltPotionQuantities
      * Returns the potion client IDs and quantities for each potion type
+     * Selects the best potion for each type based on player level (highest usable level requirement)
      * Returns null if no belt is equipped
      */
     const beltItem = this.peekIndex(CONST.EQUIPMENT.BELT);
@@ -666,38 +695,67 @@ class Equipment {
       return null;
     }
 
-    // Get all slots and calculate total quantities for each potion type
+    const playerLevel = this.IPlayer.getLevel();
+
+    // Map potion types to their client IDs (for grouping)
+    // Index 0 = Health, Index 1 = Mana, Index 2 = Stamina
+    const potionTypeConfig = [
+      { clientIds: [236, 266], type: 'health' },
+      { clientIds: [237, 268], type: 'mana' },
+      { clientIds: [238, 239], type: 'stamina' }
+    ];
+
+    // Group potions by type
+    const potionsByType: { health: IThing[]; mana: IThing[]; stamina: IThing[] } = {
+      health: [],
+      mana: [],
+      stamina: []
+    };
+
     const slots = container.getSlots();
-    let healthPotionId = 0;
+    slots.forEach((slot: any) => {
+      if (!slot) return;
+      
+      const prototype = slot.getPrototype();
+      if (prototype?.properties?.itemType !== "potion") return;
+
+      const clientId = getGameServer().database.getClientId(slot.id);
+      
+      // Group by potion type
+      for (const config of potionTypeConfig) {
+        if (config.clientIds.includes(clientId)) {
+          if (config.type === 'health') potionsByType.health.push(slot);
+          else if (config.type === 'mana') potionsByType.mana.push(slot);
+          else if (config.type === 'stamina') potionsByType.stamina.push(slot);
+          break;
+        }
+      }
+    });
+
+    // Select best potion for each type based on level
+    const bestHealth = this.__selectBestPotion(potionsByType.health, playerLevel);
+    const bestMana = this.__selectBestPotion(potionsByType.mana, playerLevel);
+    const bestStamina = this.__selectBestPotion(potionsByType.stamina, playerLevel);
+
+    // Calculate quantities for selected potions
+    let healthPotionId = bestHealth?.clientId || 0;
     let healthQuantity = 0;
-    let manaPotionId = 0;
+    let manaPotionId = bestMana?.clientId || 0;
     let manaQuantity = 0;
-    let energyPotionId = 0;
+    let energyPotionId = bestStamina?.clientId || 0;
     let energyQuantity = 0;
 
     slots.forEach((slot: any) => {
       if (!slot) return;
       
       const clientId = getGameServer().database.getClientId(slot.id);
-      // Use getCount() to properly get the count for stackable items
-      // For potions (which are stackable), this will return the actual count
-      // For non-stackable items, this returns 0
       const count = slot.getCount ? slot.getCount() : (slot.count || 1);
       
-      if (clientId === 266) { // Health potion
-        if (healthPotionId === 0) {
-          healthPotionId = clientId;
-        }
+      if (clientId === healthPotionId) {
         healthQuantity += count;
-      } else if (clientId === 268) { // Mana potion
-        if (manaPotionId === 0) {
-          manaPotionId = clientId;
-        }
+      } else if (clientId === manaPotionId) {
         manaQuantity += count;
-      } else if (clientId === 237) { // Energy potion
-        if (energyPotionId === 0) {
-          energyPotionId = clientId;
-        }
+      } else if (clientId === energyPotionId) {
         energyQuantity += count;
       }
     });

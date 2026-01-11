@@ -55,7 +55,8 @@ class UseHandler {
     }
 
     // Emit the event for the prototype listeners
-    item.emit("useWith", this.__player, item, packet.toWhere, packet.toIndex);
+    // Pass fromIndex and fromWhere so callbacks can properly remove items from containers
+    item.emit("useWith", this.__player, item, packet.toWhere, packet.toIndex, packet.fromIndex, packet.fromWhere);
 
     // Explicitly handle key uses
     if (item.constructor.name === "Key") {
@@ -146,7 +147,8 @@ class UseHandler {
     /*
      * Function UseHandler.handleUseBeltPotion
      * Handles the use of a belt potion
-     * Index 0 = Health, Index 1 = Mana, Index 2 = Energy
+     * Index 0 = Health, Index 1 = Mana, Index 2 = Stamina
+     * Action definitions handle all potion effects (health-potion.ts, mana-potion.ts, stamina-potion.ts)
      */
     
     // Check if the action is locked
@@ -162,73 +164,75 @@ class UseHandler {
       return;
     }
 
-    // Find the appropriate potion in the belt container based on index
-    let potion = null;
-    let potionSlot = -1;
-    let expectedClientId = 0;
+    // Map index to potion client IDs and type name
+    // Each type has 2 variants (e.g., health potion CID 236 and 266)
+    const potionConfig = [
+      { clientIds: [236, 266], type: 'health' },
+      { clientIds: [237, 268], type: 'mana' },
+      { clientIds: [238, 239], type: 'stamina' }
+    ];
     
-    // Determine which potion type we're looking for based on index
-    if (index === 0) {
-      expectedClientId = 266; // Health potion
-    } else if (index === 1) {
-      expectedClientId = 268; // Mana potion
-    } else if (index === 2) {
-      expectedClientId = 237; // Energy potion
-    } else {
+    if (index < 0 || index >= potionConfig.length) {
       this.__player.sendCancelMessage("Invalid potion slot.");
       return;
     }
     
-    // Search through the belt container to find the matching potion
+    const config = potionConfig[index];
+    const playerLevel = this.__player.getLevel();
+    
+    // Collect all matching potions of this type
+    const matchingPotions: { item: any; slot: number }[] = [];
+    
     for (let i = 0; i < beltItem.container.size; i++) {
       const item = beltItem.peekIndex(i);
       if (item) {
-        const clientId = getGameServer().database.getClientId(item.id);
-        if (clientId === expectedClientId) {
-          potion = item;
-          potionSlot = i;
-          break;
+        const prototype = item.getPrototype();
+        if (prototype?.properties?.itemType === "potion") {
+          const clientId = getGameServer().database.getClientId(item.id);
+          if (config.clientIds.includes(clientId)) {
+            matchingPotions.push({ item, slot: i });
+          }
         }
       }
     }
     
-    if (!potion) {
-      const potionType = index === 0 ? 'health' : index === 1 ? 'mana' : 'energy';
-      this.__player.sendCancelMessage(`You don't have a ${potionType} potion in your belt.`);
+    if (matchingPotions.length === 0) {
+      this.__player.sendCancelMessage(`You don't have a ${config.type} potion in your belt.`);
       return;
     }
     
-    // Apply the appropriate effect based on potion type
-    let effectApplied = false;
+    // Select the best potion based on level (highest usable level requirement)
+    let bestPotion: { item: any; slot: number } | null = null;
+    let bestLevel = -1;
     
-    if (index === 0) { // Health potion
-      // Add healing condition: 5 ticks, 10 seconds duration, heals 10 HP per tick
-      this.__player.addCondition(CONST.CONDITION.HEALTH_HEALING, 500, 1000, null);
-      effectApplied = true;
-    } else if (index === 1) { // Mana potion
-      // Add mana healing condition: 5 ticks, 10 seconds duration, heals 10 MP per tick
-      this.__player.addCondition(CONST.CONDITION.MANA_HEALING, 500, 1000, null);
-      effectApplied = true;
-    } else if (index === 2) { // Energy potion
-      // Add energy healing condition: 5 ticks, 10 seconds duration, heals 10 EP per tick
-      this.__player.addCondition(CONST.CONDITION.ENERGY_HEALING, 500, 1000, null);
-      effectApplied = true;
+    for (const { item, slot } of matchingPotions) {
+      const prototype = item.getPrototype();
+      const potionLevel = prototype?.properties?.level ?? 0; // Default to level 0 if not specified
+      
+      // Only consider potions the player can use (player level >= potion level requirement)
+      if (playerLevel >= potionLevel) {
+        // Prefer potions with higher level requirements
+        if (potionLevel > bestLevel) {
+          bestPotion = { item, slot };
+          bestLevel = potionLevel;
+        }
+      }
     }
-
-    if (effectApplied) {
-      // Remove the potion from the belt
-      beltItem.removeIndex(potionSlot, 1);
-      
-      // Send updated belt potion quantities to UI
-      this.__player.write(new BeltPotionQuantitiesPacket(this.__player.containerManager.equipment));
-      
-      // Lock the action for cooldown
-      this.__useWithLock.lock(this.GLOBAL_USE_COOLDOWN);
-      
-      console.log(`Used ${index === 0 ? 'health' : index === 1 ? 'mana' : 'energy'} potion from belt slot ${potionSlot}`);
-    } else {
-      this.__player.sendCancelMessage("You cannot use that potion in this slot.");
+    
+    // If no usable potion found, use the first one with level 0 (shouldn't happen, but fallback)
+    if (!bestPotion) {
+      bestPotion = matchingPotions[0];
     }
+    
+    const potion = bestPotion.item;
+    const potionSlot = bestPotion.slot;
+    
+    // Emit the "use" event on the potion item - action definitions handle all effects
+    potion.emit("use", this.__player, beltItem, potionSlot, potion);
+    
+    // Update UI and lock action
+    this.__player.write(new BeltPotionQuantitiesPacket(this.__player.containerManager.equipment));
+    this.__useWithLock.lock(this.GLOBAL_USE_COOLDOWN);
   }
 }
 

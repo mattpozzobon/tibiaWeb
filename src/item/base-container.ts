@@ -230,10 +230,15 @@ class BaseContainer implements IBaseContainer{
   private __replaceFungibleItem(index: number, item: any, count: number): void {
     /*
      * Function BaseContainer.__replaceFungibleItem
-     * Replaces a stackable item with a specific count
+     * Updates a stackable item's count (instead of deleting/recreating)
+     * This keeps the parent set so callbacks continue to work
      */
-    this.deleteThing(item);
-    this.addThing(item.createFungibleThing(count), index);
+    item.setCount(count);
+    
+    // Send update packet to spectators
+    // ContainerAddPacket works for updates - the client will update the item at this index
+    this.__informSpectators(new ContainerAddPacket(this.guid, index, item));
+    // Item reference stays the same, so we don't need to call __setItem
   }
 
   private __removeStackableItem(index: number, currentItem: any, count: number): any | null {

@@ -322,11 +322,41 @@ class Thing extends ThingEmitter implements IThing{
       console.log('Error in Rotate');
   }
 
-  removeCount(count: number): void {
+  removeCount(count: number, parent?: any, index?: number): void {
     if (!this.prototypeCache.isStackable()) {
       this.remove();
+      return;
+    }
+
+    // Try to use this.parent (should work now since we keep parent set during stack splits)
+    const itemParent = this.parent;
+    if (!itemParent) {
+      return;
+    }
+
+    // If parent is a container (has container property), find the item's index and use removeIndex
+    if ((itemParent as any).container) {
+      const container = (itemParent as any).container;
+      // Find the item's index in the container slots array (should work now since parent stays set)
+      const index = container.slots.indexOf(this);
+      if (index !== -1) {
+        (itemParent as any).removeIndex(index, count);
+        return;
+      }
+    } else if ((itemParent as any).removeIndex && (itemParent as any).itemStack) {
+      // For tiles: find index in itemStack and use removeIndex
+      const items = (itemParent as any).itemStack.getItems();
+      const index = items.findIndex((item: any) => item === this || (item && item.id === this.id));
+      if (index !== -1) {
+        (itemParent as any).removeIndex(index, count);
+        return;
+      }
+    } else if ((itemParent as any).deleteThing) {
+      // Fallback: try deleteThing (but it may not support count properly)
+      (itemParent as any).deleteThing(this, count);
     } else {
-      this.parent?.deleteThing(this, count);
+      // Last resort: remove the entire item
+      this.remove();
     }
   }
 

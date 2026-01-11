@@ -157,11 +157,11 @@ class Container extends Item implements IContainer{
   private __isPotion(item: IThing): boolean {
     /*
      * Function Container.__isPotion
-     * Checks if an item is a potion (health, mana, or energy)
+     * Checks if an item is a potion by checking itemType from definitions
      */
     if (!item) return false;
-    const clientId = getGameServer().database.getClientId(item.id);
-    return clientId === 266 || clientId === 268 || clientId === 237;
+    const prototype = item.getPrototype();
+    return prototype?.properties?.itemType === "potion";
   }
 
   getNumberItems(): number {
@@ -236,10 +236,23 @@ class Container extends Item implements IContainer{
       return null;
     }
 
+    // Get the item and its weight before removal (for stack splits)
+    const itemBefore = this.container.peekIndex(index);
+    const weightBefore = itemBefore ? itemBefore.getWeight() : 0;
+    
     const thing = this.container.removeIndex(index, amount);
     if (thing === null) return null;
     
-    this.__updateParentWeightRecursion(-thing.getWeight());
+    // Calculate weight difference
+    // For full removal: -thing.getWeight() (just the removed item)
+    // For stack splits: the remaining item's weight changed, so we need:
+    //   weightDiff = (weight of remaining item) - (weight before)
+    //   which equals: -thing.getWeight() (weight of what was removed)
+    // Actually, -thing.getWeight() is correct for both cases!
+    const weightAfter = this.container.peekIndex(index)?.getWeight() || 0;
+    const weightDiff = weightAfter - weightBefore;
+    
+    this.__updateParentWeightRecursion(weightDiff);
     thing.setParent(null);
 
     // Update belt outfit and potion quantities when potion is removed from belt container
@@ -667,8 +680,9 @@ class Container extends Item implements IContainer{
 
   getAllowedItemIds(slotIndex: number): number[] {
     if (this.__isPotionSlot(slotIndex)) {
-      // Return potion client IDs: 266 (health), 268 (mana), 237 (energy)
-      return [266, 268, 237];
+      // Return all potion client IDs from itemType "potion" in definitions
+      const potionType = exclusiveSlotsManager.getItemType("potion");
+      return potionType?.itemIds || [];
     }
     // Check if this is an exclusive slot (exclusive slots are at the end)
     const baseSize = this.__getBaseSize();
