@@ -18,7 +18,7 @@ function onExpire(creature) {
 
 }
 
-function onTick(creature) {
+function onTick(creature, properties) {
 
   /*
    * Function onTick
@@ -29,10 +29,9 @@ function onTick(creature) {
     return;
   }
 
-  let manaHealing = 10;
+  const healAmount = properties && typeof properties.healAmount === 'number' ? properties.healAmount : 10;
 
-  // Apply mana healing to the player
-  creature.increaseMana(manaHealing);
+  creature.increaseMana(healAmount);
   process.gameServer.world.sendMagicEffect(creature.position, CONST.EFFECT.MAGIC.MAGIC_BLUE);
 
 }

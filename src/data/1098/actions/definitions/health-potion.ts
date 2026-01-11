@@ -6,7 +6,8 @@ module.exports = {
   use(player: Player, thing: Thing, index: number, item: Item) {
     const name = (item.getName?.() || "").toLowerCase();
     const healAmount = name === "small health potion" ? 10 : 50;
-    player.increaseHealth(healAmount);
+
+    player.addCondition(CONST.CONDITION.HEALTH_HEALING, 1, 10, { healAmount });
     sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.MAGIC_GREEN);
     item.removeCount(1);
   },
@@ -17,7 +18,8 @@ module.exports = {
     if (target === player) {
       const name = (item.getName?.() || "").toLowerCase();
       const healAmount = name === "small health potion" ? 10 : 50;
-      player.increaseHealth(healAmount);
+
+      player.addCondition(CONST.CONDITION.HEALTH_HEALING, 1, 30, { healAmount });
       sendMagicEffect(player.getPosition(), CONST.EFFECT.MAGIC.MAGIC_GREEN);
       item.removeCount(1);
       return true;

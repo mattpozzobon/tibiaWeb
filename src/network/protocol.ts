@@ -199,11 +199,12 @@ export class CancelMessagePacket extends PacketWriter {
 }
 
 export class ToggleConditionPacket extends PacketWriter {
-  constructor(toggle: boolean, cid: number, id: number) {
-    super(CONST.PROTOCOL.SERVER.TOGGLE_CONDITION, 7);
+  constructor(toggle: boolean, cid: number, id: number, expireMs: number = 0) {
+    super(CONST.PROTOCOL.SERVER.TOGGLE_CONDITION, 11);
     this.writeUInt32(cid);
     this.writeBoolean(toggle);
     this.writeUInt16(id);
+    this.writeUInt32(expireMs >>> 0);
   }
 }
 

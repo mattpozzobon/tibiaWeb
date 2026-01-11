@@ -160,13 +160,13 @@ class ItemStack {
   private __applyFieldCondition(field: string, creature: Creature): void {
     switch (field) {
       case "energy":
-        creature.addCondition(CONST.CONDITION.ELECTRIFIED, 3, 100, null);
+        creature.addCondition(CONST.CONDITION.ELECTRIFIED, 1, 3, null);
         break;
       case "fire":
-        creature.addCondition(CONST.CONDITION.BURNING, 5, 50, null);
+        creature.addCondition(CONST.CONDITION.BURNING, 0.5, 2.5, null);
         break;
       case "poison":
-        creature.addCondition(CONST.CONDITION.POISONED, 20, 10, null);
+        creature.addCondition(CONST.CONDITION.POISONED, 0.1, 2, null);
         break;
     }
   }

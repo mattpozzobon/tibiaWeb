@@ -4,6 +4,7 @@ export default class Condition {
   maxNumberTicks: number;
   tickDuration: number;
   applyEvent: { cancel: () => void } | null;
+  properties: any;
 
   constructor(id: number, ticks: number, duration: number) {
     /*
@@ -17,6 +18,7 @@ export default class Condition {
     this.maxNumberTicks = ticks;
     this.tickDuration = duration;
     this.applyEvent = null;
+    this.properties = null;
   }
 
   isPermanent(): boolean {

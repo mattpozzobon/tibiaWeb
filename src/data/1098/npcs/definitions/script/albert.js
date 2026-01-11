@@ -40,7 +40,7 @@ function baseTalkState(player, message) {
 
   switch(message) {
     case "arena":
-      player.addCondition(Condition.prototype.ARENA, 10, 20, null);
+      player.addCondition(Condition.prototype.ARENA, 0.2, 2, null);
       break;
     case "trade":
       this.internalCreatureSay("Have a browse!", CONST.COLOR.YELLOW);

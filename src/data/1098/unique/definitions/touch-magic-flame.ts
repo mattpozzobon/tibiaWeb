@@ -10,7 +10,7 @@ export function useTrunk(player: Player, tile: Tile, index: number, item: Item):
     return true;
   }
 
-  player.addCondition(CONST.CONDITION.MAGIC_FLAME, 1, 250, null);
+  player.addCondition(CONST.CONDITION.MAGIC_FLAME, 2.5, 2.5, null);
 
   return true;
 }

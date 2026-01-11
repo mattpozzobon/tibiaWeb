@@ -7,7 +7,7 @@ module.exports = function useTrunk(player, tile, index, item) {
     return true;
   }
 
-  player.addCondition(Condition.prototype.MAGIC_FLAME, 1, 250, null);
+  player.addCondition(Condition.prototype.MAGIC_FLAME, 2.5, 2.5, null);
 
   return true;
 

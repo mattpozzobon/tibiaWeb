@@ -1,6 +1,6 @@
 "use strict";
 
-function onStart(creature) {
+function onStart(creature, properties) {
 
   /*
    * Function onStart
@@ -25,13 +25,13 @@ function onTick(creature, properties) {
    * Callback fired every condition tick
    */
 
-  if(creature.isFull(CONST.PROPERTIES.ENERGY)) {
+  if(creature.isFull(CONST.PROPERTIES.HEALTH)) {
     return;
   }
 
   const healAmount = properties && typeof properties.healAmount === 'number' ? properties.healAmount : 10;
 
-  creature.increaseEnergy(healAmount);
+  creature.increaseHealth(healAmount);
   process.gameServer.world.sendMagicEffect(creature.position, CONST.EFFECT.MAGIC.MAGIC_GREEN);
 
 }

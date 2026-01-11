@@ -1,5 +1,5 @@
 import fs from "fs";
-import { CONFIG, getDataFile, getGameServer } from "../helper/appContext";
+import { CONFIG, CONST, getDataFile, getGameServer } from "../helper/appContext";
 import DataValidator from "../utils/validator";
 import ThingPrototype from "../thing/thing-prototype";
 import Thing from "../thing/thing";
@@ -43,6 +43,14 @@ export default class Database {
   }
 
   initialize(): void {
+    // Set up globals for condition definitions and scripts
+    if (!(global as any).CONST) {
+      (global as any).CONST = CONST;
+    }
+    if (!(process as any).gameServer) {
+      (process as any).gameServer = getGameServer();
+    }
+    
     this.items = this.loadItemDefinitions("items");
     this.spells = this.loadDefinitions("spells");
     this.runes = this.loadDefinitions("runes");
@@ -223,7 +231,26 @@ export default class Database {
   }
   
   getCondition(name: string): ConditionModule | null {
-    return this.conditions[name] || null;
+    const filename = this.conditions[name];
+    if (!filename) return null;
+    
+    // If it's already a module (loaded), return it
+    if (typeof filename === 'object' && filename !== null) {
+      return filename;
+    }
+    
+    // Otherwise, load the module
+    try {
+      const modulePath = getDataFile("conditions", "definitions", filename);
+      const module = require(modulePath);
+      
+      // Cache the loaded module
+      this.conditions[name] = module;
+      return module;
+    } catch (error) {
+      console.error(`[Database] Failed to load condition ${name} from ${filename}:`, error);
+      return null;
+    }
   }
 
   getClientId(id: number): number {

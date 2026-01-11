@@ -32,15 +32,15 @@ class FluidContainer extends Item {
       player.speechHandler.internalCreatureSay(this.__getDrinkText(), CONST.COLOR.RED);
 
       if (this.isAlcohol()) {
-        player.addCondition(CONST.CONDITION.DRUNK, 1, 500, null);
+        player.addCondition(CONST.CONDITION.DRUNK, 5, 5, null);
       }
 
       if (this.isSlime()) {
-        player.addCondition(CONST.CONDITION.POISONED, 10, 20, null);
+        player.addCondition(CONST.CONDITION.POISONED, 0.2, 2, null);
       }
 
       if (this.isLava()) {
-        player.addCondition(CONST.CONDITION.BURNING, 5, 50, null);
+        player.addCondition(CONST.CONDITION.BURNING, 0.5, 2.5, null);
       }
 
       this.__empty();
