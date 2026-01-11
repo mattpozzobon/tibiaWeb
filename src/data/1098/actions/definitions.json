@@ -1,6 +1,7 @@
 [
-  {"ids": [2785], "on": ["use"], "callback": "blueberry.ts"},
+  {"ids": [2785],       "on": ["use"], "callback": "blueberry.ts"},
   {"ids": [7588, 7618], "on": ["use", "useWith"], "callback": "health-potion.ts"},
   {"ids": [7589, 7620], "on": ["use", "useWith"], "callback": "mana-potion.ts"},
-  {"ids": [7590, 7591], "on": ["use", "useWith"], "callback": "stamina-potion.ts"}
+  {"ids": [7590, 7591], "on": ["use", "useWith"], "callback": "stamina-potion.ts"},
+  {"ids": [2550],       "on": ["useWith"], "callback": "scythe.ts"}
 ]

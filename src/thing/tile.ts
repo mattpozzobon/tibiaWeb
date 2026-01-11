@@ -187,8 +187,6 @@ class Tile extends Thing {
       return -1;
     }
 
-    console.log('thing', thing.id);
-    console.log(this.itemStack?.getItems().indexOf(thing));
     const index = this.itemStack?.getItems().indexOf(thing) ?? -1;
     if (index === -1) {
       return -1;

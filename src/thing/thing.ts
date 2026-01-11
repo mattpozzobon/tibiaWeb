@@ -100,10 +100,22 @@ class Thing extends ThingEmitter {
 
   scheduleDecay(): void {
     if (!this.isDecaying()) return;
+    
+    // Cancel any existing decay event before scheduling a new one
+    if (this.scheduledDecayEvent) {
+      this.scheduledDecayEvent.cancel();
+      this.scheduledDecayEvent = null;
+    }
+    
+    // Use existing duration if set, otherwise get from prototype
     if (!this.duration) {
       this.setDuration(this.__getDecayProperties().duration);
-    } else
+    }
+    
+    // Schedule the decay with the duration (should always be set at this point)
+    if (this.duration) {
       this.__scheduleDecay(this.duration);
+    }
   }
 
   setActionId(actionId: number): void {

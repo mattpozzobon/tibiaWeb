@@ -1,31 +1,20 @@
-import { getGameServer } from "../../../../helper/appContext";
-import Player from "creature/player/player";
-import Tile from "thing/tile";
-import Item from "item/item";
+// @ts-nocheck
+const { getGameServer } = require("../../../../helper/appContext");
 
-export interface BlueberryBushAction {
-  execute(player: Player, tile: Tile, index: number, item: Item): void;
-}
-
-export class BlueberryBush {
-  execute(player: Player, tile: Tile, index: number, item: Item): void {
-    /*
-     * Function blueberryBush
-     * Picks blueberries from a blueberry bush
-     */
-
+module.exports = {
+  use(player: Player, thing: Thing, index: number, item: Item) {
     const bush = getGameServer().database.createThing(2786);
-    const amount = this.randomExp(3, 10, 3);
-    const berries = getGameServer().database.createThing(2677)?.setCount(amount)
+    const amount = randomExp(2, 10, 3);
+    const berries = getGameServer().database.createThing(2677)?.setCount(amount);
 
-    if(bush && berries){
+    if (bush && berries) {
       bush.scheduleDecay();
       item.replace(bush);
-      tile.addTopThing(berries);
+      thing.addTopThing(berries);
     }
-  }
+  },
+};
 
-  private randomExp(min: number, max: number, exp: number): number {
+function randomExp(min: number, max: number, exp: number): number {
     return Math.floor(Math.pow(Math.random(), exp) * (max - min + 1)) + min;
-  }
 }

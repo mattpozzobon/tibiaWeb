@@ -124,8 +124,20 @@ class OTBMParser {
           case OTBM_HEADERS.OTBM_ATTR_UNIQUE_ID:
             thing.setUniqueId(value);
             break;
+          case OTBM_HEADERS.OTBM_ATTR_DURATION:
+            thing.setDuration(value);
+            break;
+          case OTBM_HEADERS.OTBM_ATTR_DECAYING_STATE:
+            // Decaying state indicates the item is already in a decaying state
+            // We should ensure decay is scheduled if the item is decaying
+            break;
       }}
     });
+
+    // After setting all attributes, reschedule decay if item is decaying and has duration
+    if (thing && thing.isDecaying() && thing.duration) {
+      thing.scheduleDecay();
+    }
 
     return thing;
   }

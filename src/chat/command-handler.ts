@@ -1,5 +1,5 @@
 import { ServerMessagePacket } from "../network/protocol";
-import { CONST, getGameServer } from "../helper/appContext"; // Helper to get the game server
+import { CONST, CONFIG, getGameServer } from "../helper/appContext"; // Helper to get the game server
 import { Position } from "../utils/position";
 import Player from "creature/player/player";
 
@@ -208,6 +208,93 @@ export class CommandHandler {
           player.sendCancelMessage("Server reopened. Server is now open for connections.");
         } else {
           player.sendCancelMessage("Server is already open.");
+        }
+        break;
+      }
+
+      case "/i": {
+        if (!args[1]) {
+          player.sendCancelMessage("Usage: /i <itemId>[,<quantity>] (e.g., /i 2160 or /i 2160,100)");
+          break;
+        }
+        
+        const parts = args[1].split(",");
+        if (parts.length < 1 || parts.length > 2) {
+          player.sendCancelMessage("Invalid format. Use: /i <itemId>[,<quantity>] (e.g., /i 2160 or /i 2160,100)");
+          break;
+        }
+
+        const itemId = Number(parts[0].trim());
+        let quantity = parts.length === 2 ? Number(parts[1].trim()) : 100;
+
+        if (isNaN(itemId) || itemId <= 0) {
+          player.sendCancelMessage("Invalid item ID. Must be a positive number.");
+          break;
+        }
+
+        if (isNaN(quantity) || quantity <= 0) {
+          player.sendCancelMessage("Invalid quantity. Must be a positive number.");
+          break;
+        }
+
+        const gameServer = getGameServer();
+        const prototype = gameServer.database.getThingPrototype(itemId);
+        
+        if (!prototype) {
+          player.sendCancelMessage(`Item with ID ${itemId} does not exist.`);
+          break;
+        }
+
+        // Check if item is a tile (group 0x01 typically means ground/tile)
+        const isTile = prototype.group === 0x01;
+        
+        // Check if item is stackable
+        const isStackable = prototype.isStackable();
+        
+        // If not stackable, create only one item
+        if (!isStackable) {
+          quantity = 1;
+        }
+
+        const createdItem = gameServer.database.createThing(itemId);
+        if (!createdItem) {
+          player.sendCancelMessage(`Failed to create item with ID ${itemId}.`);
+          break;
+        }
+
+        // Set count if stackable
+        if (isStackable && quantity > 1) {
+          createdItem.setCount(quantity);
+        }
+
+        // If it's a tile, create it under the player
+        if (isTile) {
+          const playerPos = player.getPosition();
+          const tile = gameServer.world.getTileFromWorldPosition(playerPos);
+          if (tile) {
+            tile.addTopThing(createdItem);
+            player.sendCancelMessage(`Created ${quantity}x item ${itemId} on the ground.`);
+          } else {
+            player.sendCancelMessage("Cannot create tile item here.");
+          }
+          break;
+        }
+
+        // Try to add to player's backpack first
+        const equipment = player.containerManager.equipment;
+        if (equipment.canPushItem(createdItem)) {
+          equipment.pushItem(createdItem);
+          player.sendCancelMessage(`Created ${quantity}x item ${itemId} in backpack.`);
+        } else {
+          // If backpack is full or doesn't exist, add to ground
+          const playerPos = player.getPosition();
+          const tile = gameServer.world.getTileFromWorldPosition(playerPos);
+          if (tile) {
+            tile.addTopThing(createdItem);
+            player.sendCancelMessage(`Created ${quantity}x item ${itemId} on the ground.`);
+          } else {
+            player.sendCancelMessage("Cannot create item here.");
+          }
         }
         break;
       }
