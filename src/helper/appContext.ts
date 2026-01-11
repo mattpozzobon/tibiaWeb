@@ -152,6 +152,13 @@ export const getGameServer = (): GameServer => {
   return gameServerInstance;
 };
 
+// Cleaner wrappers (no Proxy, easier to type/use from scripts)
+export const sendMagicEffect = (...args: Parameters<GameServer["world"]["sendMagicEffect"]>) =>
+  getGameServer().world.sendMagicEffect(...args);
+export const sendDistanceEffect = (...args: Parameters<GameServer["world"]["sendDistanceEffect"]>) =>
+  getGameServer().world.sendDistanceEffect(...args);
+
+
 /* ----------------------------------------------------
    Debug printer
 ---------------------------------------------------- */
