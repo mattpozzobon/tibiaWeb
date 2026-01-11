@@ -13,7 +13,7 @@ module.exports = function healthPotion(player, thing, index, item) {
 
   // Add healing condition: 5 ticks, 10 seconds duration, heals 10 HP per tick
   // CONST.CONDITION.HEALTH_HEALING = 16
-  player.addCondition(16, 500, 1000, null);
+  player.addCondition(CONST.CONDITION.HEALTH_HEALING, 500, 1000, null);
 
   // Remove one potion from the container
   thing.removeIndex(index, 1);

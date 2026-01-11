@@ -20,7 +20,7 @@ module.exports = function healthPotionUseWith(player, item, tile, toIndex, fromI
   if (target === player) {
     // Add healing condition: 5 ticks, 10 seconds duration, heals 10 HP per tick
     // CONST.CONDITION.HEALTH_HEALING = 16
-    player.addCondition(16, 500, 1000, null);
+    player.addCondition(CONST.CONDITION.HEALTH_HEALING, 500, 1000, null);
     
     // Remove one potion from inventory or floor
     item.removeCount(1);

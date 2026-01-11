@@ -611,33 +611,22 @@ class Equipment {
     const container = getContainerFromIContainer(beltContainer as Container);
     if (!container) return;
 
-    // Check existing potions in the belt
-    const existingHealthPotions = container.getSlots().filter(slot => {
-      if (!slot) return false;
-      const clientId = getGameServer().database.getClientId(slot.id);
-      return clientId === 266; // Health potion
-    });
+    // Keep this in sync with `UseHandler.handleUseBeltPotion` (player-use-handler.ts)
+    const potionTypeConfig: { health: number[]; mana: number[]; stamina: number[] } = {
+      health: [236, 266],
+      mana: [237, 268],
+      stamina: [238, 239],
+    };
 
-    const existingManaPotions = container.getSlots().filter(slot => {
-      if (!slot) return false;
-      const clientId = getGameServer().database.getClientId(slot.id);
-      return clientId === 268; // Mana potion
-    });
+    const slots = container.getSlots();
+    const hasHealth = slots.some((slot) => slot && potionTypeConfig.health.includes(getGameServer().database.getClientId(slot.id)));
+    const hasMana = slots.some((slot) => slot && potionTypeConfig.mana.includes(getGameServer().database.getClientId(slot.id)));
+    const hasStamina = slots.some((slot) => slot && potionTypeConfig.stamina.includes(getGameServer().database.getClientId(slot.id)));
 
-    const existingEnergyPotions = container.getSlots().filter(slot => {
-      if (!slot) return false;
-      const clientId = getGameServer().database.getClientId(slot.id);
-      return clientId === 237; // Energy potion
-    });
-
-    console.log(`Belt equipped - Health: ${existingHealthPotions.length}, Mana: ${existingManaPotions.length}, Energy: ${existingEnergyPotions.length}`);
-
-    // Update addons based on existing potions
-    this.Player.properties.updateOutfitAddon('healthPotion', existingHealthPotions.length > 0 ? 1 : 0);
-    this.Player.properties.updateOutfitAddon('manaPotion', existingManaPotions.length > 0 ? 1 : 0);
-    this.Player.properties.updateOutfitAddon('energyPotion', existingEnergyPotions.length > 0 ? 1 : 0);
-
-    console.log('Belt addons updated on equip');
+    // Outfit addon names are historical: energyPotion == stamina potion addon
+    this.Player.properties.updateOutfitAddon("healthPotion", hasHealth ? 1 : 0);
+    this.Player.properties.updateOutfitAddon("manaPotion", hasMana ? 1 : 0);
+    this.Player.properties.updateOutfitAddon("energyPotion", hasStamina ? 1 : 0);
   }
 
   private __resetBeltAddons(): void {
